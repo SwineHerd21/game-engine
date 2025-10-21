@@ -20,8 +20,7 @@ pub fn main() !void {
     // Do setup here
 
     window.runEventLoop();
+
+    std.debug.print("\nEngine shutting down...\n", .{});
 }
 
-pub fn handleKeypress() void {
-    std.debug.print("ASDA", .{});
-}

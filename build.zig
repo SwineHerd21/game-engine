@@ -15,6 +15,7 @@ pub fn build(b: *std.Build) void {
         .root_module = mod,
     });
     exe.linkLibC();
+    // TODO: select necessary platform lib
     exe.linkSystemLibrary("X11");
     
     b.installArtifact(exe);
