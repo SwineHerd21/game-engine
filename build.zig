@@ -14,6 +14,8 @@ pub fn build(b: *std.Build) void {
         .name = "gaming",
         .root_module = mod,
     });
+    exe.linkLibC();
+    exe.linkSystemLibrary("X11");
     
     b.installArtifact(exe);
 
