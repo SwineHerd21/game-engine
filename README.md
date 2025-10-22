@@ -34,6 +34,14 @@ Basic 3d game engine catered to my puzzle game.
         [ ] Resize
         [ ] Custom handlers
     [ ] Fullscreen
+    [ ] Multiple windows?
+[ ] Layers
+    [ ] Systems are organized in layers from the engine core to the player loop
+[ ] Events
+    [ ] Events are propogated to each running engine layer in order
+    [ ] Raised by layers
+    [ ] Include stuff like key presses, window resize, frame render, etc
+    [ ] Each layer can consume the event so later layers cannot handle it
 [ ] Input
     [ ] Getting key presses/releases/states/which key/etc.
     [ ] Getting mouse button presses
@@ -67,7 +75,13 @@ Basic 3d game engine catered to my puzzle game.
 [ ] ECS
     [ ] Entity storage based on components
     [ ] Entity querying based on components
-    [ ] Hooking systems up to engine events
+    [ ] Systems can exist without scenes
+    [ ] Systems can be contained in scenes
+    [ ] Systems have functions
+        [ ] onStart - when a system is created
+        [ ] onEnd - when a scene is destroyed
+        [ ] onUpdate - runs every frame
+        [ ] onEvent - handles and consume events raised by other systems
 [ ] Scenes/levels
     [ ] Setting up scenes through files
     [ ] Switching scenes

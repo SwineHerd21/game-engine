@@ -1,4 +1,4 @@
-const events = @import("../events.zig");
+const Window = @import("../Window.zig");
 
 // TODO: replace cImport with extern fns
 pub const c = @cImport({
@@ -12,6 +12,7 @@ pub const Context = struct {
     display: *c.Display,
     screen: *c.Screen,
     window: c.Window,
+    event: c.XEvent,
     /// Handles closing the window with 'x' button
     wm_delete_window: c.Atom,
 };
@@ -26,7 +27,7 @@ pub inline fn createWindow(width: u32, height: u32) Context {
     _ = c.XClearWindow(display, window);
     _ = c.XMapRaised(display, window);
 
-    _ = c.XSelectInput(display, window, c.KeymapStateMask | c.KeyPressMask | c.KeyReleaseMask | c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask | c.FocusChangeMask);
+    _ = c.XSelectInput(display, window, c.KeymapStateMask | c.KeyPressMask | c.KeyReleaseMask | c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask | c.FocusChangeMask | c.StructureNotifyMask);
 
     const wm_delete_window = c.XInternAtom(display, "WM_DELETE_WINDOW", 0);
     _ = c.XSetWMProtocols(display, window, @constCast(&wm_delete_window), 1);
@@ -36,6 +37,7 @@ pub inline fn createWindow(width: u32, height: u32) Context {
         .display = display.?,
         .screen = @ptrCast(screen),
         .window = window,
+        .event = undefined,
         .wm_delete_window = wm_delete_window,
     };
 }
@@ -46,47 +48,54 @@ pub inline fn closeWindow(ctx: Context) void {
     _ = c.XCloseDisplay(ctx.display);
 }
 
-pub inline fn runEventLoop(ctx: Context) void {
-    var ev: c.XEvent = undefined;
-    var running = true;
-    while (running) {
-        _ = c.XNextEvent(ctx.display, &ev);
-        switch (ev.type) {
-            c.KeymapNotify => _ = c.XRefreshKeyboardMapping(&ev.xmapping),
-            c.KeyPress => {
-                events.handleKeyPress();
-            },
-            c.KeyRelease => {
-                events.handleKeyRelease();
-            },
-            c.ButtonPress => {
-                events.handlePointerButtonPress();
-            },
-            c.ButtonRelease => {
-                events.handlePointerButtonRelease();
-            },
-            c.MotionNotify => {
-                events.handlePointerMotion();
-            },
-            c.EnterNotify => {
-                events.handlePointerEnter();
-            },
-            c.LeaveNotify => {
-                events.handlePointerExit();
-            },
-            c.FocusIn => {
-                events.handleGainFocus();
-            },
-            c.FocusOut => {
-                events.handleLoseFocus();
-            },
-            c.DestroyNotify => running = false,
-            // Weird thing needed for the 'x' button on the window to be usable
-            c.ClientMessage => if (@as(c.Atom, @intCast(ev.xclient.data.l[0])) == ctx.wm_delete_window) {
-                running = false;
-            },
-            else => {},
-        }
+pub inline fn consumeEvent(window: *Window) void {
+    _ = c.XNextEvent(window.inner.display, &window.inner.event);
+    switch (window.inner.event.type) {
+        c.KeymapNotify => _ = c.XRefreshKeyboardMapping(&window.inner.event.xmapping),
+        c.KeyPress => {
+            window.handleKeyPress();
+        },
+        c.KeyRelease => {
+            window.handleKeyRelease();
+        },
+        c.ButtonPress => {
+            window.handlePointerButtonPress();
+        },
+        c.ButtonRelease => {
+            window.handlePointerButtonRelease();
+        },
+        c.MotionNotify => {
+            window.handlePointerMotion();
+        },
+        c.EnterNotify => {
+            window.handlePointerEnter();
+        },
+        c.LeaveNotify => {
+            window.handlePointerExit();
+        },
+        c.FocusIn => {
+            window.handleGainFocus();
+        },
+        c.FocusOut => {
+            window.handleLoseFocus();
+        },
+        c.ConfigureNotify => {
+            const ev = window.inner.event.xconfigure;
+
+            if (ev.width != window.width or ev.height != window.height) {
+                window.handleResize(@intCast(ev.width), @intCast(ev.height));
+            }
+        },
+        c.DestroyNotify => {
+            window.should_close = true;
+            window.handleClose();
+        },
+        // Weird thing needed for the 'x' button on the window to be usable
+        c.ClientMessage => if (@as(c.Atom, @intCast(window.inner.event.xclient.data.l[0])) == window.inner.wm_delete_window) {
+            window.should_close = true;
+            window.handleClose();
+        },
+        else => {},
     }
 }
 
