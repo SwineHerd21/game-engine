@@ -1,4 +1,5 @@
 const Window = @import("../Window.zig");
+const events = @import("../events.zig");
 
 // TODO: replace cImport with extern fns
 pub const c = @cImport({
@@ -48,12 +49,14 @@ pub inline fn closeWindow(ctx: Context) void {
     _ = c.XCloseDisplay(ctx.display);
 }
 
-pub inline fn consumeEvent(window: *Window) void {
+pub inline fn consumeEvent(window: *Window) ?*anyopaque {
     _ = c.XNextEvent(window.inner.display, &window.inner.event);
     switch (window.inner.event.type) {
         c.KeymapNotify => _ = c.XRefreshKeyboardMapping(&window.inner.event.xmapping),
         c.KeyPress => {
-            window.handleKeyPress();
+            return @ptrCast(&events.KeyPressEvent{
+                .keycode = 123,
+            });
         },
         c.KeyRelease => {
             window.handleKeyRelease();
@@ -97,5 +100,6 @@ pub inline fn consumeEvent(window: *Window) void {
         },
         else => {},
     }
+    return null;
 }
 

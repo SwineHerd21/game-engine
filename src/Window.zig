@@ -6,8 +6,6 @@ const Window = @This();
 
 const x11 = @import("native/x11.zig");
 
-/// The user-provided application that runs on the window.
-application: *anyopaque,
 /// Platform-specific implementation
 inner: switch (lib.platform) {
     .X11 => x11.Context,
@@ -39,9 +37,9 @@ pub fn destroy(w: Window) void {
 }
 
 /// Consume the next OS event
-pub fn consumeEvent(w: *Window) void {
+pub fn consumeEvent(w: *Window) ?*anyopaque {
     switch (lib.platform) {
-        .X11 => x11.consumeEvent(w),
+        .X11 => return x11.consumeEvent(w),
         .Windows => unreachable,
     }
 }

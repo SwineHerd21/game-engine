@@ -2,4 +2,6 @@
 
 const std = @import("std");
 
-
+const KeyPressEvent = struct {
+    keycode: u8,
+};

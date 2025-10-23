@@ -17,15 +17,4 @@ pub const platform: Platform = switch (@import("builtin").os.tag) {
 ///
 /// WARNING: This places the thread into an infinite update loop until the window closes.
 pub fn runApplication() !void {
-    var window = try Window.createWindow(800, 600);
-    defer window.destroy();
-
-    // Do setup here
-
-    while (!window.should_close) {
-        window.consumeEvent();
-    }
-
-    std.log.info("Shutting down engine...", .{}); 
 }
-
