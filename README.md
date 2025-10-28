@@ -5,7 +5,7 @@ Basic 3d game engine catered to my puzzle game.
 # TO-DO
 
 [x] Open window with X11
-[ ] Handling of window events
+[x] Handling of window events
 [ ] Setup engine loop
 [ ] Draw to window
 [ ] 3d rendering with OpenGL
@@ -25,23 +25,16 @@ Basic 3d game engine catered to my puzzle game.
 
 [ ] Windowing
     [x] Window creation
-    [ ] Event handling
-        [ ] Keyboard input
-        [ ] Pointer input
-        [ ] Mouse button input
-        [ ] Gain/lose focus
+    [x] Event handling
+        [x] Keyboard input
+        [x] Pointer input
+        [x] Mouse button input
+        [x] Gain/lose focus
         [ ] Maximize/minimize
-        [ ] Resize
-        [ ] Custom handlers
+        [x] Resize
+        [x] Custom handlers
     [ ] Fullscreen
     [ ] Multiple windows?
-[ ] Layers
-    [ ] Systems are organized in layers from the engine core to the player loop
-[ ] Events
-    [ ] Events are propogated to each running engine layer in order
-    [ ] Raised by layers
-    [ ] Include stuff like key presses, window resize, frame render, etc
-    [ ] Each layer can consume the event so later layers cannot handle it
 [ ] Input
     [ ] Getting key presses/releases/states/which key/etc.
     [ ] Getting mouse button presses
