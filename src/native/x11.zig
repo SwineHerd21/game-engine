@@ -20,10 +20,12 @@ pub const Context = struct {
 
 // TODO: Error handling probably?
 
-pub inline fn createWindow(width: u32, height: u32) Context {
+pub inline fn createWindow(width: u32, height: u32, title: []const u8) Context {
     const display = c.XOpenDisplay(null);
     const screen = c.DefaultScreenOfDisplay(display);
     const window = c.XCreateSimpleWindow(display, c.RootWindowOfScreen(screen), 0, 0, width, height, 0, screen.white_pixel, screen.black_pixel);
+
+    _ = c.XStoreName(display, window, @ptrCast(title));
 
     _ = c.XClearWindow(display, window);
     _ = c.XMapRaised(display, window);
@@ -49,54 +51,106 @@ pub inline fn closeWindow(ctx: Context) void {
     _ = c.XCloseDisplay(ctx.display);
 }
 
-pub inline fn consumeEvent(window: *Window) ?*anyopaque {
+pub inline fn consumeEvent(window: *Window) ?events.Event {
     _ = c.XNextEvent(window.inner.display, &window.inner.event);
     switch (window.inner.event.type) {
         c.KeymapNotify => _ = c.XRefreshKeyboardMapping(&window.inner.event.xmapping),
         c.KeyPress => {
-            return @ptrCast(&events.KeyPressEvent{
-                .keycode = 123,
-            });
+            const ev = window.inner.event.xkey;
+
+            return events.Event{
+                .key_press = .{
+                    .keycode = @truncate(ev.keycode),
+                    .modifiers = .{
+                        .shift = ev.state & (1<<0) == 1,
+                        .control = ev.state & (1<<2) == 1,
+                        .alt = ev.state & (1<<3) == 1,
+                        .super = ev.state & (1<<6) == 1,
+                    },
+                },
+            };
         },
         c.KeyRelease => {
-            window.handleKeyRelease();
+            const ev = window.inner.event.xkey;
+
+            return events.Event{
+                .key_release = .{
+                    .keycode = @truncate(ev.keycode),
+                    .modifiers = .{
+                        .shift = ev.state & (1<<0) == 1,
+                        .control = ev.state & (1<<2) == 1,
+                        .alt = ev.state & (1<<3) == 1,
+                        .super = ev.state & (1<<6) == 1,
+                    },
+                },
+            };
         },
         c.ButtonPress => {
-            window.handlePointerButtonPress();
+            const ev = window.inner.event.xbutton;
+
+            return events.Event{
+                .pointer_button_press = .{
+                    .button = @truncate(ev.button),
+                },
+            };
         },
         c.ButtonRelease => {
-            window.handlePointerButtonRelease();
+            const ev = window.inner.event.xbutton;
+
+            return events.Event{
+                .pointer_button_release = .{
+                    .button = @truncate(ev.button),
+                },
+            };
         },
         c.MotionNotify => {
-            window.handlePointerMotion();
+            const ev = window.inner.event.xmotion;
+
+            return events.Event{
+                .pointer_motion = .{ev.x, ev.y},
+            };
         },
         c.EnterNotify => {
-            window.handlePointerEnter();
+            return events.Event{
+                .pointer_enter = {},
+            };
         },
         c.LeaveNotify => {
-            window.handlePointerExit();
+            return events.Event{
+                .pointer_exit = {},
+            };
         },
         c.FocusIn => {
-            window.handleGainFocus();
+            return events.Event{
+                .focus_gained = {},
+            };
         },
         c.FocusOut => {
-            window.handleLoseFocus();
+            return events.Event{
+                .focus_lost = {},
+            };
         },
         c.ConfigureNotify => {
             const ev = window.inner.event.xconfigure;
 
             if (ev.width != window.width or ev.height != window.height) {
-                window.handleResize(@intCast(ev.width), @intCast(ev.height));
+                return events.Event{
+                    .window_resize = .{
+                        .width = @intCast(ev.width),
+                        .height = @intCast(ev.height)},
+                };
             }
         },
         c.DestroyNotify => {
-            window.should_close = true;
-            window.handleClose();
+            return events.Event{
+                .window_close = {},
+            };
         },
         // Weird thing needed for the 'x' button on the window to be usable
         c.ClientMessage => if (@as(c.Atom, @intCast(window.inner.event.xclient.data.l[0])) == window.inner.wm_delete_window) {
-            window.should_close = true;
-            window.handleClose();
+            return events.Event{
+                .window_close = {},
+            };
         },
         else => {},
     }
