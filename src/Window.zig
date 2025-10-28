@@ -13,8 +13,8 @@ inner: switch (lib.platform) {
     .X11 => x11.Context,
     .Windows => unreachable,
 },
-width: u16,
-height: u16,
+width: u32,
+height: u32,
 /// Set to true when you want to close the window.
 should_close: bool = false,
 
