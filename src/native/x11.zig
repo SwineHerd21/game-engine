@@ -63,24 +63,25 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
                     .keycode = @truncate(ev.keycode),
                     .modifiers = .{
                         .shift = ev.state & (1<<0) == 1,
-                        .control = ev.state & (1<<2) == 1,
-                        .alt = ev.state & (1<<3) == 1,
-                        .super = ev.state & (1<<6) == 1,
+                        .control = ev.state & (1<<2) == 1<<2,
+                        .alt = ev.state & (1<<3) == 1<<3,
+                        .super = ev.state & (1<<6) == 1<<6,
                     },
                 },
             };
         },
         c.KeyRelease => {
             const ev = window.inner.event.xkey;
+            @import("std").debug.print("\n{}\n", .{ev.state});
 
             return events.Event{
                 .key_release = .{
                     .keycode = @truncate(ev.keycode),
                     .modifiers = .{
                         .shift = ev.state & (1<<0) == 1,
-                        .control = ev.state & (1<<2) == 1,
-                        .alt = ev.state & (1<<3) == 1,
-                        .super = ev.state & (1<<6) == 1,
+                        .control = ev.state & (1<<2) == 1<<2,
+                        .alt = ev.state & (1<<3) == 1<<3,
+                        .super = ev.state & (1<<6) == 1<<6,
                     },
                 },
             };

@@ -17,10 +17,22 @@ pub fn main() !void {
 fn on_event(event: engine.Event) void {
     switch (event) {
         .key_press => |ev| {
-            std.debug.print("pressed {} ", .{ev.keycode});
+            std.debug.print("pressed {} (control:{}, shift:{}, alt:{}, super:{}) ", .{
+                ev.keycode,
+                ev.modifiers.control,
+                ev.modifiers.shift,
+                ev.modifiers.alt,
+                ev.modifiers.super,
+            });
         },
         .key_release => |ev| {
-            std.debug.print("released {} ", .{ev.keycode});
+            std.debug.print("released {} (control:{}, shift:{}, alt:{}, super:{}) ", .{
+                ev.keycode,
+                ev.modifiers.control,
+                ev.modifiers.shift,
+                ev.modifiers.alt,
+                ev.modifiers.super,
+            });
         },
         .pointer_button_press => |ev| {
             std.debug.print("mouse pressed {} ", .{ev.button});
