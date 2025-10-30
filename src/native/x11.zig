@@ -96,7 +96,6 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
         },
         c.KeyRelease => {
             const ev = window.inner.event.xkey;
-            @import("std").debug.print("\n{}\n", .{ev.state});
 
             return events.Event{
                 .key_release = .{
@@ -174,6 +173,8 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
         c.Expose => {
             c.glViewport(0, 0, @intCast(window.width), @intCast(window.height));
             defer c.glXSwapBuffers(window.inner.display, window.inner.window);
+
+            drawQuad();
 
             return events.Event{
                 .window_expose = {},
