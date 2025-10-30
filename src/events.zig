@@ -15,6 +15,7 @@ pub const Event = union(enum) {
     focus_lost: void,
     window_resize: WindowResize,
     window_close: void,
+    window_expose: void,
 };
 
 const WindowResize = struct {

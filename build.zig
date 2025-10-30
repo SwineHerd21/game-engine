@@ -16,6 +16,8 @@ pub fn build(b: *std.Build) void {
             std.debug.print("The {} operating system is not supported.", .{os});
         },
     }
+    mod.linkSystemLibrary("GL", .{ .needed = true });
+    mod.linkSystemLibrary("GLU", .{ .needed = true });
 
     const lib = b.addLibrary(.{
         .name = "gaming",

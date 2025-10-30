@@ -5,13 +5,8 @@ const engine = @import("engine");
 pub fn main() !void {
     std.debug.print("gaming\n", .{});
     // Setup game here
-    const app: engine.App = .{
-        .title = "Gaming",
-        .on_update = undefined,
-        .on_event = &on_event,
-    };
+    try engine.runApplication("Gaming", undefined, &on_event);
 
-    try engine.runApplication(app);
 }
 
 fn on_event(event: engine.Event) void {
@@ -60,6 +55,9 @@ fn on_event(event: engine.Event) void {
         },
         .window_close => {
             std.debug.print("closed ", .{});
+        },
+        .window_expose => {
+            std.debug.print("exposed ", .{});
         },
     }
 }

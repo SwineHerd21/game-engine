@@ -3,16 +3,17 @@ const events = @import("../events.zig");
 
 // TODO: replace cImport with extern fns
 pub const c = @cImport({
-    @cInclude("stdio.h");
-    @cInclude("stdlib.h");
     @cInclude("X11/X.h");
     @cInclude("X11/Xlib.h");
+    @cInclude("GL/gl.h");
+    @cInclude("GL/glx.h");
+    @cInclude("GL/glu.h");
 });
 
 pub const Context = struct {
     display: *c.Display,
-    screen: *c.Screen,
     window: c.Window,
+    gl: c.GLXContext,
     event: c.XEvent,
     /// Handles closing the window with 'x' button
     wm_delete_window: c.Atom,
@@ -22,30 +23,53 @@ pub const Context = struct {
 
 pub inline fn createWindow(width: u32, height: u32, title: []const u8) Context {
     const display = c.XOpenDisplay(null);
-    const screen = c.DefaultScreenOfDisplay(display);
-    const window = c.XCreateSimpleWindow(display, c.RootWindowOfScreen(screen), 0, 0, width, height, 0, screen.white_pixel, screen.black_pixel);
+    const root = c.DefaultRootWindow(display);
 
+    // OpenGL attributes
+    var gl_atts = [_]c_int{
+        c.GLX_RGBA,
+        c.GLX_DEPTH_SIZE, 24,
+        c.GLX_DOUBLEBUFFER,
+        c.None
+    };
+    const vi: *c.XVisualInfo = @ptrCast(c.glXChooseVisual(display, 0, @ptrCast(&gl_atts)));
+    const cmap = c.XCreateColormap(display, root, vi.visual, c.AllocNone);
+
+    var window_atts: c.XSetWindowAttributes = undefined;
+    window_atts.colormap = cmap;
+    window_atts.event_mask = c.KeymapStateMask | c.KeyPressMask | c.KeyReleaseMask | c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask | c.FocusChangeMask | c.StructureNotifyMask | c.ExposureMask;
+
+    const window = c.XCreateWindow(display, root, 0, 0, width, height, 0, vi.depth, c.InputOutput, vi.visual, c.CWColormap | c.CWEventMask, &window_atts);
+
+    // Set window name
     _ = c.XStoreName(display, window, @ptrCast(title));
 
     _ = c.XClearWindow(display, window);
     _ = c.XMapRaised(display, window);
 
-    _ = c.XSelectInput(display, window, c.KeymapStateMask | c.KeyPressMask | c.KeyReleaseMask | c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask | c.FocusChangeMask | c.StructureNotifyMask);
-
+    // window closing detection
     const wm_delete_window = c.XInternAtom(display, "WM_DELETE_WINDOW", 0);
     _ = c.XSetWMProtocols(display, window, @constCast(&wm_delete_window), 1);
+
+    // OpenGL context
+    const gl = c.glXCreateContext(display, vi, null, c.GL_TRUE);
+    _ = c.glXMakeCurrent(display, window, gl);
+
+    _ = c.glEnable(c.GL_DEPTH_TEST);
 
     return .{
         // TODO: check for null pointers
         .display = display.?,
-        .screen = @ptrCast(screen),
         .window = window,
+        .gl = gl,
         .event = undefined,
         .wm_delete_window = wm_delete_window,
     };
 }
 
 pub inline fn closeWindow(ctx: Context) void {
+    _ = c.glXMakeCurrent(ctx.display, c.None, null);
+    _ = c.glXDestroyContext(ctx.display, ctx.gl);
     _ = c.XUnmapWindow(ctx.display, ctx.window);
     _ = c.XDestroyWindow(ctx.display, ctx.window);
     _ = c.XCloseDisplay(ctx.display);
@@ -147,7 +171,15 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
                 .window_close = {},
             };
         },
-        // Weird thing needed for the 'x' button on the window to be usable
+        c.Expose => {
+            c.glViewport(0, 0, @intCast(window.width), @intCast(window.height));
+            defer c.glXSwapBuffers(window.inner.display, window.inner.window);
+
+            return events.Event{
+                .window_expose = {},
+            };
+        },
+        // Weird thing without which the app crashes when the window manager closes the window
         c.ClientMessage => if (@as(c.Atom, @intCast(window.inner.event.xclient.data.l[0])) == window.inner.wm_delete_window) {
             return events.Event{
                 .window_close = {},
@@ -158,3 +190,22 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
     return null;
 }
 
+fn drawQuad() void {
+    c.glClearColor(1.0, 1.0, 1.0, 1.0);
+    c.glClear(c.GL_COLOR_BUFFER_BIT | c.GL_DEPTH_BUFFER_BIT);
+
+    c.glMatrixMode(c.GL_PROJECTION);
+    c.glLoadIdentity();
+    c.glOrtho(-1.0, 1.0, -1.0, 1.0, 1.0, 20.0);
+
+    c.glMatrixMode(c.GL_MODELVIEW);
+    c.glLoadIdentity();
+    c.gluLookAt(0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+
+    c.glBegin(c.GL_QUADS);
+    c.glColor3f(1.0, 0.0, 0.0); c.glVertex3f(-0.75, -0.75, 0.0);
+    c.glColor3f(0.0, 1.0, 0.0); c.glVertex3f( 0.75, -0.75, 0.0);
+    c.glColor3f(0.0, 0.0, 1.0); c.glVertex3f( 0.75,  0.75, 0.0);
+    c.glColor3f(1.0, 1.0, 0.0); c.glVertex3f(-0.75,  0.75, 0.0);
+    c.glEnd();
+}
