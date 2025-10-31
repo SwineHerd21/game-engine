@@ -92,3 +92,7 @@ Basic 3d game engine catered to my puzzle game.
     [ ] Accessing input
     [ ] Custom systems
     [ ] Custom components
+
+# Resources
+
+https://www.youtube.com/playlist?list=PLA0dXqQjCx0S04ntJKUftl6OaOgsiwHjA - OpenGL Tutorial

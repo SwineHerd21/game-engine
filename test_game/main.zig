@@ -5,8 +5,11 @@ const engine = @import("engine");
 pub fn main() !void {
     std.debug.print("gaming\n", .{});
     // Setup game here
-    try engine.runApplication("Gaming", undefined, &on_event);
-
+    try engine.runApplication(undefined, &on_event, .{
+        .title = "Gaming",
+        .init_width = 800,
+        .init_height = 600,
+    });
 }
 
 fn on_event(event: engine.Event) void {
@@ -35,9 +38,6 @@ fn on_event(event: engine.Event) void {
         .pointer_button_release => |ev| {
             std.debug.print("mouse released {} ", .{ev.button});
         },
-        .pointer_motion => |ev| {
-            std.debug.print("m({},{}) ", .{ev[0], ev[1]});
-        },
         .pointer_enter => {
             std.debug.print("entered ", .{});
         },
@@ -50,14 +50,6 @@ fn on_event(event: engine.Event) void {
         .focus_lost => {
             std.debug.print("unfocus ", .{});
         },
-        .window_resize => |ev| {
-            std.debug.print("resize {}, {} ", .{ev.width, ev.height});
-        },
-        .window_close => {
-            std.debug.print("closed ", .{});
-        },
-        .window_expose => {
-            std.debug.print("exposed ", .{});
-        },
+        else => {},
     }
 }

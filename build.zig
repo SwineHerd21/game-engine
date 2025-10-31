@@ -16,15 +16,24 @@ pub fn build(b: *std.Build) void {
             std.debug.print("The {} operating system is not supported.", .{os});
         },
     }
+    // OpenGL
     mod.linkSystemLibrary("GL", .{ .needed = true });
     mod.linkSystemLibrary("GLU", .{ .needed = true });
+
+    const gl_bindings = @import("zigglgen").generateBindingsModule(b, .{
+        .api = .gl,
+        .version = .@"3.3",
+        .profile = .core,
+        .extensions = &.{ },
+    });
+    mod.addImport("gl", gl_bindings);
 
     const lib = b.addLibrary(.{
         .name = "gaming",
         .root_module = mod,
         .linkage = .static,
     });
-    
+
     b.installArtifact(lib);
 
     // Run test game

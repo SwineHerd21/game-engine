@@ -1,10 +1,13 @@
+const std = @import("std");
+
 const Window = @import("../Window.zig");
 const events = @import("../events.zig");
 
-// TODO: replace cImport with extern fns
+// TODO: replace cImport with extern fns?
 pub const c = @cImport({
     @cInclude("X11/X.h");
     @cInclude("X11/Xlib.h");
+
     @cInclude("GL/gl.h");
     @cInclude("GL/glx.h");
     @cInclude("GL/glu.h");
@@ -13,13 +16,15 @@ pub const c = @cImport({
 pub const Context = struct {
     display: *c.Display,
     window: c.Window,
-    gl: c.GLXContext,
+    glx: c.GLXContext,
     event: c.XEvent,
     /// Handles closing the window with 'x' button
     wm_delete_window: c.Atom,
 };
 
-// TODO: Error handling probably?
+// TODO: Error handling
+
+// ========== WINDOWING ==========
 
 pub inline fn createWindow(width: u32, height: u32, title: []const u8) Context {
     const display = c.XOpenDisplay(null);
@@ -51,17 +56,19 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) Context {
     const wm_delete_window = c.XInternAtom(display, "WM_DELETE_WINDOW", 0);
     _ = c.XSetWMProtocols(display, window, @constCast(&wm_delete_window), 1);
 
-    // OpenGL context
-    const gl = c.glXCreateContext(display, vi, null, c.GL_TRUE);
-    _ = c.glXMakeCurrent(display, window, gl);
+    std.log.info("Running on Linux with X11", .{});
 
-    _ = c.glEnable(c.GL_DEPTH_TEST);
+    // OpenGL context
+    const glx = c.glXCreateContext(display, vi, null, c.GL_TRUE);
+    _ = c.glXMakeCurrent(display, window, glx);
+
+    c.glClearColor(0, 0, 0, 1);
 
     return .{
         // TODO: check for null pointers
         .display = display.?,
         .window = window,
-        .gl = gl,
+        .glx = glx,
         .event = undefined,
         .wm_delete_window = wm_delete_window,
     };
@@ -69,7 +76,7 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) Context {
 
 pub inline fn closeWindow(ctx: Context) void {
     _ = c.glXMakeCurrent(ctx.display, c.None, null);
-    _ = c.glXDestroyContext(ctx.display, ctx.gl);
+    _ = c.glXDestroyContext(ctx.display, ctx.glx);
     _ = c.XUnmapWindow(ctx.display, ctx.window);
     _ = c.XDestroyWindow(ctx.display, ctx.window);
     _ = c.XCloseDisplay(ctx.display);
@@ -171,11 +178,6 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
             };
         },
         c.Expose => {
-            c.glViewport(0, 0, @intCast(window.width), @intCast(window.height));
-            defer c.glXSwapBuffers(window.inner.display, window.inner.window);
-
-            drawQuad();
-
             return events.Event{
                 .window_expose = {},
             };
@@ -191,22 +193,10 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
     return null;
 }
 
-fn drawQuad() void {
-    c.glClearColor(1.0, 1.0, 1.0, 1.0);
-    c.glClear(c.GL_COLOR_BUFFER_BIT | c.GL_DEPTH_BUFFER_BIT);
+// ========== OTHER ==========
 
-    c.glMatrixMode(c.GL_PROJECTION);
-    c.glLoadIdentity();
-    c.glOrtho(-1.0, 1.0, -1.0, 1.0, 1.0, 20.0);
-
-    c.glMatrixMode(c.GL_MODELVIEW);
-    c.glLoadIdentity();
-    c.gluLookAt(0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-
-    c.glBegin(c.GL_QUADS);
-    c.glColor3f(1.0, 0.0, 0.0); c.glVertex3f(-0.75, -0.75, 0.0);
-    c.glColor3f(0.0, 1.0, 0.0); c.glVertex3f( 0.75, -0.75, 0.0);
-    c.glColor3f(0.0, 0.0, 1.0); c.glVertex3f( 0.75,  0.75, 0.0);
-    c.glColor3f(1.0, 1.0, 0.0); c.glVertex3f(-0.75,  0.75, 0.0);
-    c.glEnd();
+pub inline fn swapBuffers(ctx: Context) void {
+    _ = c.glXSwapBuffers(ctx.display, ctx.window);
 }
+
+pub const getProcAddress = c.glXGetProcAddress;
