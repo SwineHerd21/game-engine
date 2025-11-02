@@ -4,12 +4,9 @@ const gl = @import("gl");
 const Window = @import("Window.zig");
 const Renderer = @import("rendering/Renderer.zig");
 
-const native = @import("platform.zig").native;
 pub const events = @import("events.zig");
 pub const Event = events.Event;
 
-// OpenGL runtime loaded functions
-var procs: gl.ProcTable = undefined;
 
 pub const AppConfiguration = struct {
     title: []const u8,
@@ -23,11 +20,6 @@ pub const AppConfiguration = struct {
 pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: events.Event) void, config: AppConfiguration) !void {
     var window = try Window.createWindow(config.init_width, config.init_height, config.title);
     defer window.destroy();
-
-    // Load OpenGL functions
-    if (!procs.init(native.getProcAddress)) return error.InitFailed;
-    gl.makeProcTableCurrent(&procs);
-    defer gl.makeProcTableCurrent(null);
 
     var renderer = Renderer.init();
     defer renderer.deinit();

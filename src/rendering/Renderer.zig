@@ -1,15 +1,23 @@
 const std = @import("std");
 const gl = @import("gl");
 
+const native = @import("platform.zig").native;
 const Window = @import("../Window.zig");
 
 const Renderer = @This();
 
+// OpenGL runtime loaded functions
+var procs: gl.ProcTable = undefined;
+
 
 vbo: gl.uint,
 
-/// Call deinit after
+/// Call deinit at the end
 pub fn init() Renderer {
+    // Load OpenGL functions
+    if (!procs.init(native.getProcAddress)) return error.InitFailed;
+    gl.makeProcTableCurrent(&procs);
+
     // Default winding order is CCW
     gl.Enable(gl.CULL_FACE);
 
@@ -19,6 +27,7 @@ pub fn init() Renderer {
 }
 
 pub fn deinit(self: Renderer) void {
+    gl.makeProcTableCurrent(null);
     _ = self;
 }
 
