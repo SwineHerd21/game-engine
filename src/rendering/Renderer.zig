@@ -1,10 +1,16 @@
+//! OpenGL renderer
+
 const std = @import("std");
 const gl = @import("gl");
 
-const native = @import("platform.zig").native;
+const native = @import("../platform.zig").native;
+
 const Window = @import("../Window.zig");
+const EngineError = @import("../lib.zig").EngineError;
 
 const Renderer = @This();
+
+const log = std.log.scoped(.engine);
 
 // OpenGL runtime loaded functions
 var procs: gl.ProcTable = undefined;
@@ -13,10 +19,13 @@ var procs: gl.ProcTable = undefined;
 vbo: gl.uint,
 
 /// Call deinit at the end
-pub fn init() Renderer {
+pub fn init() EngineError!Renderer {
     // Load OpenGL functions
-    if (!procs.init(native.getProcAddress)) return error.InitFailed;
+    if (!procs.init(native.getProcAddress)) return EngineError.InitFailure;
     gl.makeProcTableCurrent(&procs);
+
+    const gl_version: [*:0]const u8 = gl.GetString(gl.VERSION).?;
+    log.info("Rendering with OpenGL {s}", .{ gl_version });
 
     // Default winding order is CCW
     gl.Enable(gl.CULL_FACE);
@@ -27,8 +36,14 @@ pub fn init() Renderer {
 }
 
 pub fn deinit(self: Renderer) void {
-    gl.makeProcTableCurrent(null);
-    _ = self;
+    // must always happen last
+    defer gl.makeProcTableCurrent(null);
+
+    gl.DeleteBuffers(1, @ptrCast(&self.vbo));
+}
+
+pub fn adjustViewport(width: i32, height: i32) void {
+    gl.Viewport(0, 0, width, height);
 }
 
 pub fn createVertexBuffer(self: *Renderer) void {

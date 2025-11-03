@@ -7,7 +7,7 @@
             .hash = "zigglgen-0.4.0-bmyqLV6PLwAt0VCiGVgz6kZ448zaiTix2Z8MXEEuN4Vi",
         },
     },
-    .minimum_zig_version = "0.16.0-dev.565+f50c64797",
+    .minimum_zig_version = "0.15.2",
     .paths = .{""},
     .fingerprint = 0x959db7456f0ff076,
 }

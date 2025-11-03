@@ -24,4 +24,4 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {}
 
 pub inline fn swapBuffers(ctx: Context) void {}
 
-pub const getProcAddress = c.glXGetProcAddress;
+pub const getProcAddress = /* Insert function for getting graphics procedure addresses */;

@@ -1,9 +1,10 @@
 //! A high-level platform independent representation of a window.
 const std = @import("std");
 
-const lib = @import("lib.zig");
 const events = @import("events.zig");
 const native = @import("platform.zig").native;
+
+const EngineError = @import("lib.zig").EngineError;
 
 const Window = @This();
 
@@ -16,10 +17,10 @@ height: u32,
 should_close: bool = false,
 
 /// Call Window.destroy when the window is no longer needed.
-pub fn createWindow(width: u32, height: u32, title: []const u8) !Window {
+pub fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Window {
     // TODO: error handling
     return .{
-        .inner = native.createWindow(width, height, title),
+        .inner = try native.createWindow(width, height, title),
         .width = width,
         .height = height,
     };

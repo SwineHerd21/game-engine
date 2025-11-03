@@ -1,14 +1,20 @@
 const std = @import("std");
-const gl = @import("gl");
-
-const Window = @import("Window.zig");
-const Renderer = @import("rendering/Renderer.zig");
+const builtin = @import("builtin");
 
 pub const events = @import("events.zig");
 pub const Event = events.Event;
+pub const Input = @import("Input.zig");
 
+const Renderer = @import("rendering/Renderer.zig");
+const Window = @import("Window.zig");
 
-pub const AppConfiguration = struct {
+const log = std.log.scoped(.engine);
+
+pub const EngineError = error {
+    InitFailure,
+};
+
+pub const AppConfig = struct {
     title: []const u8,
     init_width: u32,
     init_height: u32,
@@ -17,11 +23,20 @@ pub const AppConfiguration = struct {
 /// Call this function when you are ready to start your application.
 ///
 /// WARNING: This places the thread into an infinite update loop until the window closes.
-pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: events.Event) void, config: AppConfiguration) !void {
-    var window = try Window.createWindow(config.init_width, config.init_height, config.title);
+/// This function will not pass on error and will close on fatal ones (like failing to open a window).
+/// You should do all necessary cleanup before calling this function.
+pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: events.Event) void, config: AppConfig) EngineError!void {
+    var window = Window.createWindow(config.init_width, config.init_height, config.title) catch |e| {
+        log.err("Failed to create a window", .{});
+        return e;
+    };
     defer window.destroy();
 
-    var renderer = Renderer.init();
+    var renderer = Renderer.init() catch |e| {
+        log.err("Failed to load a graphics library", .{});
+        return e;
+    };
+
     defer renderer.deinit();
     renderer.createVertexBuffer();
 
@@ -37,7 +52,7 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
                     window.should_close = true;
                 },
                 .window_expose => {
-                    gl.Viewport(0, 0, @intCast(window.width), @intCast(window.height));
+                    Renderer.adjustViewport(@intCast(window.width), @intCast(window.height));
 
                     renderer.render(window);
                 },
@@ -52,5 +67,5 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
 
     _ = on_update;
 
-    std.log.info("Shutting down...", .{}); 
+    log.info("Shutting down...", .{}); 
 }

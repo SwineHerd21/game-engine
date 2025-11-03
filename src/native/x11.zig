@@ -2,6 +2,9 @@ const std = @import("std");
 
 const Window = @import("../Window.zig");
 const events = @import("../events.zig");
+const EngineError = @import("../lib.zig").EngineError;
+
+const log = std.log.scoped(.engine);
 
 // TODO: replace cImport with extern fns?
 pub const c = @cImport({
@@ -26,8 +29,8 @@ pub const Context = struct {
 
 // ========== WINDOWING ==========
 
-pub inline fn createWindow(width: u32, height: u32, title: []const u8) Context {
-    const display = c.XOpenDisplay(null);
+pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Context {
+    const display = if (c.XOpenDisplay(null)) |d| d else return EngineError.InitFailure;
     const root = c.DefaultRootWindow(display);
 
     // OpenGL attributes
@@ -37,7 +40,7 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) Context {
         c.GLX_DOUBLEBUFFER,
         c.None
     };
-    const vi: *c.XVisualInfo = @ptrCast(c.glXChooseVisual(display, 0, @ptrCast(&gl_atts)));
+    const vi: *c.XVisualInfo = if (c.glXChooseVisual(display, 0, @ptrCast(&gl_atts))) |v| v else return EngineError.InitFailure;
     const cmap = c.XCreateColormap(display, root, vi.visual, c.AllocNone);
 
     var window_atts: c.XSetWindowAttributes = undefined;
@@ -46,6 +49,7 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) Context {
 
     const window = c.XCreateWindow(display, root, 0, 0, width, height, 0, vi.depth, c.InputOutput, vi.visual, c.CWColormap | c.CWEventMask, &window_atts);
 
+    // The later functions return values don't mean anything
     // Set window name
     _ = c.XStoreName(display, window, @ptrCast(title));
 
@@ -54,9 +58,10 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) Context {
 
     // window closing detection
     const wm_delete_window = c.XInternAtom(display, "WM_DELETE_WINDOW", 0);
+    // should the result be checked for 0? idk
     _ = c.XSetWMProtocols(display, window, @constCast(&wm_delete_window), 1);
 
-    std.log.info("Running on Linux with X11", .{});
+    log.info("Running on Linux with X11", .{});
 
     // OpenGL context
     const glx = c.glXCreateContext(display, vi, null, c.GL_TRUE);
@@ -66,7 +71,7 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) Context {
 
     return .{
         // TODO: check for null pointers
-        .display = display.?,
+        .display = display,
         .window = window,
         .glx = glx,
         .event = undefined,
