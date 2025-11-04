@@ -8,9 +8,8 @@ Currently runs on Linux through X11 and OpenGL.
 
 [x] Open window with X11
 [x] Handling of window events
+[x] 3d rendering with OpenGL
 [ ] Setup engine loop
-[ ] Draw to window
-[ ] 3d rendering with OpenGL
 [ ] Debug tools (fps, camera, pause, etc.)
 [ ] Loading meshes
 [ ] ECS
@@ -80,18 +79,22 @@ Currently runs on Linux through X11 and OpenGL.
     [ ] Switching scenes
 [ ] Engine loop
     [ ] Systems setup
-    [ ] Start window event handler
     [ ] Main loop
-        [ ] Initialization (on scene load)
-        [ ] Event handlers
+        [x] Window event processing
         [ ] Update, fixed update
-        [ ] Render
+        [x] Render
 [ ] API
     [ ] Math, rng, I/O, time and other utils
-    [ ] Subscribing to engine events (update, fixedUpdate, start, etc.)
     [ ] Accessing input
     [ ] Custom systems
     [ ] Custom components
+
+# BUILD
+
+Dependencies: Zig 0.15.2, libX11, libGL
+Build by running
+
+    zig build run
 
 # Resources
 

@@ -18,7 +18,6 @@ pub fn build(b: *std.Build) void {
     }
     // OpenGL
     mod.linkSystemLibrary("GL", .{ .needed = true });
-    mod.linkSystemLibrary("GLU", .{ .needed = true });
 
     const gl_bindings = @import("zigglgen").generateBindingsModule(b, .{
         .api = .gl,
@@ -35,6 +34,12 @@ pub fn build(b: *std.Build) void {
     });
 
     b.installArtifact(lib);
+
+    // Run tests
+    const test_exe = b.addTest(.{.root_module = mod});
+    const run_test = b.addRunArtifact(test_exe);
+    const test_step = b.step("test", "Run unit tests");
+    test_step.dependOn(&run_test.step);
 
     // Run test game
     const game_mod = b.createModule(.{

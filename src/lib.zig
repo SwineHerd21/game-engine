@@ -41,9 +41,15 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var renderer = Renderer.init(allocator) catch |e| {
-        log.err("Failed to load a graphics library", .{});
-        return e;
+    var renderer = Renderer.init(allocator) catch |err| switch (err) {
+        EngineError.InitFailure => {
+            log.err("Failed to load a graphics library", .{});
+            return err;
+        },
+        else => {
+            log.err("Could not compile shaders", .{});
+            return err;
+        },
     };
     defer renderer.deinit();
 
@@ -80,4 +86,8 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
 
 
     log.info("Shutting down...", .{}); 
+}
+
+test {
+    _ = std.testing.refAllDeclsRecursive(@This());
 }

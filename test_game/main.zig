@@ -31,6 +31,9 @@ fn on_event(event: engine.Event) void {
         .focus_lost => {
             std.debug.print("unfocus ", .{});
         },
+        .pointer_button_press => |ev| {
+            std.debug.print("mouse {} ", .{ev.button});
+        },
         else => {},
     }
 }

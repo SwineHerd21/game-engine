@@ -11,9 +11,7 @@ pub const c = @cImport({
     @cInclude("X11/X.h");
     @cInclude("X11/Xlib.h");
 
-    @cInclude("GL/gl.h");
     @cInclude("GL/glx.h");
-    @cInclude("GL/glu.h");
 });
 
 pub const Context = struct {
@@ -66,8 +64,6 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
     // OpenGL context
     const glx = c.glXCreateContext(display, vi, null, c.GL_TRUE);
     _ = c.glXMakeCurrent(display, window, glx);
-
-    c.glClearColor(0, 0, 0, 1);
 
     return .{
         // TODO: check for null pointers

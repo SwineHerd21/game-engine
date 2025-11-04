@@ -8,7 +8,7 @@ pub const Platform = enum {
 pub const platform: Platform = switch (@import("builtin").os.tag) {
     .linux => .X11,
     .windows => .Windows,
-    else => |os| @compileError(std.fmt.comptimePrint("Platform {} is not supported", .{@tagName(os)})),
+    else => |os| @compileError(std.fmt.comptimePrint("Platform {t} is not supported", .{os})),
 };
 
 pub const native = switch (platform) {
