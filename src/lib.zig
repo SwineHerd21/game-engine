@@ -48,31 +48,36 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
     defer renderer.deinit();
 
     while (!window.should_close) {
-        if (window.consumeEvent()) |ev| {
-            // Special handling for important events
-            switch (ev) {
-                .window_resize => |e| {
-                    window.width = e.width;
-                    window.height = e.height;
-                },
-                .window_close => {
-                    window.should_close = true;
-                },
-                .window_expose => {
-                    Renderer.adjustViewport(@intCast(window.width), @intCast(window.height));
+        // Process pending OS events
+        while (window.areEventsPending()) {
+            if (window.consumeEvent()) |ev| {
+                // Special handling for important events
+                switch (ev) {
+                    .window_resize => |e| {
+                        window.width = e.width;
+                        window.height = e.height;
+                    },
+                    .window_close => {
+                        window.should_close = true;
+                    },
+                    .window_expose => {
+                        Renderer.adjustViewport(@intCast(window.width), @intCast(window.height));
+                    },
+                    else => {},
+                }
 
-                    renderer.render(window);
-                },
-                else => {},
+                on_event(ev);
             }
-
-            on_event(ev);
         }
 
-        // TODO: update/render loop
+        // TODO: engine update loop
+        on_update();
+
+        renderer.render();
+
+        window.swapBuffers();
     }
 
-    _ = on_update;
 
     log.info("Shutting down...", .{}); 
 }

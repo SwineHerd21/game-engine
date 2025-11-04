@@ -87,6 +87,10 @@ pub inline fn closeWindow(ctx: Context) void {
     _ = c.XCloseDisplay(ctx.display);
 }
 
+pub inline fn areEventsPending(ctx: Context) bool {
+    return c.XPending(ctx.display) != 0;
+}
+
 pub inline fn consumeEvent(window: *Window) ?events.Event {
     _ = c.XNextEvent(window.inner.display, &window.inner.event);
     switch (window.inner.event.type) {

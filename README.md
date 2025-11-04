@@ -2,6 +2,8 @@
 
 Basic 3d game engine catered to my puzzle game.
 
+Currently runs on Linux through X11 and OpenGL.
+
 # TO-DO
 
 [x] Open window with X11
@@ -30,11 +32,9 @@ Basic 3d game engine catered to my puzzle game.
         [x] Pointer input
         [x] Mouse button input
         [x] Gain/lose focus
-        [ ] Maximize/minimize
         [x] Resize
         [x] Custom handlers
     [ ] Fullscreen
-    [ ] Multiple windows?
 [ ] Input
     [ ] Getting key presses/releases/states/which key/etc.
     [ ] Getting mouse button presses
@@ -95,4 +95,6 @@ Basic 3d game engine catered to my puzzle game.
 
 # Resources
 
+https://x.org/releases/current/doc/libX11/libX11/libX11.html - Xlib reference
 https://www.youtube.com/playlist?list=PLA0dXqQjCx0S04ntJKUftl6OaOgsiwHjA - OpenGL Tutorial
+https://learnopengl.com - OpenGL resource

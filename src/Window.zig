@@ -30,6 +30,10 @@ pub fn destroy(w: Window) void {
     native.closeWindow(w.inner);
 }
 
+pub fn areEventsPending(w: Window) bool {
+    return native.areEventsPending(w.inner);
+}
+
 /// Consume the next OS event
 pub fn consumeEvent(w: *Window) ?events.Event {
     return native.consumeEvent(w);
