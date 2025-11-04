@@ -12,10 +12,15 @@ const Renderer = @This();
 
 const log = std.log.scoped(.engine);
 
+pub const RenderMode = enum {
+    Solid,
+    Wireframe,
+};
+
 // OpenGL runtime loaded functions
 var procs: gl.ProcTable = undefined;
 
-
+vao: gl.uint,
 vbo: gl.uint,
 shader_program: gl.uint,
 vertex_shader: gl.uint,
@@ -34,13 +39,14 @@ pub fn init(allocator: std.mem.Allocator) EngineError!Renderer {
     gl.Enable(gl.CULL_FACE);
 
     var renderer: Renderer = .{
+        .vao = undefined,
         .vbo = undefined,
         .shader_program = undefined,
         .vertex_shader = undefined,
         .fragment_shader = undefined,
     };
 
-    renderer.createVertexBuffer();
+    renderer.createVertexArray();
     try renderer.compileShaders(allocator);
 
     return renderer;
@@ -62,22 +68,36 @@ pub fn deinit(self: Renderer) void {
 
     // Clean buffers
     gl.DeleteBuffers(1, @ptrCast(&self.vbo));
+    gl.DeleteVertexArrays(1, @ptrCast(&self.vao));
 }
 
 pub fn adjustViewport(width: i32, height: i32) void {
     gl.Viewport(0, 0, width, height);
 }
 
-pub fn createVertexBuffer(self: *Renderer) void {
+pub fn setRenderMode(mode: RenderMode) void {
+    gl.PolygonMode(gl.FRONT_AND_BACK, switch (mode) {
+        .Solid => gl.LINE,
+        .Wireframe => gl.FILL,
+    });
+}
+
+pub fn createVertexArray(self: *Renderer) void {
     const verts = [_]f32{
         -1.0, -1.0, 0.0,    // bottom left
         1.0, -1.0, 0.0,     // bottom right
         0.0, 1.0, 0.0,      // top
     };
 
+    gl.GenVertexArrays(1, @ptrCast(&self.vao));
     gl.GenBuffers(1, @ptrCast(&self.vbo));
+
+    gl.BindVertexArray(self.vao);
     gl.BindBuffer(gl.ARRAY_BUFFER, self.vbo);
     gl.BufferData(gl.ARRAY_BUFFER, @sizeOf(@TypeOf(verts)), &verts, gl.STATIC_DRAW);
+
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * @sizeOf(f32), 0);
+    gl.EnableVertexAttribArray(0);
 }
 
 const vs_path: []const u8 = "shader.vert";
@@ -113,8 +133,6 @@ pub fn compileShaders(self: *Renderer, allocator: std.mem.Allocator) EngineError
         std.log.err("Invalid shader program: {s}", .{info_log});
         return EngineError.ShaderCompilationFailure;
     }
-
-    gl.UseProgram(self.shader_program);
 }
 
 // Load a shader file, returns the created shader handle
@@ -173,12 +191,8 @@ fn createShader(
 pub fn render(self: Renderer, window: Window) void {
     gl.Clear(gl.COLOR_BUFFER_BIT);
 
-    gl.BindBuffer(gl.ARRAY_BUFFER, self.vbo);
-
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 0, 0);
-    gl.EnableVertexAttribArray(0);
-    defer gl.DisableVertexAttribArray(0);
-
+    gl.UseProgram(self.shader_program);
+    gl.BindVertexArray(self.vao);
     gl.DrawArrays(gl.TRIANGLES, 0, 3);
 
     window.swapBuffers();

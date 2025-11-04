@@ -4,6 +4,8 @@ const builtin = @import("builtin");
 pub const events = @import("events.zig");
 pub const Event = events.Event;
 pub const Input = @import("Input.zig");
+pub const RenderMode = @import("rendering/Renderer.zig").RenderMode;
+pub const setRenderMode = @import("rendering/Renderer.zig").setRenderMode;
 
 const Renderer = @import("rendering/Renderer.zig");
 const Window = @import("Window.zig");

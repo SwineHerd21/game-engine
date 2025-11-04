@@ -13,9 +13,13 @@ pub fn main() !void {
     });
 }
 
+var rendermode = engine.RenderMode.Solid;
 fn on_event(event: engine.Event) void {
     switch (event) {
         .key_press => |ev| {
+            // Switch between solid and wireframe rendering
+            rendermode = @enumFromInt(@intFromEnum(rendermode) ^ 1);
+            engine.setRenderMode(rendermode);
             std.debug.print("pressed {} (control:{}, shift:{}, alt:{}, super:{}) ", .{
                 ev.keycode,
                 ev.modifiers.control,
