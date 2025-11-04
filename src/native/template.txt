@@ -1,5 +1,8 @@
 const Window = @import("../Window.zig");
 const events = @import("../events.zig");
+const EngineError = @import("../lib.zig").EngineError;
+
+const log = std.log.scoped(.engine);
 
 // TODO: replace cImport with extern fns?
 pub const c = @cImport({
@@ -14,7 +17,7 @@ pub const Context = struct {
 
 // ========== WINDOWING ==========
 
-pub inline fn createWindow(width: u32, height: u32, title: []const u8) Context {}
+pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Context {}
 
 pub inline fn closeWindow(ctx: Context) void {}
 

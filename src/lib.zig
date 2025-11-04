@@ -12,6 +12,9 @@ const log = std.log.scoped(.engine);
 
 pub const EngineError = error {
     InitFailure,
+    ShaderCompilationFailure,
+    IOError,
+    OutOfMemory,
 };
 
 pub const AppConfig = struct {
@@ -32,13 +35,15 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
     };
     defer window.destroy();
 
-    var renderer = Renderer.init() catch |e| {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    var renderer = Renderer.init(allocator) catch |e| {
         log.err("Failed to load a graphics library", .{});
         return e;
     };
-
     defer renderer.deinit();
-    renderer.createVertexBuffer();
 
     while (!window.should_close) {
         if (window.consumeEvent()) |ev| {

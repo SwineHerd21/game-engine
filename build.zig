@@ -45,9 +45,10 @@ pub fn build(b: *std.Build) void {
     game_mod.addImport("engine", mod);
 
     const game_exe = b.addExecutable(.{
-        .name = "game test",
+        .name = "test-game",
         .root_module = game_mod,
     });
+    b.installArtifact(game_exe);
     const run_exe = b.addRunArtifact(game_exe);
     
     const run_step = b.step("run", "Run a test game");

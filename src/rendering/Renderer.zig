@@ -17,9 +17,12 @@ var procs: gl.ProcTable = undefined;
 
 
 vbo: gl.uint,
+shader_program: gl.uint,
+vertex_shader: gl.uint,
+fragment_shader: gl.uint,
 
 /// Call deinit at the end
-pub fn init() EngineError!Renderer {
+pub fn init(allocator: std.mem.Allocator) EngineError!Renderer {
     // Load OpenGL functions
     if (!procs.init(native.getProcAddress)) return EngineError.InitFailure;
     gl.makeProcTableCurrent(&procs);
@@ -30,15 +33,34 @@ pub fn init() EngineError!Renderer {
     // Default winding order is CCW
     gl.Enable(gl.CULL_FACE);
 
-    return .{
+    var renderer: Renderer = .{
         .vbo = undefined,
+        .shader_program = undefined,
+        .vertex_shader = undefined,
+        .fragment_shader = undefined,
     };
+
+    renderer.createVertexBuffer();
+    try renderer.compileShaders(allocator);
+
+    return renderer;
 }
 
 pub fn deinit(self: Renderer) void {
     // must always happen last
     defer gl.makeProcTableCurrent(null);
 
+    // Clean shaders
+    {
+        defer gl.DeleteProgram(self.shader_program);
+
+        gl.DetachShader(self.shader_program, self.vertex_shader);
+        gl.DeleteShader(self.vertex_shader);
+        gl.DetachShader(self.shader_program, self.fragment_shader);
+        gl.DeleteShader(self.fragment_shader);
+    }
+
+    // Clean buffers
     gl.DeleteBuffers(1, @ptrCast(&self.vbo));
 }
 
@@ -58,14 +80,104 @@ pub fn createVertexBuffer(self: *Renderer) void {
     gl.BufferData(gl.ARRAY_BUFFER, @sizeOf(@TypeOf(verts)), &verts, gl.STATIC_DRAW);
 }
 
+const vs_path: []const u8 = "shader.vert";
+const fs_path: []const u8 = "shader.frag";
+
+pub fn compileShaders(self: *Renderer, allocator: std.mem.Allocator) EngineError!void {
+    self.shader_program = gl.CreateProgram();
+    if (self.shader_program == 0) {
+        log.err("Failed to create a shader program", .{});
+        return EngineError.ShaderCompilationFailure;
+    }
+
+    // TODO: Make the path to shaders reasonable
+    self.vertex_shader = try createShader("shaders/" ++ vs_path, self.shader_program, gl.VERTEX_SHADER, allocator);
+    self.fragment_shader = try createShader("shaders/" ++ fs_path, self.shader_program, gl.FRAGMENT_SHADER, allocator);
+
+    var success: gl.int = undefined;
+    var info_log: [1024]u8 = undefined;
+
+    gl.LinkProgram(self.shader_program);
+
+    gl.GetProgramiv(self.shader_program, gl.LINK_STATUS, @ptrCast(&success));
+    if (success == 0) {
+        gl.GetProgramInfoLog(self.shader_program, 1024, null, @ptrCast(&info_log));
+        std.log.err("Failed to link shader program: {s}", .{info_log});
+        return EngineError.ShaderCompilationFailure;
+    }
+
+    gl.ValidateProgram(self.shader_program);
+    gl.GetProgramiv(self.shader_program, gl.VALIDATE_STATUS, @ptrCast(&success));
+    if (success == 0) {
+        gl.GetProgramInfoLog(self.shader_program, 1024, null, @ptrCast(&info_log));
+        std.log.err("Invalid shader program: {s}", .{info_log});
+        return EngineError.ShaderCompilationFailure;
+    }
+
+    gl.UseProgram(self.shader_program);
+}
+
+// Load a shader file, returns the created shader handle
+fn createShader(
+    path: []const u8,
+    program: gl.uint,
+    shader_type: gl.@"enum",
+    allocator: std.mem.Allocator
+) EngineError!gl.uint {
+    const shader_file = std.fs.cwd().openFile(path, .{}) catch {
+        std.log.err("Shader file '{s}' does not exist or is inaccessible", .{ path });
+        return EngineError.IOError;
+    };
+    defer shader_file.close();
+    const file_stat = shader_file.stat() catch {
+        std.log.err("Shader file '{s}' is corrupted", .{ path });
+        return EngineError.IOError;
+    };
+    const shader_text = allocator.alloc(u8, file_stat.size) catch {
+        std.log.err("Could not allocate memory", .{});
+        return EngineError.OutOfMemory;
+    };
+    defer allocator.free(shader_text);
+
+    _ = shader_file.read(shader_text) catch {
+        std.log.err("Could not read shader file '{s}'", .{ path });
+        return EngineError.OutOfMemory;
+    };
+
+    const shader_obj = gl.CreateShader(shader_type);
+    if (shader_obj == 0) {
+        log.err("Failed to create a shader of type {X}", .{shader_type});
+        return EngineError.ShaderCompilationFailure;
+    }
+
+    const pointers: [*]const [*]const u8 = &.{ @ptrCast(shader_text) };
+    const lengths: [*]const gl.int = &.{ @intCast(shader_text.len) };
+    gl.ShaderSource(shader_obj, 1, pointers, lengths);
+
+    gl.CompileShader(shader_obj);
+
+    var success: gl.int = undefined;
+    gl.GetShaderiv(shader_obj, gl.COMPILE_STATUS, @ptrCast(&success));
+
+    if (success == 0) {
+        var info_log: [1024]u8 = undefined;
+        gl.GetShaderInfoLog(shader_obj, 1024, null, @ptrCast(&info_log));
+        std.log.err("Failed to compile shader of type {X}: {s}", .{shader_type, info_log});
+        return EngineError.ShaderCompilationFailure;
+    }
+
+    gl.AttachShader(program, shader_obj);
+    return shader_obj;
+}
+
 pub fn render(self: Renderer, window: Window) void {
     gl.Clear(gl.COLOR_BUFFER_BIT);
 
     gl.BindBuffer(gl.ARRAY_BUFFER, self.vbo);
 
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 0, 0);
     gl.EnableVertexAttribArray(0);
     defer gl.DisableVertexAttribArray(0);
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 0, 0);
 
     gl.DrawArrays(gl.TRIANGLES, 0, 3);
 
