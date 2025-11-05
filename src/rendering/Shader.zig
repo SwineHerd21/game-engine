@@ -99,7 +99,7 @@ pub fn use(shader: Shader) void {
 /// Represents a GLSL uniform field and its value.
 /// Allowed types: bool, i32, u32, f32, 1-4 element vectors of previous types, matricies and arrays/slices of/to those types (except for vectors of bool, as those use 1 bit per value instead of 1 byte).
 pub fn Uniform(comptime T: type) type {
-    const error_msg = "Invalid uniform type: GLSL uniforms can be only of type bool, i32, u32, f32, 1-4 element vectors of previous types, matricies and arrays/slices of/to those types (except for vectors of bool, as those use 1 bit per value instead of 1 byte).";
+    const error_msg = @typeName(T) ++ " is an invalid uniform type: GLSL uniforms can be only of type bool, i32, u32, f32, 1-4 element vectors of previous types, matricies and arrays/slices of/to those types (except for vectors of bool, as those use 1 bit per value instead of 1 byte).";
 
     const inner = struct {
         pub fn validateType(comptime U: type, array: bool) void {
@@ -147,7 +147,11 @@ pub fn Uniform(comptime T: type) type {
     };
 
     switch (@typeInfo(T)) {
-        .array => |a| inner.validateType(a.child, true),
+        .array => |a| if (a.len > std.math.maxInt(c_int)) {
+            @compileError("Array size is larger than a C int");
+        } else {
+            inner.validateType(a.child, true);
+        },
         .pointer => |p| {
             if (p.size != .slice) {
                 @compileError(error_msg);
@@ -161,6 +165,13 @@ pub fn Uniform(comptime T: type) type {
     return struct {
         name: []const u8,
         value: T,
+
+        pub fn new(name: []const u8, value: T) @This() {
+            return .{
+                .name = name,
+                .value = value,
+            };
+        }
     };
 }
 
@@ -174,39 +185,44 @@ pub fn setUniform(self: Shader, comptime value_type: type, uniform: Uniform(valu
     }
 
     const inner = struct {
-        pub fn passArray(comptime child: type, len: usize, value: [*]anyopaque) void {
+        // The array data is passed through an opaque pointer to allow conversion of vectors.
+        pub fn passArray(comptime child: type, loc: gl.int, len: gl.int, value: *const anyopaque) void {
             switch (@typeInfo(child)) {
-                .bool => gl.Uniform1iv(location, len, @ptrCast(value)),
+                .bool => gl.Uniform1iv(loc, len, @alignCast(@ptrCast(value))),
                 .int => |i| if (i.signedness == .signed) {
-                    gl.Uniform1iv(location, len, @ptrCast(value));
+                    gl.Uniform1iv(loc, len, @alignCast(@ptrCast(value)));
                 } else {
-                    gl.Uniform1uiv(location, len, @ptrCast(value));
+                    gl.Uniform1uiv(loc, len, @alignCast(@ptrCast(value)));
                 },
-                .float => gl.Uniform1fv(location, len, @ptrCast(value)),
+                .float => gl.Uniform1fv(loc, len, @alignCast(@ptrCast(value))),
                 .vector => |v| {
-                    // Converting vectors to pointers here is ok because vectors of u32,i32,f32
-                    // have the same layout as arrays of those types. Bool vectors whoever do not.
+                    // Converting vectors to array pointers here is ok because vectors of u32,i32,f32
+                    // have the same memory layout as arrays of those types. Bool vectors however do not.
                     switch (@typeInfo(v.child)) {
                         .int => |i| if (i.signedness == .signed) switch (v.len) {
-                            1 => gl.Uniform1iv(location, len, @ptrCast(value)),
-                            2 => gl.Uniform2iv(location, len, @ptrCast(value)),
-                            3 => gl.Uniform3iv(location, len, @ptrCast(value)),
-                            4 => gl.Uniform4iv(location, len, @ptrCast(value)),
+                            1 => gl.Uniform1iv(loc, len, @alignCast(@ptrCast(value))),
+                            2 => gl.Uniform2iv(loc, len, @alignCast(@ptrCast(value))),
+                            3 => gl.Uniform3iv(loc, len, @alignCast(@ptrCast(value))),
+                            4 => gl.Uniform4iv(loc, len, @alignCast(@ptrCast(value))),
+                            else => unreachable,
                         } else switch (v.len) {
-                            1 => gl.Uniform1uiv(location, len, @ptrCast(value)),
-                            2 => gl.Uniform2uiv(location, len, @ptrCast(value)),
-                            3 => gl.Uniform3uiv(location, len, @ptrCast(value)),
-                            4 => gl.Uniform4uiv(location, len, @ptrCast(value)),
+                            1 => gl.Uniform1uiv(loc, len, @alignCast(@ptrCast(value))),
+                            2 => gl.Uniform2uiv(loc, len, @alignCast(@ptrCast(value))),
+                            3 => gl.Uniform3uiv(loc, len, @alignCast(@ptrCast(value))),
+                            4 => gl.Uniform4uiv(loc, len, @alignCast(@ptrCast(value))),
+                            else => unreachable,
                         },
                         .float => switch (v.len) {
-                            1 => gl.Uniform1fv(location, len, @ptrCast(value)),
-                            2 => gl.Uniform2fv(location, len, @ptrCast(value)),
-                            3 => gl.Uniform3fv(location, len, @ptrCast(value)),
-                            4 => gl.Uniform4fv(location, len, @ptrCast(value)),
+                            1 => gl.Uniform1fv(loc, len, @alignCast(@ptrCast(value))),
+                            2 => gl.Uniform2fv(loc, len, @alignCast(@ptrCast(value))),
+                            3 => gl.Uniform3fv(loc, len, @alignCast(@ptrCast(value))),
+                            4 => gl.Uniform4fv(loc, len, @alignCast(@ptrCast(value))),
+                            else => unreachable,
                         },
                         else => unreachable,
                     }
-                }
+                },
+                else => unreachable,
             }
         }
     };
@@ -225,23 +241,27 @@ pub fn setUniform(self: Shader, comptime value_type: type, uniform: Uniform(valu
                 2 => gl.Uniform2i(location, @intFromBool(uniform.value[0]), @intFromBool(uniform.value[1])),
                 3 => gl.Uniform3i(location, @intFromBool(uniform.value[0]), @intFromBool(uniform.value[1]), @intFromBool(uniform.value[2])),
                 4 => gl.Uniform4i(location, @intFromBool(uniform.value[0]), @intFromBool(uniform.value[1]), @intFromBool(uniform.value[2]), @intFromBool(uniform.value[3])),
+                else => unreachable,
             },
             .int => |i| if (i.signedness == .signed) switch (v.len) {
                 1 => gl.Uniform1i(location, uniform.value[0]),
                 2 => gl.Uniform2i(location, uniform.value[0], uniform.value[1]),
                 3 => gl.Uniform3i(location, uniform.value[0], uniform.value[1], uniform.value[2]),
                 4 => gl.Uniform4i(location, uniform.value[0], uniform.value[1], uniform.value[2], uniform.value[3]),
+                else => unreachable,
             } else switch (v.len) {
                 1 => gl.Uniform1ui(location, uniform.value[0]),
                 2 => gl.Uniform2ui(location, uniform.value[0], uniform.value[1]),
                 3 => gl.Uniform3ui(location, uniform.value[0], uniform.value[1], uniform.value[2]),
                 4 => gl.Uniform4ui(location, uniform.value[0], uniform.value[1], uniform.value[2], uniform.value[3]),
+                else => unreachable,
             },
             .float => switch (v.len) {
                 1 => gl.Uniform1f(location, uniform.value[0]),
                 2 => gl.Uniform2f(location, uniform.value[0], uniform.value[1]),
                 3 => gl.Uniform3f(location, uniform.value[0], uniform.value[1], uniform.value[2]),
                 4 => gl.Uniform4f(location, uniform.value[0], uniform.value[1], uniform.value[2], uniform.value[3]),
+                else => unreachable,
             },
             else => unreachable,
         },
@@ -249,8 +269,8 @@ pub fn setUniform(self: Shader, comptime value_type: type, uniform: Uniform(valu
             unreachable;
             // TODO: add matrix support
         },
-        .array => |a| inner.passArray(a.child, uniform.value.len, @ptrCast(&uniform.value)),
-        .pointer => |p| inner.passArray(p.child, uniform.value.len, @ptrCast(&uniform.value)),
+        .array => |a| inner.passArray(a.child, location, @intCast(a.len), @ptrCast(&uniform.value)),
+        .pointer => |p| inner.passArray(p.child, location, @intCast(@as(gl.uint, @truncate(uniform.value.len))), @ptrCast(uniform.value.ptr)),
         else => unreachable,
     }
 
@@ -261,6 +281,15 @@ pub fn setUniform(self: Shader, comptime value_type: type, uniform: Uniform(valu
 // ========== Testing ==========
 
 const expectEqual = std.testing.expectEqual;
+const expectEqualDeep = std.testing.expectEqualDeep;
+test "Vector to multipointer" {
+    const vec: @Vector(5, i32) = @splat(1234);
+    const ptr_opaque: *const anyopaque = @ptrCast(&vec);
+    const ptr: [*]const i32 = @alignCast(@ptrCast(ptr_opaque));
+
+    try expectEqualDeep(ptr[0..5], &[5]i32{1234,1234,1234,1234,1234});
+}
+
 test "Uniforms basic types" {
     const b = Uniform(bool){.name = "b", .value = true};
     const int = Uniform(i32){.name = "int", .value = -1234};
@@ -408,3 +437,14 @@ test "Uniform float vector slices" {
         try expectEqual(uniform.value, &arr);
     }
 }
+
+// Until Zig supports testing for compile errors(
+// test "Uniform invalid types" {
+//     comptime {
+//         _ = Uniform(u8);
+//         _ = Uniform(i4);
+//         _ = Uniform([2]@Vector(3, bool));
+//         _ = Uniform(type);
+//         _ = Uniform(struct {a: u2});
+//     }
+// }

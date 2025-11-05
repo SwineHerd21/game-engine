@@ -6,7 +6,7 @@ const engine = @import("engine");
 pub fn main() !void {
     std.debug.print("gaming\n", .{});
     // Setup game here
-    try engine.runApplication(&on_update, &on_event, .{
+    try engine.runApplication(on_update, on_event, .{
         .title = "Gaming",
         .init_width = 800,
         .init_height = 600,
@@ -17,7 +17,7 @@ fn on_update() void {
     // stub
 }
 
-var rendermode = engine.RenderMode.Solid;
+var rendermode: engine.RenderMode = .Solid;
 fn on_event(event: engine.Event) void {
     switch (event) {
         .key_press => {

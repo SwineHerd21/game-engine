@@ -67,8 +67,8 @@ pub fn adjustViewport(width: i32, height: i32) void {
 
 pub fn setRenderMode(mode: RenderMode) void {
     gl.PolygonMode(gl.FRONT_AND_BACK, switch (mode) {
-        .Solid => gl.LINE,
-        .Wireframe => gl.FILL,
+        .Solid => gl.FILL,
+        .Wireframe => gl.LINE,
     });
 }
 
@@ -146,6 +146,9 @@ pub fn render(self: Renderer) void {
     const timeSine = @sin(framecount / 60.0) / 2.0 + 0.5;
     framecount+=1;
     _=self.shader.setUniform(f32, .{.name = "timeSine", .value = timeSine});
+
+    const values: []const @Vector(3, f32) = &.{.{0.41, 1.0, 0.2}, .{-123.0, 0.25, 12.2}, .{1.0, 0.3, 0.8}};
+    _=self.shader.setUniform(@TypeOf(values), .{.name = "values", .value = values});
 
     gl.BindVertexArray(self.vao);
     gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
