@@ -63,7 +63,7 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
     test_shader.use();
     _=test_shader.setUniform(@TypeOf(values), .{.name = "values", .value = values});
 
-
+    // TEMP
     const verts = [_]f32{
         // positions        // colors
         -0.5, -0.5, 0.0,    1.0, 1.0, 1.0,  // bottom left
@@ -90,8 +90,10 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
 
     var cur_mesh: i32 = 0;
     var cur_shader: i32 = 0;
-    // Engine loop
     var framecount: f32 = 0;
+    // TEMP
+
+    // Engine loop
     while (!window.should_close) {
         // Process pending OS events
         while (window.areEventsPending()) {
@@ -122,7 +124,7 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
         // TODO: engine update loop
         on_update();
 
-        // temp for testing
+        // TEMP
         const mesh = if (cur_mesh == 0) quad else tri;
         const shader = if (cur_shader == 0) default_shader else test_shader;
 
@@ -131,6 +133,7 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
         const timeSine = @sin(framecount / 60.0);
         framecount+=1;
         _=shader.setUniform(f32, .{.name = "timeSine", .value = timeSine});
+        // TEMP
 
 
         window.swapBuffers();

@@ -21,6 +21,13 @@ pub fn create(vertex: []const u8, fragment: []const u8) EngineError!Shader {
 
     const vertex_shader = try compileShader(shader_program, vertex, gl.VERTEX_SHADER);
     const fragment_shader = try compileShader(shader_program, fragment, gl.FRAGMENT_SHADER);
+    // Shader objects are not needed after linking, so delete them
+    defer {
+        gl.DetachShader(shader_program, vertex_shader);
+        gl.DeleteShader(vertex_shader);
+        gl.DetachShader(shader_program, fragment_shader);
+        gl.DeleteShader(fragment_shader);
+    }
 
     gl.LinkProgram(shader_program);
 
@@ -40,12 +47,6 @@ pub fn create(vertex: []const u8, fragment: []const u8) EngineError!Shader {
         log.err("Invalid shader program: {s}", .{info_log});
         return EngineError.ShaderCompilationFailure;
     }
-
-    // Shader objects are not needed after linking, so delete them
-    gl.DetachShader(shader_program, vertex_shader);
-    gl.DeleteShader(vertex_shader);
-    gl.DetachShader(shader_program, fragment_shader);
-    gl.DeleteShader(fragment_shader);
 
     return .{
         .program = shader_program,

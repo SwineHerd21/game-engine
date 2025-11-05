@@ -8,7 +8,6 @@ const native = @import("../platform.zig").native;
 const Window = @import("../Window.zig");
 const EngineError = @import("../lib.zig").EngineError;
 
-const Renderer = @This();
 const Shader = @import("Shader.zig");
 const Mesh = @import("Mesh.zig");
 
