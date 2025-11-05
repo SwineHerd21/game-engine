@@ -5,6 +5,7 @@ const engine = @import("engine");
 
 pub fn main() !void {
     std.debug.print("gaming\n", .{});
+
     // Setup game here
     try engine.runApplication(on_update, on_event, .{
         .title = "Gaming",

@@ -5,10 +5,11 @@ layout(location = 1) in vec3 aColor;
 
 out vec3 vertexColor;
 
-uniform vec3 values[3];
+uniform float values[3];
+uniform float timeSine;
 
 void main() {
-	gl_Position = vec4(aPos, 1.0);
-	vertexColor = vec3(values[0].x, values[1].y, values[2].z);
+	gl_Position = vec4(aPos.x + values[0] * timeSine, aPos.y + values[1] * timeSine, aPos.z + values[2] * timeSine, 1.0);
+	vertexColor = aColor;
 }
 

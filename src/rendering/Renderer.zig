@@ -27,7 +27,7 @@ ebo: gl.uint = undefined,
 shader: Shader = undefined,
 
 /// Call deinit at the end
-pub fn init(allocator: std.mem.Allocator) EngineError!Renderer {
+pub fn init() EngineError!Renderer {
     // Load OpenGL functions
     if (!procs.init(native.getProcAddress)) return EngineError.InitFailure;
     gl.makeProcTableCurrent(&procs);
@@ -41,22 +41,17 @@ pub fn init(allocator: std.mem.Allocator) EngineError!Renderer {
     var renderer: Renderer = .{};
 
     renderer.createVertexArray();
-    renderer.shader = try Shader.create(try loadShaderFile(allocator, "shaders/shader.vert"), try loadShaderFile(allocator, "shaders/shader.frag"));
 
     return renderer;
 }
 
 pub fn deinit(self: Renderer) void {
-    // must always happen last
-    defer gl.makeProcTableCurrent(null);
-
     // Clean buffers
     gl.DeleteBuffers(1, @ptrCast(&self.vbo));
     gl.DeleteBuffers(1, @ptrCast(&self.ebo));
     gl.DeleteVertexArrays(1, @ptrCast(&self.vao));
 
-    // Clean shaders
-    self.shader.destroy();
+    gl.makeProcTableCurrent(null);
 }
 
 // ========== Utilities ==========
@@ -107,48 +102,11 @@ pub fn createVertexArray(self: *Renderer) void {
     gl.EnableVertexAttribArray(1);
 }
 
-// TODO: make the asset manager load shaders
-fn loadShaderFile(
-    allocator: std.mem.Allocator,
-    path: []const u8,
-) EngineError![]const u8 {
-    const shader_file = std.fs.cwd().openFile(path, .{}) catch {
-        log.err("Shader file '{s}' does not exist or is inaccessible", .{ path });
-        return EngineError.IOError;
-    };
-    defer shader_file.close();
-    const file_stat = shader_file.stat() catch {
-        log.err("Shader file '{s}' is corrupted", .{ path });
-        return EngineError.IOError;
-    };
-    const shader_text = allocator.alloc(u8, file_stat.size) catch {
-        log.err("Could not allocate memory", .{});
-        return EngineError.OutOfMemory;
-    };
-
-    _ = shader_file.read(shader_text) catch {
-        log.err("Could not read shader file '{s}'", .{ path });
-        return EngineError.OutOfMemory;
-    };
-
-    return shader_text;
-}
-
 // ========== Render ==========
 
-var framecount: f32 = 0;
 pub fn render(self: Renderer) void {
     gl.ClearColor(0.0, 0.0, 0.0, 1.0);
     gl.Clear(gl.COLOR_BUFFER_BIT);
-
-    // Little hack just for testing
-    self.shader.use();
-    const timeSine = @sin(framecount / 60.0) / 2.0 + 0.5;
-    framecount+=1;
-    _=self.shader.setUniform(f32, .{.name = "timeSine", .value = timeSine});
-
-    const values: []const @Vector(3, f32) = &.{.{0.41, 1.0, 0.2}, .{-123.0, 0.25, 12.2}, .{1.0, 0.3, 0.8}};
-    _=self.shader.setUniform(@TypeOf(values), .{.name = "values", .value = values});
 
     gl.BindVertexArray(self.vao);
     gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);

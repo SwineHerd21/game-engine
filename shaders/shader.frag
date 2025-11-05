@@ -7,5 +7,5 @@ in vec3 vertexColor;
 uniform float timeSine;
 
 void main() {
-	FragColor = vec4(vertexColor * timeSine, 1.0);
+	FragColor = vec4(vertexColor * (timeSine / 2.0 + 0.5), 1.0);
 }
