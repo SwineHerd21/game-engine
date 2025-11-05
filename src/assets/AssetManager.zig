@@ -25,16 +25,15 @@ pub fn init(allocator: std.mem.Allocator) AssetManager {
 }
 
 pub fn deinit(self: *AssetManager) void {
-    var shader_iter = self.shader_cache.valueIterator();
-    while (shader_iter.next()) |s| {
-        s.destroy();
+    inline for (@typeInfo(AssetManager).@"struct".fields[1..]) |f| {
+        var cache = @field(self, f.name);
+        var iter = cache.valueIterator();
+        while (iter.next()) |a| {
+            a.destroy();
+        }
+        cache.clearAndFree(self.allocator);
+        cache.deinit(self.allocator);
     }
-
-    self.shader_cache.clearAndFree(self.allocator);
-    self.shader_cache.deinit(self.allocator);
-
-    self.mesh_cache.clearAndFree(self.allocator);
-    self.mesh_cache.deinit(self.allocator);
 }
 
 // ========== General =========
@@ -72,7 +71,6 @@ pub fn free(self: AssetManager, memory: anytype) void {
 
 // TODO: make paths relative to an asset folder supplied by library user
 
-/// Get an asset from the cache or load it from a file on disk.
 pub fn getShader(self: AssetManager, name: []const u8) ?Shader {
     return self.shader_cache.get(name);
 }
@@ -90,5 +88,20 @@ pub fn loadShader(self: *AssetManager, name: []const u8, vertex_file: []const u8
         log.err("Out of memory", .{});
         return EngineError.OutOfMemory;
     };
+
+    log.debug("Loaded shader '{s}'", .{name});
 }
 
+pub fn getMesh(self: AssetManager, name: []const u8) ?Mesh {
+    return self.mesh_cache.get(name);
+}
+
+pub fn loadMeshTemp(self: *AssetManager, name: []const u8, vertices: []const f32, indices: []const c_uint) EngineError!void {
+    const mesh = Mesh.create(vertices, indices);
+    self.mesh_cache.put(self.allocator, name, mesh) catch {
+        log.err("Out of memory", .{});
+        return EngineError.OutOfMemory;
+    };
+
+    log.debug("Loaded mesh '{s}'", .{name});
+}

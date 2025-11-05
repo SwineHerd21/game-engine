@@ -4,11 +4,11 @@ const builtin = @import("builtin");
 pub const events = @import("events.zig");
 pub const Event = events.Event;
 pub const Input = @import("Input.zig");
+const renderer = @import("rendering/renderer.zig");
 
-pub const RenderMode = @import("rendering/Renderer.zig").RenderMode;
-pub const setRenderMode = @import("rendering/Renderer.zig").setRenderMode;
+pub const RenderMode = renderer.RenderMode;
+pub const setRenderMode = renderer.setRenderMode;
 
-const Renderer = @import("rendering/Renderer.zig");
 const Window = @import("Window.zig");
 const AssetManager = @import("assets/AssetManager.zig");
 
@@ -40,7 +40,7 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
     };
     defer window.destroy();
 
-    var renderer = Renderer.init() catch |err| {
+    renderer.init() catch |err| {
             log.err("Failed to load a graphics library", .{});
             return err;
     };
@@ -63,8 +63,33 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
     test_shader.use();
     _=test_shader.setUniform(@TypeOf(values), .{.name = "values", .value = values});
 
-    var cur_shader: i32 = 0;
 
+    const verts = [_]f32{
+        // positions        // colors
+        -0.5, -0.5, 0.0,    1.0, 1.0, 1.0,  // bottom left
+         0.5, -0.5, 0.0,    1.0, 0.0, 0.0,  // bottom right
+         0.5,  0.5, 0.0,    0.0, 1.0, 0.0,  // top right
+        -0.5,  0.5, 0.0,    0.0, 0.0, 1.0,  // top left
+    };
+    const indices = [_]c_uint{
+        0, 1, 3,
+        1, 2, 3,
+    };
+    try asset_manager.loadMeshTemp("quad", &verts, &indices);
+    const quad = asset_manager.getMesh("quad").?;
+
+    const verts2 = [_]f32{
+        -0.5, -0.5, 0.0,    1.0, 0.0, 0.0,
+         0.5, -0.5, 0.0,    0.0, 1.0, 0.0,
+         0.0,  0.5, 0.0,    0.0, 0.0, 1.0,
+    };
+    try asset_manager.loadMeshTemp("tri", &verts2, &.{0,1,2});
+    const tri = asset_manager.getMesh("tri").?;
+
+    log.info("Press left mouse to toggle shader, press right mouse to toggle mesh", .{});
+
+    var cur_mesh: i32 = 0;
+    var cur_shader: i32 = 0;
     // Engine loop
     var framecount: f32 = 0;
     while (!window.should_close) {
@@ -81,10 +106,11 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
                         window.should_close = true;
                     },
                     .window_expose => {
-                        Renderer.adjustViewport(@intCast(window.width), @intCast(window.height));
+                        renderer.adjustViewport(@intCast(window.width), @intCast(window.height));
                     },
-                    .pointer_button_press => {
-                        cur_shader ^= 1;
+                    .pointer_button_press => |e| {
+                        if (e.button == 1) cur_shader ^= 1;
+                        if (e.button == 3) cur_mesh ^= 1;
                     },
                     else => {},
                 }
@@ -97,13 +123,15 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
         on_update();
 
         // temp for testing
+        const mesh = if (cur_mesh == 0) quad else tri;
         const shader = if (cur_shader == 0) default_shader else test_shader;
-        shader.use();
+
+        renderer.render(mesh, shader);
+
         const timeSine = @sin(framecount / 60.0);
         framecount+=1;
         _=shader.setUniform(f32, .{.name = "timeSine", .value = timeSine});
 
-        renderer.render();
 
         window.swapBuffers();
     }
