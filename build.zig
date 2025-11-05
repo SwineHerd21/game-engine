@@ -1,5 +1,9 @@
 const std = @import("std");
 
+// Example TODO:
+// Rendering a rotating Utah teapot
+// Shaders with complex uniform types
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
