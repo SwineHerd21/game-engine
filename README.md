@@ -57,11 +57,13 @@ Currently runs on Linux through X11 and OpenGL.
 [ ] Asset management  
   [ ] Loading assets from files  
   [ ] Memory management  
+  [ ] Asset metafiles  
   [ ] Asset bundles  
-  [ ] Passing assets to other systems  
+  [ ] Passing assets around  
   [ ] Referencing assets in scenes, components and other assets (IDs?)  
-  [ ] Meshes  
+  [ ] Meshes, materials  
   [ ] Textures and sprites  
+  [ ] Shaders  
   [ ] Fonts  
   [ ] Sound files  
   [ ] Scenes  

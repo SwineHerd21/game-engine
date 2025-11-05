@@ -102,7 +102,7 @@ pub fn Uniform(comptime T: type) type {
     const error_msg = @typeName(T) ++ " is an invalid uniform type: GLSL uniforms can be only of type bool, i32, u32, f32, 1-4 element vectors of previous types, matricies and arrays/slices of/to those types (except for vectors of bool, as those use 1 bit per value instead of 1 byte).";
 
     const inner = struct {
-        pub fn validateType(comptime U: type, array: bool) void {
+        pub inline fn validateType(comptime U: type, array: bool) void {
             switch (@typeInfo(U)) {
                 .@"bool" => {},
                 .int => |i| {
@@ -186,7 +186,7 @@ pub fn setUniform(self: Shader, comptime value_type: type, uniform: Uniform(valu
 
     const inner = struct {
         // The array data is passed through an opaque pointer to allow conversion of vectors.
-        pub fn passArray(comptime child: type, loc: gl.int, len: gl.int, value: *const anyopaque) void {
+        pub inline fn passArray(comptime child: type, loc: gl.int, len: gl.int, value: *const anyopaque) void {
             switch (@typeInfo(child)) {
                 .bool => gl.Uniform1iv(loc, len, @alignCast(@ptrCast(value))),
                 .int => |i| if (i.signedness == .signed) {
