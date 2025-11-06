@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+pub const math = @import("math/math.zig");
 pub const events = @import("events.zig");
 pub const Event = events.Event;
 pub const Input = @import("Input.zig");

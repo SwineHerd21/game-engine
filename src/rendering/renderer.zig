@@ -11,7 +11,7 @@ const EngineError = @import("../lib.zig").EngineError;
 const Shader = @import("Shader.zig");
 const Mesh = @import("Mesh.zig");
 
-const log = std.log.scoped(.engine);
+const log = std.log.scoped(.opengl);
 
 pub const RenderMode = enum {
     Solid,
@@ -21,7 +21,7 @@ pub const RenderMode = enum {
 // OpenGL runtime loaded functions
 var procs: gl.ProcTable = undefined;
 
-/// Call deinit at the end
+/// Call `deinit()` at the end
 pub fn init() EngineError!void {
     // Load OpenGL functions
     if (!procs.init(native.getProcAddress)) return EngineError.InitFailure;

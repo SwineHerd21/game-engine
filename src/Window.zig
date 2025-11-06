@@ -16,7 +16,7 @@ height: u32,
 /// Note: you can set this to false again if you want to prevent the user from closing the app.
 should_close: bool = false,
 
-/// Call Window.destroy when the window is no longer needed.
+/// Call `destroy()` when the window is no longer needed.
 pub fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Window {
     // TODO: error handling
     return .{

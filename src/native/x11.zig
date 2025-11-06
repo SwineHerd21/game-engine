@@ -23,8 +23,6 @@ pub const Context = struct {
     wm_delete_window: c.Atom,
 };
 
-// TODO: Error handling
-
 // ========== WINDOWING ==========
 
 pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Context {

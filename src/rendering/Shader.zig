@@ -5,13 +5,12 @@ const gl = @import("gl");
 
 const EngineError = @import("../lib.zig").EngineError;
 
-const log = std.log.scoped(.engine);
+const log = std.log.scoped(.opengl);
 
 const Shader = @This();
 
 program: gl.uint,
 
-// Pass in shader source code. Call destroy() when shader is no longer needed.
 pub fn create(vertex: []const u8, fragment: []const u8) EngineError!Shader {
     const shader_program = gl.CreateProgram();
     if (shader_program == 0) {
@@ -273,7 +272,7 @@ test "Vector to multipointer" {
     const ptr_opaque: *const anyopaque = @ptrCast(&vec);
     const ptr: [*]const i32 = @alignCast(@ptrCast(ptr_opaque));
 
-    try expectEqualDeep(ptr[0..5], &[5]i32{1234,1234,1234,1234,1234});
+    try expectEqualDeep(&[5]i32{1234,1234,1234,1234,1234}, ptr[0..5]);
 }
 
 test "Uniforms basic types" {
@@ -282,10 +281,10 @@ test "Uniforms basic types" {
     const uint = Uniform(u32){.name = "uint", .value = 1234};
     const float = Uniform(f32){.name = "float", .value = 12.34};
 
-    try expectEqual(b.value, true);
-    try expectEqual(int.value, -1234);
-    try expectEqual(uint.value, 1234);
-    try expectEqual(float.value, 12.34);
+    try expectEqual(true, b.value);
+    try expectEqual(-1234, int.value);
+    try expectEqual(1234, uint.value);
+    try expectEqual(12.34, float.value);
 }
 
 // test "Uniform bool vectors" {
@@ -293,7 +292,7 @@ test "Uniforms basic types" {
 //         const vec: @Vector(i, bool) = @splat(true);
 //         const uniform = Uniform(@Vector(i, bool)){.name = "b", .value = vec};
 //
-//         try expectEqual(uniform.value, vec);
+//         try expectEqual(vec, uniform.value);
 //     }
 // }
 //
@@ -302,7 +301,7 @@ test "Uniforms basic types" {
 //         const vec: @Vector(i, i32) = @splat(-1234);
 //         const uniform = Uniform(@Vector(i, i32)){.name = "b", .value = vec};
 //
-//         try expectEqual(uniform.value, vec);
+//         try expectEqual(vec, uniform.value);
 //     }
 // }
 //
@@ -311,7 +310,7 @@ test "Uniforms basic types" {
 //         const vec: @Vector(i, u32) = @splat(1234);
 //         const uniform = Uniform(@Vector(i, u32)){.name = "b", .value = vec};
 //
-//         try expectEqual(uniform.value, vec);
+//         try expectEqual(vec, uniform.value);
 //     }
 // }
 //
@@ -320,7 +319,7 @@ test "Uniforms basic types" {
 //         const vec: @Vector(i, f32) = @splat(12.34);
 //         const uniform = Uniform(@Vector(i, f32)){.name = "b", .value = vec};
 //
-//         try expectEqual(uniform.value, vec);
+//         try expectEqual(vec, uniform.value);
 //     }
 // }
 
@@ -335,10 +334,10 @@ test "Uniform basic arrays" {
     const uints_u = Uniform([5]u32){.name = "", .value = uints};
     const floats_u = Uniform([5]f32){.name = "", .value = floats};
 
-    try expectEqual(bs_u.value, bs);
-    try expectEqual(ints_u.value, ints);
-    try expectEqual(uints_u.value, uints);
-    try expectEqual(floats_u.value, floats);
+    try expectEqual(bs, bs_u.value);
+    try expectEqual(ints, ints_u.value);
+    try expectEqual(uints, uints_u.value);
+    try expectEqual(floats, floats_u.value);
 }
 
 // test "Uniform int vector arrays" {
@@ -348,7 +347,7 @@ test "Uniform basic arrays" {
 //
 //         const uniform = Uniform([5]@Vector(i, i32)){.name = "b", .value = arr};
 //
-//         try expectEqual(uniform.value, arr);
+//         try expectEqual(arr, uniform.value);
 //     }
 // }
 //
@@ -359,7 +358,7 @@ test "Uniform basic arrays" {
 //
 //         const uniform = Uniform([5]@Vector(i, u32)){.name = "b", .value = arr};
 //
-//         try expectEqual(uniform.value, arr);
+//         try expectEqual(arr, uniform.value);
 //     }
 // }
 //
@@ -370,7 +369,7 @@ test "Uniform basic arrays" {
 //
 //         const uniform = Uniform([5]@Vector(i, f32)){.name = "b", .value = arr};
 //
-//         try expectEqual(uniform.value, arr);
+//         try expectEqual(arr, uniform.value);
 //     }
 // }
 
@@ -385,10 +384,10 @@ test "Uniform basic slices" {
     const uints_u = Uniform([]const u32){.name = "", .value = &uints};
     const floats_u = Uniform([]const f32){.name = "", .value = &floats};
 
-    try expectEqual(bs_u.value, &bs);
-    try expectEqual(ints_u.value, &ints);
-    try expectEqual(uints_u.value, &uints);
-    try expectEqual(floats_u.value, &floats);
+    try expectEqual(&bs, bs_u.value);
+    try expectEqual(&ints, ints_u.value);
+    try expectEqual(&uints, uints_u.value);
+    try expectEqual(&floats, floats_u.value);
 }
 
 // test "Uniform int vector slices" {
@@ -398,7 +397,7 @@ test "Uniform basic slices" {
 //
 //         const uniform = Uniform([]const @Vector(i, i32)){.name = "b", .value = &arr};
 //
-//         try expectEqual(uniform.value, &arr);
+//         try expectEqual(&arr, uniform.value);
 //     }
 // }
 //
@@ -409,7 +408,7 @@ test "Uniform basic slices" {
 //
 //         const uniform = Uniform([]const @Vector(i, u32)){.name = "b", .value = &arr};
 //
-//         try expectEqual(uniform.value, &arr);
+//         try expectEqual(&arr, uniform.value);
 //     }
 // }
 //
@@ -420,7 +419,7 @@ test "Uniform basic slices" {
 //
 //         const uniform = Uniform([]const @Vector(i, f32)){.name = "b", .value = &arr};
 //
-//         try expectEqual(uniform.value, &arr);
+//         try expectEqual(&arr, uniform.value);
 //     }
 // }
 

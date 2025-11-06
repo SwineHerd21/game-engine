@@ -1,0 +1,626 @@
+const std = @import("std");
+const Type = std.builtin.Type;
+
+/// A vector with 2 elements of f32
+pub const Vec2 = extern struct {
+    x: f32,
+    y: f32,
+
+    pub const zero: Vec2 = .{.x = 0, .y = 0};
+    pub const right: Vec2 = .{.x = 1, .y = 0};
+    pub const left: Vec2 = .{.x = -1, .y = 0};
+    pub const up: Vec2 = .{.x = 0, .y = 1};
+    pub const down: Vec2 = .{.x = 0, .y = -1};
+    pub const one: Vec2 = .{.x = 1, .y = 1};
+
+    const funcs = Shared(Vec2);
+    pub const normalized = funcs.normalized;
+    pub const distance = funcs.distance;
+    pub const distanceSqr = funcs.distanceSqr;
+    pub const lerp = funcs.lerp;
+    pub const moveToward = funcs.moveToward;
+    pub const reflect = funcs.reflect;
+    pub const clampLength = funcs.clampLength;
+
+    pub inline fn new(x: f32, y: f32) Vec2 {
+        return .{ .x = x, .y = y };
+    }
+    /// Create a vector with all elements set to 'scalar'
+    pub inline fn splat(scalar: f32) Vec2 {
+        return .{ .x = scalar, .y = scalar };
+    }
+    pub inline fn from_array(arr: [2]f32) Vec2 {
+        return .{ .x = arr[0], .y = arr[1] };
+    }
+    pub inline fn to_array(v: Vec2) [2]f32 {
+        return .{ v.x, v.y };
+    }
+
+    /// Element-wise negation
+    pub inline fn negate(v: Vec2) Vec2 {
+        return .{
+            .x = -v.x,
+            .y = -v.y,
+        };
+    }
+    /// Element-wise addition
+    pub inline fn add(a: Vec2, b: Vec2) Vec2 {
+        return .{
+            .x = a.x + b.x,
+            .y = a.y + b.y,
+        };
+    }
+    /// Element-wise subtraction
+    pub inline fn sub(a: Vec2, b: Vec2) Vec2 {
+        return .{
+            .x = a.x - b.x,
+            .y = a.y - b.y,
+        };
+    }
+    /// Element-wise multiplication by a scalar
+    pub inline fn mul(v: Vec2, scalar: f32) Vec2 {
+        return .{
+            .x = v.x * scalar,
+            .y = v.y * scalar,
+        };
+    }
+    /// Element-wise division by a scalar
+    pub inline fn div(v: Vec2, scalar: f32) Vec2 {
+        return .{
+            .x = v.x / scalar,
+            .y = v.y / scalar,
+        };
+    }
+    /// Element-wise multiplication
+    pub inline fn scale(a: Vec2, b: Vec2) Vec2 {
+        return .{
+            .x = a.x * b.x,
+            .y = a.y * b.y,
+        };
+    }
+
+    /// Dot (scalar) product of two vectors
+    pub inline fn dot(a: Vec2, b: Vec2) f32 {
+        return a.x*b.x + a.y*b.y;
+    }
+    /// In 2D the cross (vector) product gives the signed area of a parallelogram
+    /// constructed with two vectors.
+    pub inline fn cross(a: Vec2, b: Vec2) f32 {
+        return a.x*b.y - a.y*b.x;
+    }
+
+    pub inline fn length(v: Vec2) f32 {
+        return @sqrt(v.x*v.x + v.y*v.y);
+    }
+    /// Faster than `length()`
+    pub inline fn lengthSqr(v: Vec2) f32 {
+        return v.x*v.x + v.y*v.y;
+    }
+
+    /// Returns the angle between the vector and the positive X axis.
+    ///
+    /// See 'angle_to()' for angle between vectors
+    pub inline fn angle(v: Vec2) f32 {
+        return std.math.atan2(v.x, v.y);
+    }
+
+    /// Find the angle between two vectors.
+    pub inline fn angle_to(a: Vec2, b: Vec2) f32 {
+        return std.math.atan2(a.cross(b), a.dot(b));
+    }
+
+    /// Check if two vectors are approximately equal
+    pub inline fn eqlApprox(a: Vec2, b: Vec2) bool {
+        return std.math.approxEqRel(f32, a.x, b.x, std.math.floatEps(f32))
+            and std.math.approxEqRel(f32, a.y, b.y, std.math.floatEps(f32));
+    }
+
+    pub fn format(
+        self: @This(),
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!void {
+        try writer.print("({}, {})", .{self.x, self.y});
+    }
+};
+
+/// A vector with 3 elements of f32
+pub const Vec3 = extern struct {
+    x: f32,
+    y: f32,
+    z: f32,
+
+    pub const zero: Vec3 = .{.x = 0, .y = 0, .z = 0};
+    pub const right: Vec3 = .{.x = 1, .y = 0, .z = 0};
+    pub const left: Vec3 = .{.x = -1, .y = 0, .z = 0};
+    pub const up: Vec3 = .{.x = 0, .y = 1, .z = 0};
+    pub const down: Vec3 = .{.x = 0, .y = -1, .z = 0};
+    pub const forward: Vec3 = .{.x = 0, .y = 0, .z = 1};
+    pub const back: Vec3 = .{.x = 0, .y = 0, .z = -1};
+    pub const one: Vec3 = .{.x = 1, .y = 1, .z = 1};
+
+    const funcs = Shared(Vec3);
+    pub const normalized = funcs.normalized;
+    pub const distance = funcs.distance;
+    pub const distanceSqr = funcs.distanceSqr;
+    pub const lerp = funcs.lerp;
+    pub const moveToward = funcs.moveToward;
+    pub const reflect = funcs.reflect;
+    pub const clampLength = funcs.clampLength;
+
+    pub inline fn new(x: f32, y: f32, z: f32) Vec3 {
+        return .{ .x = x, .y = y, .z = z };
+    }
+    /// Create a vector with all elements set to 'scalar'
+    pub inline fn splat(scalar: f32) Vec3 {
+        return .{ .x = scalar, .y = scalar, .z = scalar };
+    }
+    pub inline fn from_array(arr: [3]f32) Vec3 {
+        return .{ .x = arr[0], .y = arr[1], .z = arr[2] };
+    }
+    pub inline fn to_array(v: Vec3) [3]f32 {
+        return .{ v.x, v.y, v.z };
+    }
+    pub inline fn from_vec2(v: Vec2, z: f32) Vec3 {
+        return .{ .x = v.x, .y = v.y, .z = z };
+    }
+
+    /// Element-wise negation
+    pub inline fn negate(v: Vec3) Vec3 {
+        return .{
+            .x = -v.x,
+            .y = -v.y,
+            .z = -v.z,
+        };
+    }
+    /// Element-wise addition
+    pub inline fn add(a: Vec3, b: Vec3) Vec3 {
+        return .{
+            .x = a.x + b.x,
+            .y = a.y + b.y,
+            .z = a.z + b.z,
+        };
+    }
+    /// Element-wise subtraction
+    pub inline fn sub(a: Vec3, b: Vec3) Vec3 {
+        return .{
+            .x = a.x - b.x,
+            .y = a.y - b.y,
+            .z = a.z - b.z,
+        };
+    }
+    /// Element-wise multiplication by a scalar
+    pub inline fn mul(v: Vec3, scalar: f32) Vec3 {
+        return .{
+            .x = v.x * scalar,
+            .y = v.y * scalar,
+            .z = v.z * scalar,
+        };
+    }
+    /// Element-wise division by a scalar
+    pub inline fn div(v: Vec3, scalar: f32) Vec3 {
+        return .{
+            .x = v.x / scalar,
+            .y = v.y / scalar,
+            .z = v.z / scalar,
+        };
+    }
+    /// Element-wise multiplication
+    pub inline fn scale(a: Vec3, b: Vec3) Vec3 {
+        return .{
+            .x = a.x * b.x,
+            .y = a.y * b.y,
+            .z = a.z * b.z,
+        };
+    }
+
+    /// Dot (scalar) product of two vectors
+    pub inline fn dot(a: Vec3, b: Vec3) f32 {
+        return a.x*b.x + a.y*b.y + a.z*b.z;
+    }
+    /// Cross (vector) product of two vectors
+    ///
+    /// Gives a vector perpendicular to both inputs in the direction determined by the left-hand rule.
+    pub inline fn cross(a: Vec3, b: Vec3) Vec3 {
+        return .{
+            .x = a.y*b.z - a.z*b.y,
+            .y = a.z*b.x - a.x*b.z,
+            .z = a.x*b.y - a.y*b.x,
+        };
+    }
+
+    pub inline fn length(v: Vec3) f32 {
+        return @sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+    }
+    /// Faster than `length()`
+    pub inline fn lengthSqr(v: Vec3) f32 {
+        return v.x*v.x + v.y*v.y + v.z*v.z;
+    }
+
+    /// Find the angle between two vectors.
+    pub inline fn angle_to(a: Vec3, b: Vec3) f32 {
+        return std.math.atan2(a.cross(b).length(), a.dot(b));
+    }
+
+    /// Check if two vectors are approximately equal
+    pub inline fn eqlApprox(a: Vec3, b: Vec3) bool {
+        return std.math.approxEqRel(f32, a.x, b.x, std.math.floatEps(f32))
+            and std.math.approxEqRel(f32, a.y, b.y, std.math.floatEps(f32))
+            and std.math.approxEqRel(f32, a.z, b.z, std.math.floatEps(f32));
+    }
+
+    pub fn format(
+        self: @This(),
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!void {
+        try writer.print("({}, {}, {})", .{self.x, self.y, self.z});
+    }
+};
+
+/// A vector with 4 elements of f32
+pub const Vec4 = extern struct {
+    x: f32,
+    y: f32,
+    z: f32,
+    w: f32,
+
+    pub const zero: Vec4 = .{.x = 0, .y = 0, .z = 0, .w = 0};
+    pub const one: Vec4 = .{.x = 1, .y = 1, .z = 1, . w = 1};
+
+    const funcs = Shared(Vec4);
+    pub const normalized = funcs.normalized;
+    pub const distance = funcs.distance;
+    pub const distanceSqr = funcs.distanceSqr;
+    pub const lerp = funcs.lerp;
+    pub const moveToward = funcs.moveToward;
+    pub const reflect = funcs.reflect;
+    pub const clampLength = funcs.clampLength;
+
+    pub inline fn new(x: f32, y: f32, z: f32, w: f32) Vec4 {
+        return .{ .x = x, .y = y, .z = z, .w = w };
+    }
+    /// Create a vector with all elements set to 'scalar'
+    pub inline fn splat(scalar: f32) Vec4 {
+        return .{ .x = scalar, .y = scalar, .z = scalar, .w = scalar };
+    }
+    pub inline fn from_array(arr: [4]f32) Vec4 {
+        return .{ .x = arr[0], .y = arr[1], .z = arr[2], .w = arr[3] };
+    }
+    pub inline fn to_array(v: Vec4) [4]f32 {
+        return .{ v.x, v.y, v.z, v.w };
+    }
+    pub inline fn from_vec3(v: Vec3, w: f32) Vec4 {
+        return .{ .x = v.x, .y = v.y, .z = v.z, .w = w };
+    }
+
+    /// Element-wise negation
+    pub inline fn negate(v: Vec4) Vec4 {
+        return .{
+            .x = -v.x,
+            .y = -v.y,
+            .z = -v.z,
+            .w = -v.w,
+        };
+    }
+    /// Element-wise addition
+    pub inline fn add(a: Vec4, b: Vec4) Vec4 {
+        return .{
+            .x = a.x + b.x,
+            .y = a.y + b.y,
+            .z = a.z + b.z,
+            .w = a.w + b.w,
+        };
+    }
+    /// Element-wise subtraction
+    pub inline fn sub(a: Vec4, b: Vec4) Vec4 {
+        return .{
+            .x = a.x - b.x,
+            .y = a.y - b.y,
+            .z = a.z - b.z,
+            .w = a.w - b.w,
+        };
+    }
+    /// Element-wise multiplication by a scalar
+    pub inline fn mul(v: Vec4, scalar: f32) Vec4 {
+        return .{
+            .x = v.x * scalar,
+            .y = v.y * scalar,
+            .z = v.z * scalar,
+            .w = v.w * scalar,
+        };
+    }
+    /// Element-wise division by a scalar
+    pub inline fn div(v: Vec4, scalar: f32) Vec4 {
+        return .{
+            .x = v.x / scalar,
+            .y = v.y / scalar,
+            .z = v.z / scalar,
+            .w = v.w / scalar,
+        };
+    }
+    /// Element-wise multiplication
+    pub inline fn scale(a: Vec4, b: Vec4) Vec4 {
+        return .{
+            .x = a.x * b.x,
+            .y = a.y * b.y,
+            .z = a.z * b.z,
+            .w = a.w * b.w,
+        };
+    }
+
+    /// Dot (scalar) product of two vectors
+    pub inline fn dot(a: Vec4, b: Vec4) f32 {
+        return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w;
+    }
+
+    pub inline fn length(v: Vec4) f32 {
+        return @sqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w);
+    }
+    /// Faster than `length()`
+    pub inline fn lengthSqr(v: Vec4) f32 {
+        return v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w;
+    }
+
+    /// Check if two vectors are approximately equal
+    pub inline fn eqlApprox(a: Vec4, b: Vec4) bool {
+        return std.math.approxEqRel(f32, a.x, b.x, std.math.floatEps(f32))
+            and std.math.approxEqRel(f32, a.y, b.y, std.math.floatEps(f32))
+            and std.math.approxEqRel(f32, a.z, b.z, std.math.floatEps(f32))
+            and std.math.approxEqRel(f32, a.w, b.w, std.math.floatEps(f32));
+    }
+
+    pub fn format(
+        self: @This(),
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!void {
+        try writer.print("({}, {}, {}, {})", .{self.x, self.y, self.z, self.w});
+    }
+};
+
+/// Holds functions that apply for all vector types and don't need to reference elements
+fn Shared(Vec: type) type {
+    return struct {
+        /// Returns a vector pointing in the same direction but with length 1
+        pub inline fn normalized(v: Vec) Vec {
+            return v.div(v.length());
+        }
+
+        pub inline fn distance(a: Vec, b: Vec) f32 {
+            return b.sub(a).length();
+        }
+        /// Faster than 'distance()'
+        pub inline fn distanceSqr(a: Vec, b: Vec) f32 {
+            return b.sub(a).lengthSqr();
+        }
+
+        /// Linearly interpolate between two vectors by 't'.
+        ///
+        /// 't' is clamped to [[0,1]]
+        ///
+        /// When 't' = '0' return 'a'
+        /// When 't' = '0.5' return midpoint of 'a' and 'b'
+        /// When 't' = '1' return 'b'
+        pub inline fn lerp(a: Vec, b: Vec, t: f32) Vec {
+            const tc = std.math.clamp(t, 0, 1);
+            return a.mul(1 - tc).add(b.mul(tc));
+        }
+
+        /// Move from 'a' to 'b' by a distance of 'delta'.
+        ///
+        /// Will not go further than 'b'.
+        pub inline fn moveToward(a: Vec, b: Vec, delta: f32) Vec {
+            const dir = b.sub(a);
+            const len = dir.length();
+            return if (len <= delta or len < std.math.floatEps(f32)) b else a.add(dir.mul(delta / len));
+        }
+
+        /// Reflect the vector off a surface defined by the normal.
+        pub inline fn reflect(v: Vec, normal: Vec) Vec {
+            return v.sub(normal.mul(2 * v.dot(normal)));
+        }
+
+        /// Returns a vector pointing in the same direction but with length <= 'len'
+        pub inline fn clampLength(v: Vec, len: f32) Vec {
+            const l = v.length();
+            if (len < 0 or len >= l) return v;
+            return v.mul(len / l);
+        }
+    };
+}
+
+// ========== Tests ==========
+
+const testing = std.testing;
+test "Vector layout" {
+    const vec2 = Vec2.new(3.3, -5.0);
+    const vec3 = Vec3.new(3.3, -5.0, 0.23);
+    const vec4 = Vec4.new(3.3, -5.0, 0.23, 14.0);
+
+    const ptr2: *const anyopaque = @ptrCast(&vec2);
+    const ptr3: *const anyopaque = @ptrCast(&vec3);
+    const ptr4: *const anyopaque = @ptrCast(&vec4);
+
+    const slice2: [*]const f32 = @alignCast(@ptrCast(ptr2));
+    const slice3: [*]const f32 = @alignCast(@ptrCast(ptr3));
+    const slice4: [*]const f32 = @alignCast(@ptrCast(ptr4));
+
+    try testing.expectEqualSlices(f32, slice2[0..2], &.{3.3, -5.0});
+    try testing.expectEqualSlices(f32, slice3[0..3], &.{3.3, -5.0, 0.23});
+    try testing.expectEqualSlices(f32, slice4[0..4], &.{3.3, -5.0, 0.23, 14.0});
+}
+
+test "Vector new" {
+    try testing.expectEqual(Vec2{.x = 123,.y = 321}, Vec2.new(123, 321));
+    try testing.expectEqual(Vec3{.x = 123,.y = 321,.z = 123}, Vec3.new(123, 321, 123));
+    try testing.expectEqual(Vec4{.x = 123,.y = 321,.z = 123,.w = 312}, Vec4.new(123, 321, 123, 312));
+}
+
+test "Vector splat" {
+    const v: f32 = 1234;
+    try testing.expectEqual(Vec2{.x = v,.y = v}, Vec2.splat(v));
+    try testing.expectEqual(Vec3{.x = v,.y = v,.z = v}, Vec3.splat(v));
+    try testing.expectEqual(Vec4{.x = v,.y = v,.z = v,.w = v}, Vec4.splat(v));
+}
+
+test "Vector from array" {
+    try testing.expectEqual(Vec2.new(321, 123), Vec2.from_array(.{321,123}));
+    try testing.expectEqual(Vec3.new(321, 123, 222), Vec3.from_array(.{321,123,222}));
+    try testing.expectEqual(Vec4.new(321, 123, 222, 4), Vec4.from_array(.{321,123,222,4}));
+}
+
+test "Vector to array" {
+    const vec2 = Vec2.new(321, 123);
+    const vec3 = Vec3.new(321, 123, 222);
+    const vec4 = Vec4.new(321, 123, 222, 4);
+
+    try testing.expectEqual(.{321,123}, vec2.to_array());
+    try testing.expectEqual(.{321,123,222}, vec3.to_array());
+    try testing.expectEqual(.{321,123,222,4}, vec4.to_array());
+}
+
+test "Vector from lower" {
+    const vec2 = Vec2.new(321, 123);
+    const vec3 = Vec3.from_vec2(vec2, 333);
+    const vec4 = Vec4.from_vec3(vec3, 444);
+
+    try testing.expectEqual(Vec3.new(321, 123, 333), vec3);
+    try testing.expectEqual(Vec4.new(321, 123, 333, 444), vec4);
+}
+
+test "Vector negate" {
+    try testing.expectEqual(Vec2.new(1, -3), Vec2.new(-1, 3).negate());
+    try testing.expectEqual(Vec3.new(1, -3, -3), Vec3.new(-1, 3, 3).negate());
+    try testing.expectEqual(Vec4.new(1, -3, -3, 1), Vec4.new(-1, 3, 3, -1).negate());
+}
+
+test "Vector add" {
+    try testing.expectEqual(Vec2.new(1, -3), Vec2.new(-1, 3).add(Vec2.new(2, -6)));
+    try testing.expectEqual(Vec3.new(1, -3, -3), Vec3.new(-1, 3, 3).add(Vec3.new(2, -6, -6)));
+    try testing.expectEqual(Vec4.new(1, -3, -3, 1), Vec4.new(-1, 3, 3, -1).add(Vec4.new(2, -6, -6, 2)));
+}
+
+test "Vector sub" {
+    try testing.expectEqual(Vec2.new(-3, 9), Vec2.new(-1, 3).sub(Vec2.new(2, -6)));
+    try testing.expectEqual(Vec3.new(-3, 9, 9), Vec3.new(-1, 3, 3).sub(Vec3.new(2, -6, -6)));
+    try testing.expectEqual(Vec4.new(-3, 9, 9, -3), Vec4.new(-1, 3, 3, -1).sub(Vec4.new(2, -6, -6, 2)));
+}
+
+test "Vector mul" {
+    try testing.expectEqual(Vec2.new(-4, 12), Vec2.new(-1, 3).mul(4));
+    try testing.expectEqual(Vec3.new(-4, 12, 12), Vec3.new(-1, 3, 3).mul(4));
+    try testing.expectEqual(Vec4.new(-4, 12, 12, -4), Vec4.new(-1, 3, 3, -1).mul(4));
+}
+
+test "Vector div" {
+    try testing.expectEqual(Vec2.new(-1.0/4.0, 3.0/4.0), Vec2.new(-1, 3).div(4));
+    try testing.expectEqual(Vec3.new(-1.0/4.0, 3.0/4.0, 3.0/4.0), Vec3.new(-1, 3, 3).div(4));
+    try testing.expectEqual(Vec4.new(-1.0/4.0, 3.0/4.0, 3.0/4.0, -1.0/4.0), Vec4.new(-1, 3, 3, -1).div(4));
+}
+
+test "Vector scale" {
+    try testing.expectEqual(Vec2.new(-2, -18), Vec2.new(-1, 3).scale(Vec2.new(2, -6)));
+    try testing.expectEqual(Vec3.new(-2, -18, -18), Vec3.new(-1, 3, 3).scale(Vec3.new(2, -6, -6)));
+    try testing.expectEqual(Vec4.new(-2, -18, -18, -2), Vec4.new(-1, 3, 3, -1).scale(Vec4.new(2, -6, -6, 2)));
+}
+
+test "Vector dot" {
+    try testing.expectEqual(0, Vec2.dot(Vec2.new(1, 0), Vec2.new(0, 1)));
+    try testing.expectEqual(0, Vec3.dot(Vec3.new(1, 0, 0), Vec3.new(0, 1, 0)));
+    try testing.expectEqual(0, Vec4.dot(Vec4.new(1, 0, 0, 0), Vec4.new(0, 1, 0, 0)));
+
+    try testing.expectApproxEqRel(12.2, Vec2.dot(Vec2.new(2, 3), Vec2.new(-2, 5.4)), std.math.floatEps(f32));
+    try testing.expectApproxEqRel(16.2, Vec3.dot(Vec3.new(2, 3, 4), Vec3.new(-2, 5.4, 1)), std.math.floatEps(f32));
+    try testing.expectApproxEqRel(51.2, Vec4.dot(Vec4.new(2, 3, 4, 5), Vec4.new(-2, 5.4, 1, 7)), std.math.floatEps(f32));
+
+    const v2 = Vec2.new(3, 4);
+    const v3 = Vec3.new(3, 4, -2);
+    const v4 = Vec4.new(3, 4, -2, 0.1);
+    try testing.expectEqual(v2.lengthSqr(), v2.dot(v2));
+    try testing.expectEqual(v3.lengthSqr(), v3.dot(v3));
+    try testing.expectEqual(v4.lengthSqr(), v4.dot(v4));
+}
+
+test "Vector length" {
+    const v2 = Vec2.new(3, 4);
+    const v3 = Vec3.new(3, 4, -2);
+    const v4 = Vec4.new(3, 4, -2, 0.1);
+
+    try testing.expectEqual(5, v2.length());
+    try testing.expectApproxEqRel(@sqrt(29.0), v3.length(), std.math.floatEps(f32));
+    try testing.expectApproxEqRel(@sqrt(29.01), v4.length(), std.math.floatEps(f32));
+}
+
+test "Vector lengthSqr" {
+    const v2 = Vec2.new(3, 4);
+    const v3 = Vec3.new(3, 4, -2);
+    const v4 = Vec4.new(3, 4, -2, 0.1);
+
+    try testing.expectEqual(25, v2.lengthSqr());
+    try testing.expectEqual(29, v3.lengthSqr());
+    try testing.expectEqual(29.01, v4.lengthSqr());
+}
+
+test "Vector cross 2D" {
+    try testing.expectEqual(-1, Vec2.new(2, 3).cross(Vec2.new(3, 4)));
+}
+
+test "Vector cross 3D" {
+    try testing.expectEqual(Vec3.forward, Vec3.right.cross(Vec3.up));
+    try testing.expectEqual(Vec3.back, Vec3.up.cross(Vec3.right));
+    try testing.expectEqual(Vec3.new(18.5, 46, 42), Vec3.new(2, -4, 3.5).cross(Vec3.new(8, 5, -9)));
+    try testing.expectEqual(Vec3.new(18.5, 46, 42).negate(), Vec3.new(8, 5, -9).cross(Vec3.new(2, -4, 3.5)));
+}
+
+test "Vector angle 2D" {
+    try testing.expectApproxEqRel(std.math.pi/4.0, Vec2.one.angle(), std.math.floatEps(f32));
+}
+
+test "Vector angle to" {
+    try testing.expectApproxEqRel(-std.math.pi/4.0, Vec2.one.angle_to(Vec2.right), std.math.floatEps(f32));
+    try testing.expectApproxEqRel(std.math.pi/4.0, Vec3.new(1,1,0).angle_to(Vec3.right), std.math.floatEps(f32));
+}
+
+test "Vector normalized" {
+    try testing.expectEqual(Vec2.right, Vec2.new(2, 0).normalized());
+    try testing.expectEqual(Vec3.right, Vec3.new(2, 0, 0).normalized());
+    try testing.expectEqual(Vec4.new(1,0,0,0), Vec4.new(2, 0, 0, 0).normalized());
+
+    try testing.expect(Vec2.new(4.0/5.0, 3.0/5.0).eqlApprox(Vec2.new(4, 3).normalized()));
+    try testing.expect(Vec3.new(4.0/@sqrt(41.0), 3.0/@sqrt(41.0), 4.0/@sqrt(41.0)).eqlApprox(Vec3.new(4, 3, 4).normalized()));
+    try testing.expect(Vec4.new(1.0/2.0,3.0/8.0,1.0/2.0,@sqrt(23.0)/8.0).eqlApprox(Vec4.new(4, 3, 4, @sqrt(23.0)).normalized()));
+}
+
+test "Vector distance" {
+    try testing.expectApproxEqRel(11.580155, Vec2.new(1.5, 2.25).distance(Vec2.new(1.44, -9.33)), std.math.floatEps(f32));
+    try testing.expectApproxEqRel(12.225645, Vec3.new(1.5, 2.25, 3.33).distance(Vec3.new(1.44, -9.33, 7.25)), std.math.floatEps(f32));
+    try testing.expectApproxEqRel(13.185977, Vec4.new(1.5, 2.25, 3.33, 4.44).distance(Vec4.new(1.44, -9.33, 7.25, -0.5)), std.math.floatEps(f32));
+}
+
+test "Vector distanceSqr" {
+    try testing.expectApproxEqRel(134.099989824, Vec2.new(1.5, 2.25).distanceSqr(Vec2.new(1.44, -9.33)), std.math.floatEps(f32));
+    try testing.expectApproxEqRel(149.466395666, Vec3.new(1.5, 2.25, 3.33).distanceSqr(Vec3.new(1.44, -9.33, 7.25)), std.math.floatEps(f32));
+    try testing.expectApproxEqRel(173.869995666, Vec4.new(1.5, 2.25, 3.33, 4.44).distanceSqr(Vec4.new(1.44, -9.33, 7.25, -0.5)), std.math.floatEps(f32));
+}
+
+test "Vector lerp" {
+    try testing.expectEqual(Vec2.new(0.5, 0.5), Vec2.zero.lerp(Vec2.one, 0.5));
+    try testing.expectEqual(Vec3.new(0.5, 0.5, 0.5), Vec3.zero.lerp(Vec3.one, 0.5));
+    try testing.expectEqual(Vec4.new(0.5, 0.5, 0.5, 0.5), Vec4.zero.lerp(Vec4.one, 0.5));
+}
+
+test "Vector move toward" {
+    try testing.expectEqual(Vec2.new(0.35355338, 0.35355338), Vec2.zero.moveToward(Vec2.one.mul(2), 0.5));
+    try testing.expectEqual(Vec3.new(0.28867513, 0.28867513, 0.28867513), Vec3.zero.moveToward(Vec3.one.mul(2), 0.5));
+    try testing.expectEqual(Vec4.new(0.25, 0.25, 0.25, 0.25), Vec4.zero.moveToward(Vec4.one.mul(2), 0.5));
+}
+
+test "Vector reflect" {
+    try testing.expectEqual(Vec2.new(1, 4), Vec2.new(1, -4).reflect(Vec2.up));
+    try testing.expectEqual(Vec3.new(1, -5.92, 2.44), Vec3.new(1, -4, 5).reflect(Vec3.new(0, 0.6, 0.8)));
+}
+
+test "Vector clampLength" {
+    try testing.expectEqual(Vec2.normalized(Vec2.one), Vec2.clampLength(Vec2.one, 1));
+    try testing.expectEqual(Vec3.normalized(Vec3.one), Vec3.clampLength(Vec3.one, 1));
+    try testing.expectEqual(Vec4.normalized(Vec4.one), Vec4.clampLength(Vec4.one, 1));
+}
+
