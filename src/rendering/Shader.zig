@@ -194,6 +194,6 @@ pub fn setUniform(self: Shader, name: []const u8, value: anytype) bool {
         else => unreachable,
     }
 
-    return false;
+    return true;
 }
 

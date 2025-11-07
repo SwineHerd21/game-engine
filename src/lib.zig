@@ -136,7 +136,6 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
         _=shader.setUniform("timeSine", timeSine);
         // TEMP
 
-
         window.swapBuffers();
     }
 
