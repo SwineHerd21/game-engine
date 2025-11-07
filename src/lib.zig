@@ -5,10 +5,10 @@ pub const math = @import("math/math.zig");
 pub const events = @import("events.zig");
 pub const Event = events.Event;
 pub const Input = @import("Input.zig");
-const renderer = @import("rendering/renderer.zig");
+const graphics = @import("graphics/graphics.zig");
 
-pub const RenderMode = renderer.RenderMode;
-pub const setRenderMode = renderer.setRenderMode;
+pub const RenderMode = graphics.RenderMode;
+pub const setRenderMode = graphics.setRenderMode;
 
 const Window = @import("Window.zig");
 const AssetManager = @import("assets/AssetManager.zig");
@@ -41,11 +41,11 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
     };
     defer window.destroy();
 
-    renderer.init() catch |err| {
+    graphics.init() catch |err| {
             log.err("Failed to load a graphics library", .{});
             return err;
     };
-    defer renderer.deinit();
+    defer graphics.deinit();
 
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -109,7 +109,7 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
                         window.should_close = true;
                     },
                     .window_expose => {
-                        renderer.adjustViewport(@intCast(window.width), @intCast(window.height));
+                        graphics.adjustViewport(@intCast(window.width), @intCast(window.height));
                     },
                     .pointer_button_press => |e| {
                         if (e.button == 1) cur_shader ^= 1;
@@ -122,6 +122,8 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
             }
         }
 
+        graphics.new_frame();
+
         // TODO: engine update loop
         on_update();
 
@@ -129,7 +131,7 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
         const mesh = if (cur_mesh == 0) quad else tri;
         const shader = if (cur_shader == 0) default_shader else test_shader;
 
-        renderer.render(mesh, shader);
+        mesh.draw(shader);
 
         const timeSine = @sin(framecount / 60.0);
         framecount+=1;

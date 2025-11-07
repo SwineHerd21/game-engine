@@ -68,16 +68,6 @@ Currently runs on Linux through X11 and OpenGL.
   [ ] Sound files  
   [ ] Scenes  
   [ ] General data  
-[ ] ECS  
-  [ ] Entity storage based on components  
-  [ ] Entity querying based on components  
-  [ ] Systems can exist without scenes  
-  [ ] Systems can be contained in scenes  
-  [ ] Systems have functions  
-      [ ] onStart - when a system is created  
-      [ ] onEnd - when a scene is destroyed  
-      [ ] onUpdate - runs every frame  
-      [ ] onEvent - handles and consume events raised by other systems  
 [ ] Scenes/levels  
   [ ] Setting up scenes through files  
   [ ] Switching scenes  

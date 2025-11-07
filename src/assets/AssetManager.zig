@@ -4,8 +4,8 @@ const std = @import("std");
 
 const EngineError = @import("../lib.zig").EngineError;
 
-const Shader = @import("../rendering/Shader.zig");
-const Mesh = @import("../rendering/Mesh.zig");
+const Shader = @import("../graphics/Shader.zig");
+const Mesh = @import("../graphics/Mesh.zig");
 
 const AssetManager = @This();
 

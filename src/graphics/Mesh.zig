@@ -16,7 +16,7 @@ pub fn create(vertices: []const f32, indices: []const u32) Mesh {
         .vao = undefined,
         .vbo = undefined,
         .ebo = undefined,
-        .index_count = @intCast(indices.len),
+        .index_count = @intCast(@as(gl.uint, @truncate(indices.len))),
     };
 
     gl.GenVertexArrays(1, @ptrCast(&mesh.vao));

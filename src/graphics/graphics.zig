@@ -53,9 +53,7 @@ pub fn setRenderMode(mode: RenderMode) void {
 
 // ========== Render ==========
 
-pub fn render(mesh: Mesh, shader: Shader) void {
+pub fn new_frame() void {
     gl.ClearColor(0.0, 0.0, 0.0, 1.0);
     gl.Clear(gl.COLOR_BUFFER_BIT);
-
-    mesh.draw(shader);
 }

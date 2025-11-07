@@ -103,68 +103,7 @@ pub fn use(shader: Shader) void {
 /// Slices longer than max value of c_int will be truncated.
 pub fn setUniform(self: Shader, name: []const u8, value: anytype) bool {
     const T = @TypeOf(value);
-    const error_msg = @typeName(T) ++ " is an invalid uniform type: GLSL uniforms can be only of type bool, i32, u32, f32, math.VecN and arrays/slices of those types.";
-
-    const inner = struct {
-        pub inline fn validateType(comptime U: type, array: bool) void {
-            _=array;
-            switch (@typeInfo(U)) {
-                .@"bool" => {},
-                .int => |i| if (i.bits != 32) {
-                    @compileError(error_msg);
-                },
-                .float => |f| if (f.bits != 32) {
-                    @compileError(error_msg);
-                },
-                .@"struct" => {
-                    switch (U) {
-                        math.Vec2, math.Vec3, math.Vec4 => {},
-                        else => @compileError(error_msg),
-                    }
-                },
-                else => @compileError(error_msg),
-            }
-        }
-
-        // The array data is passed through an opaque pointer to allow conversion of vectors.
-        pub inline fn passArray(comptime child: type, loc: gl.int, len: gl.int, val: *const anyopaque) void {
-            switch (@typeInfo(child)) {
-                .bool => gl.Uniform1iv(loc, len, @alignCast(@ptrCast(val))),
-                .int => |i| if (i.signedness == .signed) {
-                    gl.Uniform1iv(loc, len, @alignCast(@ptrCast(val)));
-                } else {
-                    gl.Uniform1uiv(loc, len, @alignCast(@ptrCast(val)));
-                },
-                .float => {
-                    gl.Uniform1fv(loc, len, @alignCast(@ptrCast(val)));
-                },
-                .@"struct" => {
-                    switch (child) {
-                        math.Vec2 => gl.Uniform2fv(loc, len, @alignCast(@ptrCast(val))),
-                        math.Vec3 => gl.Uniform3fv(loc, len, @alignCast(@ptrCast(val))),
-                        math.Vec4 => gl.Uniform4fv(loc, len, @alignCast(@ptrCast(val))),
-                        else => unreachable,
-                    }
-                },
-                else => unreachable,
-            }
-        }
-    };
-
-    // Validate the type
-    switch (@typeInfo(T)) {
-        .array => |a| if (a.len > std.math.maxInt(c_int)) {
-            @compileError("Array size is larger than a c_int");
-        } else {
-            inner.validateType(a.child, true);
-        },
-        .pointer => |p| if (p.size != .slice) {
-            @compileError(error_msg);
-        } else {
-            inner.validateType(p.child, true);
-        },
-        else => inner.validateType(T, false),
-    }
+    validateUniformType(T);
 
     // Implementation
     const location = gl.GetUniformLocation(self.program, @ptrCast(name));
@@ -189,11 +128,77 @@ pub fn setUniform(self: Shader, name: []const u8, value: anytype) bool {
                 else => unreachable,
             }
         },
-        .array => |a| inner.passArray(a.child, location, @intCast(a.len), @ptrCast(&value)),
-        .pointer => |p| inner.passArray(p.child, location, @intCast(@as(gl.uint, @truncate(value.len))), @ptrCast(value.ptr)),
+        .array => |a| passUniformArray(a.child, location, @intCast(a.len), @ptrCast(&value)),
+        .pointer => |p| passUniformArray(p.child, location, @intCast(@as(gl.uint, @truncate(value.len))), @ptrCast(value.ptr)),
         else => unreachable,
     }
 
     return true;
 }
 
+// The array data is passed through an opaque pointer to allow conversion of vectors.
+inline fn passUniformArray(comptime child: type, loc: gl.int, len: gl.int, val: *const anyopaque) void {
+    switch (@typeInfo(child)) {
+        .bool => gl.Uniform1iv(loc, len, @alignCast(@ptrCast(val))),
+        .int => |i| if (i.signedness == .signed) {
+            gl.Uniform1iv(loc, len, @alignCast(@ptrCast(val)));
+        } else {
+            gl.Uniform1uiv(loc, len, @alignCast(@ptrCast(val)));
+        },
+        .float => {
+            gl.Uniform1fv(loc, len, @alignCast(@ptrCast(val)));
+        },
+        .@"struct" => {
+            switch (child) {
+                math.Vec2 => gl.Uniform2fv(loc, len, @alignCast(@ptrCast(val))),
+                math.Vec3 => gl.Uniform3fv(loc, len, @alignCast(@ptrCast(val))),
+                math.Vec4 => gl.Uniform4fv(loc, len, @alignCast(@ptrCast(val))),
+                else => unreachable,
+            }
+        },
+        else => unreachable,
+    }
+}
+
+
+pub fn validateUniformType(comptime T: type) void {
+    const error_msg = @typeName(T) ++ " is an invalid uniform type: GLSL uniforms can be only of type bool, i32, u32, f32, math.VecN and arrays/slices of those types.";
+
+    const inner = struct {
+        pub inline fn validateType(comptime U: type, array: bool) void {
+            _=array;
+            switch (@typeInfo(U)) {
+                .@"bool" => {},
+                .int => |i| if (i.bits != 32) {
+                    @compileError(error_msg);
+                },
+                .float => |f| if (f.bits != 32) {
+                    @compileError(error_msg);
+                },
+                .@"struct" => {
+                    switch (U) {
+                        math.Vec2, math.Vec3, math.Vec4 => {},
+                        else => @compileError(error_msg),
+                    }
+                },
+                else => @compileError(error_msg),
+            }
+        }
+    };
+
+
+    switch (@typeInfo(T)) {
+        .array => |a| if (a.len > std.math.maxInt(c_int)) {
+            @compileError("Array size is larger than a c_int");
+        } else {
+            inner.validateType(a.child, true);
+        },
+        .pointer => |p| if (p.size != .slice) {
+            @compileError(error_msg);
+        } else {
+            inner.validateType(p.child, true);
+        },
+        else => inner.validateType(T, false),
+    }
+
+}

@@ -8,7 +8,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const mod = b.createModule(.{
+    const mod = b.addModule("engine", .{
         .root_source_file = b.path("src/lib.zig"),
         .target = target,
         .optimize = optimize,
@@ -42,6 +42,7 @@ pub fn build(b: *std.Build) void {
     // Run tests
     const test_exe = b.addTest(.{.root_module = mod});
     const run_test = b.addRunArtifact(test_exe);
+    run_test.has_side_effects = true;
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_test.step);
 
@@ -62,4 +63,5 @@ pub fn build(b: *std.Build) void {
     
     const run_step = b.step("run", "Run a test game");
     run_step.dependOn(&run_exe.step);
+    run_step.dependOn(b.getInstallStep());
 }
