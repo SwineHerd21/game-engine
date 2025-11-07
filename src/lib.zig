@@ -62,7 +62,7 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
 
     const values: [3]math.Vec3 = .{ .splat(0.2), .splat(-0.2), .splat(0.0) };
     test_shader.use();
-    _=test_shader.setUniform(@TypeOf(values), .{.name = "values", .value = values});
+    _=test_shader.setUniform("values", values);
 
     // TEMP
     const verts = [_]f32{
@@ -133,7 +133,7 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
 
         const timeSine = @sin(framecount / 60.0);
         framecount+=1;
-        _=shader.setUniform(f32, .{.name = "timeSine", .value = timeSine});
+        _=shader.setUniform("timeSine", timeSine);
         // TEMP
 
 

@@ -97,11 +97,13 @@ pub fn use(shader: Shader) void {
     gl.UseProgram(shader.program);
 }
 
-/// Represents a GLSL uniform field and its value.
-/// Allowed types: bool, i32, u32, f32, math.VecN and arrays/slices of/to those types.
+/// Set a uniform value in the shader program. Returns false if the uniform could not be found.
+/// Must call 'use()' before this function as uniforms are applied to the currently bound shader.
+/// Allowed types: bool, i32, u32, f32, math.VecN and arrays/slices of those types.
 /// Slices longer than max value of c_int will be truncated.
-pub fn Uniform(comptime T: type) type {
-    const error_msg = @typeName(T) ++ " is an invalid uniform type: GLSL uniforms can be only of type bool, i32, u32, f32, math.VecN and arrays/slices of/to those types.";
+pub fn setUniform(self: Shader, name: []const u8, value: anytype) bool {
+    const T = @TypeOf(value);
+    const error_msg = @typeName(T) ++ " is an invalid uniform type: GLSL uniforms can be only of type bool, i32, u32, f32, math.VecN and arrays/slices of those types.";
 
     const inner = struct {
         pub inline fn validateType(comptime U: type, array: bool) void {
@@ -123,8 +125,33 @@ pub fn Uniform(comptime T: type) type {
                 else => @compileError(error_msg),
             }
         }
+
+        // The array data is passed through an opaque pointer to allow conversion of vectors.
+        pub inline fn passArray(comptime child: type, loc: gl.int, len: gl.int, val: *const anyopaque) void {
+            switch (@typeInfo(child)) {
+                .bool => gl.Uniform1iv(loc, len, @alignCast(@ptrCast(val))),
+                .int => |i| if (i.signedness == .signed) {
+                    gl.Uniform1iv(loc, len, @alignCast(@ptrCast(val)));
+                } else {
+                    gl.Uniform1uiv(loc, len, @alignCast(@ptrCast(val)));
+                },
+                .float => {
+                    gl.Uniform1fv(loc, len, @alignCast(@ptrCast(val)));
+                },
+                .@"struct" => {
+                    switch (child) {
+                        math.Vec2 => gl.Uniform2fv(loc, len, @alignCast(@ptrCast(val))),
+                        math.Vec3 => gl.Uniform3fv(loc, len, @alignCast(@ptrCast(val))),
+                        math.Vec4 => gl.Uniform4fv(loc, len, @alignCast(@ptrCast(val))),
+                        else => unreachable,
+                    }
+                },
+                else => unreachable,
+            }
+        }
     };
 
+    // Validate the type
     switch (@typeInfo(T)) {
         .array => |a| if (a.len > std.math.maxInt(c_int)) {
             @compileError("Array size is larger than a c_int");
@@ -139,212 +166,34 @@ pub fn Uniform(comptime T: type) type {
         else => inner.validateType(T, false),
     }
 
-    return struct {
-        name: []const u8,
-        value: T,
+    // Implementation
+    const location = gl.GetUniformLocation(self.program, @ptrCast(name));
 
-        pub fn new(name: []const u8, value: T) @This() {
-            return .{
-                .name = name,
-                .value = value,
-            };
-        }
-    };
-}
-
-/// Set a uniform value in the shader program. Returns false if the uniform could not be found.
-/// Must call use() before this function as uniforms are applied to the currently bound shader.
-/// Allowed types: bool, i32, u32, f32, math.VecN and arrays/slices of/to those types.
-pub fn setUniform(self: Shader, comptime value_type: type, uniform: Uniform(value_type)) bool {
-    const location = gl.GetUniformLocation(self.program, @ptrCast(uniform.name));
     if (location == -1) {
         return false;
     }
 
-    const inner = struct {
-        // The array data is passed through an opaque pointer to allow conversion of vectors.
-        pub inline fn passArray(comptime child: type, loc: gl.int, len: gl.int, value: *const anyopaque) void {
-            switch (@typeInfo(child)) {
-                .bool => gl.Uniform1iv(loc, len, @alignCast(@ptrCast(value))),
-                .int => |i| if (i.signedness == .signed) {
-                    gl.Uniform1iv(loc, len, @alignCast(@ptrCast(value)));
-                } else {
-                    gl.Uniform1uiv(loc, len, @alignCast(@ptrCast(value)));
-                },
-                .float => {
-                    gl.Uniform1fv(loc, len, @alignCast(@ptrCast(value)));
-                },
-                .@"struct" => {
-                    switch (child) {
-                        math.Vec2 => gl.Uniform2fv(loc, len, @alignCast(@ptrCast(value))),
-                        math.Vec3 => gl.Uniform3fv(loc, len, @alignCast(@ptrCast(value))),
-                        math.Vec4 => gl.Uniform4fv(loc, len, @alignCast(@ptrCast(value))),
-                        else => unreachable,
-                    }
-                },
-                else => unreachable,
-            }
-        }
-    };
-
-    switch (@typeInfo(value_type)) {
-        .@"bool" => gl.Uniform1i(location, @intFromBool(uniform.value)),
+    switch (@typeInfo(T)) {
+        .@"bool" => gl.Uniform1i(location, @intFromBool(value)),
         .int => |i| if (i.signedness == .signed) {
-            gl.Uniform1i(location, uniform.value);
+            gl.Uniform1i(location, value);
         } else {
-            gl.Uniform1ui(location, uniform.value);
+            gl.Uniform1ui(location, value);
         },
-        .float => gl.Uniform1f(location, uniform.value),
+        .float => gl.Uniform1f(location, value),
         .@"struct" => {
-            switch (value_type) {
-                math.Vec2 => gl.Uniform2f(location, uniform.value.x, uniform.value.y),
-                math.Vec3 => gl.Uniform3f(location, uniform.value.x, uniform.value.y, uniform.value.z),
-                math.Vec4 => gl.Uniform4f(location, uniform.value.x, uniform.value.y, uniform.value.z, uniform.value.w),
+            switch (T) {
+                math.Vec2 => gl.Uniform2f(location, value.x, value.y),
+                math.Vec3 => gl.Uniform3f(location, value.x, value.y, value.z),
+                math.Vec4 => gl.Uniform4f(location, value.x, value.y, value.z, value.w),
                 else => unreachable,
             }
         },
-        .array => |a| inner.passArray(a.child, location, @intCast(a.len), @ptrCast(&uniform.value)),
-        .pointer => |p| inner.passArray(p.child, location, @intCast(@as(gl.uint, @truncate(uniform.value.len))), @ptrCast(uniform.value.ptr)),
+        .array => |a| inner.passArray(a.child, location, @intCast(a.len), @ptrCast(&value)),
+        .pointer => |p| inner.passArray(p.child, location, @intCast(@as(gl.uint, @truncate(value.len))), @ptrCast(value.ptr)),
         else => unreachable,
     }
 
     return false;
 }
 
-
-// ========== Testing ==========
-
-const expectEqual = std.testing.expectEqual;
-const expectEqualSlices = std.testing.expectEqualSlices;
-
-test "Uniforms basic types" {
-    const b = Uniform(bool){.name = "b", .value = true};
-    const int = Uniform(i32){.name = "int", .value = -1234};
-    const uint = Uniform(u32){.name = "uint", .value = 1234};
-    const float = Uniform(f32){.name = "float", .value = 12.34};
-
-    try expectEqual(true, b.value);
-    try expectEqual(-1234, int.value);
-    try expectEqual(1234, uint.value);
-    try expectEqual(12.34, float.value);
-}
-
-test "Uniform float vec2" {
-    const vec: math.Vec2 = .splat(12.34);
-    const uniform = Uniform(math.Vec2){.name = "b", .value = vec};
-
-    try expectEqual(vec, uniform.value);
-}
-
-test "Uniform float vec3" {
-    const vec: math.Vec3 = .splat(12.34);
-    const uniform = Uniform(math.Vec3){.name = "b", .value = vec};
-
-    try expectEqual(vec, uniform.value);
-}
-
-test "Uniform float vec4" {
-    const vec: math.Vec4 = .splat(12.34);
-    const uniform = Uniform(math.Vec4){.name = "b", .value = vec};
-
-    try expectEqual(vec, uniform.value);
-}
-
-test "Uniform basic arrays" {
-    const bs: [5]bool = @splat(true);
-    const ints: [5]i32 = @splat(-1234);
-    const uints: [5]u32 = @splat(1234);
-    const floats: [5]f32 = @splat(12.34);
-
-    const bs_u = Uniform([5]bool){.name = "", .value = bs};
-    const ints_u = Uniform([5]i32){.name = "", .value = ints};
-    const uints_u = Uniform([5]u32){.name = "", .value = uints};
-    const floats_u = Uniform([5]f32){.name = "", .value = floats};
-
-    try expectEqual(bs, bs_u.value);
-    try expectEqual(ints, ints_u.value);
-    try expectEqual(uints, uints_u.value);
-    try expectEqual(floats, floats_u.value);
-}
-
-test "Uniform float vec2 array" {
-    const vec: math.Vec2 = .splat(12.34);
-    const arr: [5]math.Vec2 = @splat(vec);
-
-    const uniform = Uniform([5]math.Vec2){.name = "b", .value = arr};
-
-    try expectEqual(arr, uniform.value);
-}
-
-test "Uniform float vec3 array" {
-    const vec: math.Vec3 = .splat(12.34);
-    const arr: [5]math.Vec3 = @splat(vec);
-
-    const uniform = Uniform([5]math.Vec3){.name = "b", .value = arr};
-
-    try expectEqual(arr, uniform.value);
-}
-
-test "Uniform float vec4 array" {
-    const vec: math.Vec4 = .splat(12.34);
-    const arr: [5]math.Vec4 = @splat(vec);
-
-    const uniform = Uniform([5]math.Vec4){.name = "b", .value = arr};
-
-    try expectEqual(arr, uniform.value);
-}
-
-test "Uniform basic slices" {
-    const bs: [5]bool = @splat(true);
-    const ints: [5]i32 = @splat(-1234);
-    const uints: [5]u32 = @splat(1234);
-    const floats: [5]f32 = @splat(12.34);
-
-    const bs_u = Uniform([]const bool){.name = "", .value = &bs};
-    const ints_u = Uniform([]const i32){.name = "", .value = &ints};
-    const uints_u = Uniform([]const u32){.name = "", .value = &uints};
-    const floats_u = Uniform([]const f32){.name = "", .value = &floats};
-
-    try expectEqual(&bs, bs_u.value);
-    try expectEqual(&ints, ints_u.value);
-    try expectEqual(&uints, uints_u.value);
-    try expectEqual(&floats, floats_u.value);
-}
-
-test "Uniform float vec2 slice" {
-    const vec: math.Vec2 = .splat(12.34);
-    const arr: [5]math.Vec2 = @splat(vec);
-
-    const uniform = Uniform([]const math.Vec2){.name = "b", .value = &arr};
-
-    try expectEqualSlices(math.Vec2, &arr, uniform.value);
-}
-
-test "Uniform float vec3 slice" {
-    const vec: math.Vec3 = .splat(12.34);
-    const arr: [5]math.Vec3 = @splat(vec);
-
-    const uniform = Uniform([]const math.Vec3){.name = "b", .value = &arr};
-
-    try expectEqualSlices(math.Vec3, &arr, uniform.value);
-}
-
-test "Uniform float vec4 slice" {
-    const vec: math.Vec4 = .splat(12.34);
-    const arr: [5]math.Vec4 = @splat(vec);
-
-    const uniform = Uniform([]const math.Vec4){.name = "b", .value = &arr};
-
-    try expectEqualSlices(math.Vec4, &arr, uniform.value);
-}
-
-// Until Zig supports testing for compile errors(
-// test "Uniform invalid types" {
-//     comptime {
-//         _ = Uniform(u8);
-//         _ = Uniform(*i4);
-//         _ = Uniform([2]@Vector(3, bool));
-//         _ = Uniform(type);
-//         _ = Uniform(struct {a: u2});
-//     }
-// }
