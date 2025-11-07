@@ -60,7 +60,7 @@ pub fn runApplication(on_update: *const fn() void, on_event: *const fn(event: ev
     try asset_manager.loadShader("test", "shaders/shader.vert", "shaders/shader.frag");
     const test_shader = asset_manager.getShader("test").?;
 
-    const values: [3]f32 = .{0.2, -0.2, 0.0};
+    const values: [3]math.Vec3 = .{ .splat(0.2), .splat(-0.2), .splat(0.0) };
     test_shader.use();
     _=test_shader.setUniform(@TypeOf(values), .{.name = "values", .value = values});
 
