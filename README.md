@@ -42,7 +42,7 @@ Currently runs on Linux through X11 and OpenGL.
   [ ] Getting pointer position  
   [ ] Gamepad support?  
 [ ] Rendering  
-  [ ] Meshes  
+  [x] Meshes  
   [ ] Materials  
   [ ] Textures  
   [ ] Lighting?  
@@ -55,19 +55,18 @@ Currently runs on Linux through X11 and OpenGL.
   [ ] Sound mixing  
   [ ] Effects  
 [ ] Asset management  
-  [ ] Loading assets from files  
+  [x] Loading assets from files  
   [ ] Memory management  
-  [ ] Asset metafiles  
-  [ ] Asset bundles  
-  [ ] Passing assets around  
+  [ ] Asset metadata in ZON format  
   [ ] Referencing assets in scenes, components and other assets (IDs?)  
-  [ ] Meshes, materials  
+  [ ] Meshes  
+  [x] Shaders  
+  [ ] Materials  
   [ ] Textures and sprites  
-  [ ] Shaders  
   [ ] Fonts  
   [ ] Sound files  
   [ ] Scenes  
-  [ ] General data  
+  [ ] Compiling assets to bundles?  
 [ ] Scenes/levels  
   [ ] Setting up scenes through files  
   [ ] Switching scenes  
@@ -78,16 +77,18 @@ Currently runs on Linux through X11 and OpenGL.
       [ ] Update, fixed update  
       [x] Render  
 [ ] API  
-  [ ] Math, rng, I/O, time and other utils  
+  [ ] Math (vectors, matricies)  
   [ ] Accessing input  
-  [ ] Custom systems  
-  [ ] Custom components  
+  [ ] Asset usage  
+  [ ] Event processing, updating  
+  [ ] Safe wrappings to prevent low-level field access/function calls  
 
 # BUILD  
 
-Dependencies: Zig 0.15.2, libX11, libGL  
-Zig packages: [zigglgen](https://github.com/castholm/zigglgen)  
+Requires Zig 0.15.2, OpenGL 3.3+ Core  
 
+System dependencies: libX11, libGL
+Zig packages: [zigglgen](https://github.com/castholm/zigglgen)  
 
 Build by running:  
 
@@ -97,7 +98,7 @@ Run a test window:
 
     zig build run  
 
-Run unit tests:
+Run unit tests:  
 
     zig build test --summary all  
 

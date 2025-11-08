@@ -1,6 +1,6 @@
 const std = @import("std");
 
-// Example TODO:
+// Examples TODO:
 // Rendering a rotating Utah teapot
 // Shaders with complex uniform types
 
@@ -48,7 +48,7 @@ pub fn build(b: *std.Build) void {
 
     // Run test game
     const game_mod = b.createModule(.{
-        .root_source_file = b.path("test_game/main.zig"),
+        .root_source_file = b.path("examples/shader/src/main.zig"),
         .target = target,
         .optimize = optimize,
     });

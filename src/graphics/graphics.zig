@@ -53,7 +53,7 @@ pub fn setRenderMode(mode: RenderMode) void {
 
 // ========== Render ==========
 
-pub fn new_frame() void {
+pub fn clear() void {
     gl.ClearColor(0.0, 0.0, 0.0, 1.0);
     gl.Clear(gl.COLOR_BUFFER_BIT);
 }
