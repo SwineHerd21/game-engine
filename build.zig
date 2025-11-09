@@ -17,7 +17,7 @@ pub fn build(b: *std.Build) void {
     switch (target.result.os.tag) {
         .linux => mod.linkSystemLibrary("X11", .{ .needed = true }),
         else => |os| {
-            std.debug.print("The {} operating system is not supported.", .{os});
+            std.debug.print("The {t} operating system is not supported.", .{os});
         },
     }
     // OpenGL
@@ -48,7 +48,7 @@ pub fn build(b: *std.Build) void {
 
     // Run test game
     const game_mod = b.createModule(.{
-        .root_source_file = b.path("examples/shader/src/main.zig"),
+        .root_source_file = b.path("examples/shader/main.zig"),
         .target = target,
         .optimize = optimize,
     });
