@@ -7,100 +7,175 @@ const EngineError = @import("../lib.zig").EngineError;
 const Shader = @import("../graphics/Shader.zig");
 const Mesh = @import("../graphics/Mesh.zig");
 
+const asset_cache = @import("asset_cache.zig");
+const AssetCache = asset_cache.AssetCache;
+const OpaqueAssetCache = asset_cache.OpaqueAssetCache;
+
 const AssetManager = @This();
 
 const log = std.log.scoped(.engine);
 
 gpa: std.mem.Allocator,
-asset_folder: []const u8,
-shader_cache: std.StringHashMapUnmanaged(Shader),
-mesh_cache: std.StringHashMapUnmanaged(Mesh),
+database: std.StringHashMapUnmanaged(OpaqueAssetCache),
 
 /// Call deinit after
-pub fn init(allocator: std.mem.Allocator, asset_folder: []const u8) AssetManager {
+pub fn init(allocator: std.mem.Allocator) AssetManager {
     return .{
         .gpa = allocator,
-        .asset_folder = asset_folder,
-        .shader_cache = .empty,
-        .mesh_cache = .empty,
+        .database = .empty,
     };
 }
 
 pub fn deinit(self: *AssetManager) void {
-    inline for (@typeInfo(AssetManager).@"struct".fields[2..]) |f| {
-        var cache = @field(self, f.name);
-        var iter = cache.valueIterator();
-        while (iter.next()) |a| {
-            a.*.destroy();
-        }
-        cache.deinit(self.gpa);
+    var iter = self.database.valueIterator();
+    while (iter.next()) |c| {
+        c.deinit(c.*, self.gpa);
     }
+    self.database.deinit(self.gpa);
 }
 
 // ========== General =========
 
-/// Spits out a slice of the file's entire contents. Call it you are done using them.
+/// Spits out a slice of the file's entire contents. Call 'free()' you are done using them.
 pub fn readFile(self: AssetManager, path: []const u8) EngineError![]const u8 {
-    const full_path = std.mem.concat(self.gpa, u8, &.{self.asset_folder, path}) catch return EngineError.OutOfMemory;
-    const file = std.fs.cwd().openFile(full_path, .{}) catch {
-        log.err("File '{s}' does not exist or is inaccessible", .{full_path});
+    const file = std.fs.cwd().openFile(path, .{}) catch {
+        log.err("File '{s}' does not exist or is inaccessible", .{path});
         return EngineError.IOError;
     };
     defer file.close();
     const file_stat = file.stat() catch {
-        log.err("File '{s}' is likely corrupted", .{full_path});
+        log.err("File '{s}' is likely corrupted", .{path});
         return EngineError.IOError;
     };
     const file_text = self.gpa.alloc(u8, file_stat.size) catch {
-        log.err("File '{s}' is too large, could not allocate memory", .{full_path});
+        log.err("File '{s}' is too large, could not allocate memory", .{path});
         return EngineError.OutOfMemory;
     };
+    errdefer self.gpa.free(file_text);
 
     _ = file.read(file_text) catch {
-        log.err("Could not read file '{s}'", .{full_path});
+        log.err("Could not read file '{s}'", .{path});
         return EngineError.IOError;
     };
 
     return file_text;
 }
 
-// ========== Assets ==========
-
-// TODO: make paths relative to an asset folder supplied by library user
-
-pub fn getShader(self: AssetManager, name: []const u8) ?Shader {
-    return self.shader_cache.get(name);
-    // return if (self.shader_cache.get(name)) |p| p.* else null;
+pub fn free(self: AssetManager, data: anytype) void {
+    self.gpa.free(data);
 }
 
-pub fn loadShader(self: *AssetManager, name: []const u8, vertex_file: []const u8, fragment_file: []const u8) EngineError!void {
-    errdefer log.err("Could not create shader '{s}' from files '{s}' and '{s}'", .{name, vertex_file, fragment_file});
+// ========== Cache management ==========
 
-    const vertex_code = try self.readFile(vertex_file);
-    const fragment_code = try self.readFile(fragment_file);
-
-    // const shader = self.gpa.create(Shader) catch return outOfMemory();
-    const shader = try Shader.create(vertex_code, fragment_code);
-    const name_owned = self.gpa.dupe(u8, name) catch return outOfMemory();
-
-    self.shader_cache.put(self.gpa, name_owned, shader) catch return outOfMemory();
-
-    log.debug("Loaded shader '{s}'", .{name});
+fn createCache(
+    self: AssetManager,
+    comptime T: type,
+    init_fn: fn(data: []const u8, std.mem.Allocator) T,
+    deinit_fn: fn(*T, std.mem.Allocator) void,
+) EngineError!OpaqueAssetCache {
+    const ptr = self.gpa.create(AssetCache(T)) catch return outOfMemory();
+    ptr.* = AssetCache(T){
+        .hashmap = .empty,
+        .init_fn = init_fn,
+        .deinit_fn = deinit_fn,
+    };
+    return .{
+        .ptr = @ptrCast(ptr),
+        .deinit = (struct {
+            pub fn deinit(s: OpaqueAssetCache, alloc: std.mem.Allocator) void {
+                const cache = s.cast(T);
+                cache.deinit(alloc);
+                alloc.destroy(cache);
+            }
+        }).deinit,
+    };
 }
 
-pub fn getMesh(self: AssetManager, name: []const u8) ?Mesh {
-    return self.mesh_cache.get(name);
-    // return if (self.mesh_cache.get(name)) |p| p.* else null;
+fn getCache(self: AssetManager, comptime T: type) !*AssetCache(T) {
+    const cache_opaque = self.database.getPtr(@typeName(T)) orelse {
+        log.err("Tried to load an asset of unregistered type '{s}'", .{@typeName(T)});
+        return EngineError.InvalidAssetType;
+    };
+    return cache_opaque.cast(T);
 }
 
-pub fn loadMeshTemp(self: *AssetManager, name: []const u8, vertices: []const f32, indices: []const c_uint) EngineError!void {
-    // const mesh = self.gpa.create(Mesh) catch return outOfMemory();
-    const mesh = Mesh.create(vertices, indices);
-    const name_owned = self.gpa.dupe(u8, name) catch return outOfMemory();
+/// Must be called for any type you wish to use as an asset.
+///
+/// 'init_fn' should be an initialization function and 'deinit_fn' should be used for any clean up needed.
+pub fn registerAssetType(
+    self: *AssetManager,
+    comptime T: type,
+    init_fn: fn(data: []const u8, std.mem.Allocator) T,
+    deinit_fn: fn(*T, std.mem.Allocator) void,
+) EngineError!void {
+    const name = @typeName(T);
+    const entry = self.database.getOrPut(self.gpa, name) catch return outOfMemory();
+    if (entry.found_existing) {
+        log.warn("Tried to re-register asset type '{s}'", .{name});
+        return;
+    }
 
-    self.mesh_cache.put(self.gpa, name_owned, mesh) catch return outOfMemory();
+    entry.value_ptr.* = try self.createCache(T, init_fn, deinit_fn);
+    log.info("Registered asset type '{s}'", .{name});
+}
 
-    log.debug("Loaded mesh '{s}'", .{name_owned});
+// ========== Interface ==========
+
+/// Get a pointer to an existing asset, or load it from file if it is not cached.
+pub fn getPtr(self: *AssetManager, comptime T: type, filepath: []const u8) EngineError!*T {
+    const realpath = try self.getRealpath(filepath);
+    errdefer self.gpa.free(realpath);
+
+    const cache = try self.getCache(T);
+
+    const asset_entry = cache.hashmap.getOrPut(self.gpa, realpath) catch return outOfMemory();
+    errdefer _=cache.hashmap.remove(realpath);
+    if (!asset_entry.found_existing) {
+        asset_entry.value_ptr.* = try self.loadToCache(T, cache.*, realpath);
+        log.debug("Loaded asset '{s}' of type '{s}'", .{filepath, @typeName(T)});
+    }
+
+    return asset_entry.value_ptr;
+}
+
+pub fn get(self: *AssetManager, comptime T: type, filepath: []const u8) EngineError!T {
+    return (try self.getPtr(T, filepath)).*;
+}
+
+
+pub fn getPtrNamed(self: *AssetManager, comptime T: type, name: []const u8) EngineError!?*T {
+    const cache = try self.getCache(T);
+    return cache.hashmap.getPtr(name);
+}
+
+pub fn getNamed(self: *AssetManager, comptime T: type, name: []const u8) EngineError!?T {
+    const cache = try self.getCache(T);
+    return cache.hashmap.get(name);
+}
+
+fn loadToCache(self: AssetManager, comptime T: type, cache: AssetCache(T), filepath: []const u8) EngineError!T {
+    const data = try self.readFile(filepath);
+    return cache.init_fn(data, self.gpa);
+}
+
+/// Put a pre-initialized asset into the database. Access with 'getNamed()' and 'getPtrNamed()'.
+pub fn put(self: *AssetManager, name: []const u8, value: anytype) EngineError!void {
+    const T = @TypeOf(value);
+    const cache = try self.getCache(T);
+    cache.hashmap.put(self.gpa, name, value) catch return outOfMemory();
+    log.debug("Added named asset '{s}' of type '{s}'", .{name, @typeName(T)});
+}
+
+// ========== Helpers ==========
+
+fn getRealpath(self: AssetManager, path: []const u8) EngineError![]const u8 {
+    return std.fs.cwd().realpathAlloc(self.gpa, path) catch |err| switch (err) {
+        error.OutOfMemory => return outOfMemory(),
+        else => {
+            log.err("Could not locate file '{s}'", .{path});
+            return EngineError.IOError;
+        },
+    };
 }
 
 inline fn outOfMemory() EngineError {

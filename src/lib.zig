@@ -1,18 +1,22 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+const graphics = @import("graphics/graphics.zig");
+
 pub const math = @import("math/math.zig");
 pub const events = @import("events.zig");
 pub const Input = @import("Input.zig");
 
-const graphics = @import("graphics/graphics.zig");
-
+pub const Window = @import("Window.zig");
 pub const Event = events.Event;
+
 pub const RenderMode = graphics.RenderMode;
 pub const setRenderMode = graphics.setRenderMode;
 
-const Window = @import("Window.zig");
-const AssetManager = @import("assets/AssetManager.zig");
+pub const AssetManager = @import("assets/AssetManager.zig");
+
+pub const Mesh = @import("graphics/Mesh.zig");
+pub const Shader = @import("graphics/Shader.zig");
 
 const log = std.log.scoped(.engine);
 
@@ -21,6 +25,7 @@ pub const EngineError = error {
     ShaderCompilationFailure,
     IOError,
     OutOfMemory,
+    InvalidAssetType,
 };
 
 pub fn Options(comptime T: type) type {
@@ -28,8 +33,6 @@ pub fn Options(comptime T: type) type {
         title: []const u8,
         window_width: u32,
         window_height: u32,
-
-        asset_folder: []const u8,
 
         /// Gets called when the application is initialized
         on_init: *const fn(*App(T)) EngineError!void,
@@ -50,6 +53,12 @@ pub fn App(comptime T: type) type {
     };
 }
 
+fn init_1(_:[]const u8, _:std.mem.Allocator) Shader {
+    return undefined;
+}
+fn init_2(_:[]const u8, _:std.mem.Allocator) Mesh {
+    return undefined;
+}
 /// Call this function when you are ready to start your application.
 /// The 'your_context' argument is for your own application data and will be passed to callbacks
 /// as part of an 'App' struct.
@@ -75,8 +84,11 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var asset_manager = AssetManager.init(allocator, options.asset_folder);
+    var asset_manager = AssetManager.init(allocator);
     defer asset_manager.deinit();
+
+    try asset_manager.registerAssetType(Shader, init_1, Shader.deinit);
+    try asset_manager.registerAssetType(Mesh, init_2, Mesh.deinit);
 
     var app: App(T) = .{
         .state = your_context,

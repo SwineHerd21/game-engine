@@ -11,7 +11,7 @@ vbo: gl.uint,
 ebo: gl.uint,
 index_count: gl.int,
 
-pub fn create(vertices: []const f32, indices: []const u32) Mesh {
+pub fn init(vertices: []const f32, indices: []const u32) Mesh {
     var mesh: Mesh = .{
         .vao = undefined,
         .vbo = undefined,
@@ -42,7 +42,7 @@ pub fn create(vertices: []const f32, indices: []const u32) Mesh {
     return mesh;
 }
 
-pub fn destroy(self: Mesh) void {
+pub fn deinit(self: *Mesh, _: @import("std").mem.Allocator) void {
     gl.DeleteBuffers(1, @ptrCast(&self.vbo));
     gl.DeleteBuffers(1, @ptrCast(&self.ebo));
     gl.DeleteVertexArrays(1, @ptrCast(&self.vao));

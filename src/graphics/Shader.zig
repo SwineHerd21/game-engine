@@ -12,7 +12,7 @@ const Shader = @This();
 
 program: gl.uint,
 
-pub fn create(vertex: []const u8, fragment: []const u8) EngineError!Shader {
+pub fn init(vertex: []const u8, fragment: []const u8) EngineError!Shader {
     const shader_program = gl.CreateProgram();
     if (shader_program == 0) {
         log.err("Failed to create a shader program", .{});
@@ -88,7 +88,7 @@ fn compileShader(program: gl.uint, source: []const u8, shader_type: gl.uint) Eng
     return shader_obj;
 }
 
-pub fn destroy(self: Shader) void {
+pub fn deinit(self: *Shader, _: std.mem.Allocator) void {
     gl.DeleteProgram(self.program);
 }
 
