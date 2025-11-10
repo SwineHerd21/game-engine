@@ -32,8 +32,8 @@ pub fn init(data: []const u8, assets: *AssetManager) EngineError!Material {
     }
     errdefer gl.DeleteProgram(shader_program);
 
-    const vertex_shader = try assets.get(shaders.Vertex, zon.vertex);
-    const fragment_shader = try assets.get(shaders.Fragment, zon.fragment);
+    const vertex_shader = try assets.getOrLoad(shaders.Vertex, zon.vertex);
+    const fragment_shader = try assets.getOrLoad(shaders.Fragment, zon.fragment);
 
     gl.AttachShader(shader_program, vertex_shader.obj);
     gl.AttachShader(shader_program, fragment_shader.obj);

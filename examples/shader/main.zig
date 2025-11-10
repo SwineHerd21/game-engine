@@ -33,7 +33,7 @@ const App = engine.App(State);
 fn on_init(app: *App) !void {
     var assets = app.asset_manager;
 
-    const fancy_shader = try assets.get(engine.Material, "fancy.mat");
+    const fancy_shader = assets.get(engine.Material, "fancy.mat").?;
     // You can pass even arrays of VecN to shaders!
     const values: [3]engine.math.Vec3 = .{ .splat(0.2), .splat(-0.2), .splat(0.0) };
     fancy_shader.use();
@@ -66,12 +66,12 @@ fn on_init(app: *App) !void {
 fn on_update(app: *App) !void {
     const assets = app.asset_manager;
 
-    const quad = (try assets.getNamed(engine.Mesh, "quad")).?;
-    const default_s = try assets.get(engine.Material, "default.mat");
+    const quad = assets.getNamed(engine.Mesh, "quad").?;
+    const default_s = assets.get(engine.Material, "default.mat").?;
     quad.draw(default_s);
 
-    const tri = (try assets.getNamed(engine.Mesh, "tri")).?;
-    const fancy_s = try assets.get(engine.Material, "fancy.mat");
+    const tri = assets.getNamed(engine.Mesh, "tri").?;
+    const fancy_s = assets.get(engine.Material, "fancy.mat").?;
     tri.draw(fancy_s);
 
     // This is after 'draw' because uniforms are actually applied to the currently loaded shader,

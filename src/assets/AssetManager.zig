@@ -121,11 +121,11 @@ pub fn registerAssetType(
 // ========== Interface ==========
 
 /// Get a pointer to an existing asset, or load it from file if it is not cached.
-pub fn getPtr(self: *AssetManager, comptime T: type, filepath: []const u8) EngineError!*T {
+pub fn getOrLoadPtr(self: *AssetManager, comptime T: type, filepath: []const u8) EngineError!*T {
+    const cache = try self.getCache(T);
+
     const realpath = try self.getRealpath(filepath);
     errdefer self.gpa.free(realpath);
-
-    const cache = try self.getCache(T);
 
     const asset_entry = cache.hashmap.getOrPut(self.gpa, realpath) catch return outOfMemory();
     errdefer _=cache.hashmap.remove(realpath);
@@ -140,8 +140,28 @@ pub fn getPtr(self: *AssetManager, comptime T: type, filepath: []const u8) Engin
     return asset_entry.value_ptr;
 }
 
-pub fn get(self: *AssetManager, comptime T: type, filepath: []const u8) EngineError!T {
-    return (try self.getPtr(T, filepath)).*;
+/// Get a copy of an existing asset, or load it from file if it is not cached.
+pub fn getOrLoad(self: *AssetManager, comptime T: type, filepath: []const u8) EngineError!T {
+    return (try self.getOrLoadPtr(T, filepath)).*;
+}
+
+/// Get a pointer to an asset if it is loaded.
+pub fn getPtr(self: AssetManager, comptime T: type, filepath: []const u8) ?*T {
+    const cache = self.getCache(T) catch gotUnregistered(T);
+
+    const realpath = self.getRealpath(filepath) catch return null;
+    defer self.gpa.free(realpath);
+
+    return cache.hashmap.getPtr(realpath);
+}
+
+/// Get a copy of an asset if it is loaded.
+pub fn get(self: AssetManager, comptime T: type, filepath: []const u8) ?T {
+    const cache = self.getCache(T) catch gotUnregistered(T);
+    const realpath = self.getRealpath(filepath) catch return null;
+    defer self.gpa.free(realpath);
+
+    return cache.hashmap.get(realpath);
 }
 
 fn createAsset(self: *AssetManager, comptime T: type, cache: AssetCache(T), filepath: []const u8) EngineError!T {
@@ -153,9 +173,32 @@ fn createAsset(self: *AssetManager, comptime T: type, cache: AssetCache(T), file
     };
 }
 
+/// Put a pre-initialized asset into the database. Access with 'getNamed()' and 'getPtrNamed()'.
+pub fn put(self: *AssetManager, name: []const u8, value: anytype) EngineError!void {
+    const T = @TypeOf(value);
+    const cache = try self.getCache(T);
+    cache.hashmap.put(self.gpa, name, value) catch return outOfMemory();
+    log.debug("Added named asset '{s}' of type '{s}'", .{name, @typeName(T)});
+}
+
+/// Get a pointer to an asset added with 'put()'
+pub fn getPtrNamed(self: *AssetManager, comptime T: type, name: []const u8) ?*T {
+    const cache = self.getCache(T) catch gotUnregistered(T);
+    return cache.hashmap.getPtr(name);
+}
+
+/// Get a copy of an asset added with 'put()'
+pub fn getNamed(self: *AssetManager, comptime T: type, name: []const u8) ?T {
+    const cache = self.getCache(T) catch gotUnregistered(T);
+    return cache.hashmap.get(name);
+}
+
+// ========== Helpers ==========
+
+/// Helper function for parsing a ZON file into a specific type
 pub fn parseZon(self: AssetManager, comptime T: type, data: []const u8) EngineError!T {
     var diag: std.zon.parse.Diagnostics = .{};
-    const value = std.zon.parse.fromSliceAlloc(T, self.gpa, @ptrCast(data), &diag, .{}) catch |err| switch (err) {
+    const value = std.zon.parse.fromSlice(T, self.gpa, @ptrCast(data), &diag, .{}) catch |err| switch (err) {
         error.OutOfMemory => {
             log.err("Out of memory", .{});
             return EngineError.OutOfMemory;
@@ -168,26 +211,6 @@ pub fn parseZon(self: AssetManager, comptime T: type, data: []const u8) EngineEr
 
     return value;
 }
-
-/// Put a pre-initialized asset into the database. Access with 'getNamed()' and 'getPtrNamed()'.
-pub fn put(self: *AssetManager, name: []const u8, value: anytype) EngineError!void {
-    const T = @TypeOf(value);
-    const cache = try self.getCache(T);
-    cache.hashmap.put(self.gpa, name, value) catch return outOfMemory();
-    log.debug("Added named asset '{s}' of type '{s}'", .{name, @typeName(T)});
-}
-
-pub fn getPtrNamed(self: *AssetManager, comptime T: type, name: []const u8) EngineError!?*T {
-    const cache = try self.getCache(T);
-    return cache.hashmap.getPtr(name);
-}
-
-pub fn getNamed(self: *AssetManager, comptime T: type, name: []const u8) EngineError!?T {
-    const cache = try self.getCache(T);
-    return cache.hashmap.get(name);
-}
-
-// ========== Helpers ==========
 
 fn getRealpath(self: AssetManager, path: []const u8) EngineError![]const u8 {
     const asset_path = std.mem.concat(self.gpa, u8, &.{self.asset_folder, "/", path}) catch return outOfMemory();
@@ -204,4 +227,9 @@ fn getRealpath(self: AssetManager, path: []const u8) EngineError![]const u8 {
 inline fn outOfMemory() EngineError {
     log.err("Out of memory", .{});
     return EngineError.OutOfMemory;
+}
+
+inline fn gotUnregistered(comptime T: type) @TypeOf(null) {
+    log.err("Tried to get unregistered asset type '{s}'", .{@typeName(T)});
+    return null;
 }
