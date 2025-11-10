@@ -26,18 +26,17 @@ pub fn main() !void {
 
 const State = struct {
     rendermode: engine.RenderMode,
-    framecount: f32 = 0,
 };
 const App = engine.App(State);
 
 fn on_init(app: *App) !void {
     var assets = app.asset_manager;
 
-    const fancy_shader = assets.get(engine.Material, "fancy.mat").?;
+    const fancy_material = try assets.getOrLoad(engine.Material, "fancy.mat");
     // You can pass even arrays of VecN to shaders!
     const values: [3]engine.math.Vec3 = .{ .splat(0.2), .splat(-0.2), .splat(0.0) };
-    fancy_shader.use();
-    _=fancy_shader.setUniform("values", values);
+    fancy_material.use();
+    _=fancy_material.setUniform("values", values);
 
     // TEMP
     const verts = [_]f32{
@@ -67,18 +66,19 @@ fn on_update(app: *App) !void {
     const assets = app.asset_manager;
 
     const quad = assets.getNamed(engine.Mesh, "quad").?;
-    const default_s = assets.get(engine.Material, "default.mat").?;
-    quad.draw(default_s);
+    // This asset has not been loaded yet so we should use 'assets.getOrLoad()'
+    const default_mat = try assets.getOrLoad(engine.Material, "default.mat");
+    quad.draw(default_mat);
 
     const tri = assets.getNamed(engine.Mesh, "tri").?;
-    const fancy_s = assets.get(engine.Material, "fancy.mat").?;
-    tri.draw(fancy_s);
+    // This asset was already loaded in 'on_init()' so we can use 'assets.get()'
+    const fancy_mat = assets.get(engine.Material, "fancy.mat").?;
+    tri.draw(fancy_mat);
 
     // This is after 'draw' because uniforms are actually applied to the currently loaded shader,
     // not the one passed to the 'setUniform' method)
-    app.state.framecount+=1;
-    const timeSine = @sin(app.state.framecount / 60.0);
-    _=fancy_s.setUniform("timeSine", timeSine);
+    const timeSine = @sin(app.time.totalRuntime);
+    _=fancy_mat.setUniform("timeSine", timeSine);
 }
 
 fn on_event(app: *App, event: engine.Event) !void {

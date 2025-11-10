@@ -14,6 +14,7 @@ pub const RenderMode = graphics.RenderMode;
 pub const setRenderMode = graphics.setRenderMode;
 
 pub const AssetManager = @import("assets/AssetManager.zig");
+pub const Time = @import("Time.zig");
 
 pub const Mesh = @import("graphics/Mesh.zig");
 pub const Material = @import("graphics/Material.zig");
@@ -54,6 +55,7 @@ pub fn App(comptime T: type) type {
     return struct {
         state: *T,
         asset_manager: *AssetManager,
+        time: Time,
     };
 }
 
@@ -96,6 +98,7 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
     var app: App(T) = .{
         .state = your_context,
         .asset_manager = &asset_manager,
+        .time = try .init(),
     };
 
     try options.on_init(&app);
@@ -125,6 +128,8 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
         }
 
         graphics.clear();
+
+        app.time.update();
 
         // TODO: engine update loop
         try options.on_update(&app);

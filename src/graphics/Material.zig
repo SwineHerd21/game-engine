@@ -9,7 +9,7 @@ const AssetManager = @import("../assets/AssetManager.zig");
 
 const shaders = @import("shaders.zig");
 
-const log = std.log.scoped(.opengl);
+const log_gl = std.log.scoped(.opengl);
 
 const Material = @This();
 
@@ -27,7 +27,7 @@ pub fn init(data: []const u8, assets: *AssetManager) EngineError!Material {
 
     const shader_program = gl.CreateProgram();
     if (shader_program == 0) {
-        log.err("Failed to create a shader program", .{});
+        log_gl.err("Failed to create a shader program", .{});
         return EngineError.ShaderCompilationFailure;
     }
     errdefer gl.DeleteProgram(shader_program);
@@ -48,14 +48,14 @@ pub fn init(data: []const u8, assets: *AssetManager) EngineError!Material {
     gl.GetProgramiv(shader_program, gl.LINK_STATUS, @ptrCast(&success));
     if (success == 0) {
         gl.GetProgramInfoLog(shader_program, 1024, null, @ptrCast(&info_log));
-        log.err("Failed to link shader program: {s}", .{info_log});
+        log_gl.err("Failed to link shader program: {s}", .{info_log});
         return EngineError.ShaderCompilationFailure;
     }
     gl.ValidateProgram(shader_program);
     gl.GetProgramiv(shader_program, gl.VALIDATE_STATUS, @ptrCast(&success));
     if (success == 0) {
         gl.GetProgramInfoLog(shader_program, 1024, null, @ptrCast(&info_log));
-        log.err("Invalid shader program: {s}", .{info_log});
+        log_gl.err("Invalid shader program: {s}", .{info_log});
         return EngineError.ShaderCompilationFailure;
     }
 

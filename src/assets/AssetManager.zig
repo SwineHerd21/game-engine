@@ -147,7 +147,7 @@ pub fn getOrLoad(self: *AssetManager, comptime T: type, filepath: []const u8) En
 
 /// Get a pointer to an asset if it is loaded.
 pub fn getPtr(self: AssetManager, comptime T: type, filepath: []const u8) ?*T {
-    const cache = self.getCache(T) catch gotUnregistered(T);
+    const cache = self.getCache(T) catch return gotUnregistered(T);
 
     const realpath = self.getRealpath(filepath) catch return null;
     defer self.gpa.free(realpath);
@@ -157,7 +157,7 @@ pub fn getPtr(self: AssetManager, comptime T: type, filepath: []const u8) ?*T {
 
 /// Get a copy of an asset if it is loaded.
 pub fn get(self: AssetManager, comptime T: type, filepath: []const u8) ?T {
-    const cache = self.getCache(T) catch gotUnregistered(T);
+    const cache = self.getCache(T) catch return gotUnregistered(T);
     const realpath = self.getRealpath(filepath) catch return null;
     defer self.gpa.free(realpath);
 
@@ -183,13 +183,13 @@ pub fn put(self: *AssetManager, name: []const u8, value: anytype) EngineError!vo
 
 /// Get a pointer to an asset added with 'put()'
 pub fn getPtrNamed(self: *AssetManager, comptime T: type, name: []const u8) ?*T {
-    const cache = self.getCache(T) catch gotUnregistered(T);
+    const cache = self.getCache(T) catch return gotUnregistered(T);
     return cache.hashmap.getPtr(name);
 }
 
 /// Get a copy of an asset added with 'put()'
 pub fn getNamed(self: *AssetManager, comptime T: type, name: []const u8) ?T {
-    const cache = self.getCache(T) catch gotUnregistered(T);
+    const cache = self.getCache(T) catch return gotUnregistered(T);
     return cache.hashmap.get(name);
 }
 
