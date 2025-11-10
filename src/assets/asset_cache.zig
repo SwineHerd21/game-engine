@@ -1,11 +1,12 @@
 const std = @import("std");
 
 const Allocator = std.mem.Allocator;
+const AssetManager = @import("AssetManager.zig");
 
 pub fn AssetCache(comptime T: type) type {
     return struct {
         hashmap: std.StringHashMapUnmanaged(T),
-        init_fn: *const fn(data: []const u8, Allocator) T,
+        init_fn: *const fn(data: []const u8, *AssetManager) anyerror!T,
         deinit_fn: *const fn(*T, Allocator) void,
 
         const Self = @This();

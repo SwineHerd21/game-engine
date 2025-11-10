@@ -1,5 +1,4 @@
 .{
 	.vertex = "./default.vert",
 	.fragment = "./default.frag",
-	.uniforms = .{},
 }

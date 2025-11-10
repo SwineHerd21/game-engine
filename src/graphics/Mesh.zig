@@ -1,8 +1,11 @@
 //! Holds a VAO, VBO, EBO, etc.
 
+const std = @import("std");
 const gl = @import("gl");
 
-const Shader = @import("Shader.zig");
+const Allocator = std.mem.Allocator;
+const AssetManager = @import("../assets/AssetManager.zig");
+const Material = @import("Material.zig");
 
 const Mesh = @This();
 
@@ -48,7 +51,7 @@ pub fn deinit(self: *Mesh, _: @import("std").mem.Allocator) void {
     gl.DeleteVertexArrays(1, @ptrCast(&self.vao));
 }
 
-pub fn draw(self: Mesh, shader: Shader) void {
+pub fn draw(self: Mesh, shader: Material) void {
     shader.use();
     gl.BindVertexArray(self.vao);
     gl.DrawElements(gl.TRIANGLES, self.index_count, gl.UNSIGNED_INT, 0);

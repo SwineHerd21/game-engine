@@ -8,9 +8,6 @@ const native = @import("../platform.zig").native;
 const Window = @import("../Window.zig");
 const EngineError = @import("../lib.zig").EngineError;
 
-const Shader = @import("Shader.zig");
-const Mesh = @import("Mesh.zig");
-
 const log = std.log.scoped(.opengl);
 
 pub const RenderMode = enum {

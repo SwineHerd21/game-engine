@@ -16,7 +16,8 @@ pub const setRenderMode = graphics.setRenderMode;
 pub const AssetManager = @import("assets/AssetManager.zig");
 
 pub const Mesh = @import("graphics/Mesh.zig");
-pub const Shader = @import("graphics/Shader.zig");
+pub const Material = @import("graphics/Material.zig");
+pub const shaders = @import("graphics/shaders.zig");
 
 const log = std.log.scoped(.engine);
 
@@ -26,6 +27,7 @@ pub const EngineError = error {
     IOError,
     OutOfMemory,
     InvalidAssetType,
+    AssetLoadError,
 };
 
 pub fn Options(comptime T: type) type {
@@ -33,6 +35,8 @@ pub fn Options(comptime T: type) type {
         title: []const u8,
         window_width: u32,
         window_height: u32,
+
+        asset_folder: []const u8,
 
         /// Gets called when the application is initialized
         on_init: *const fn(*App(T)) EngineError!void,
@@ -53,10 +57,7 @@ pub fn App(comptime T: type) type {
     };
 }
 
-fn init_1(_:[]const u8, _:std.mem.Allocator) Shader {
-    return undefined;
-}
-fn init_2(_:[]const u8, _:std.mem.Allocator) Mesh {
+fn init_2(_:[]const u8, _:*AssetManager) !Mesh {
     return undefined;
 }
 /// Call this function when you are ready to start your application.
@@ -84,10 +85,12 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    var asset_manager = AssetManager.init(allocator);
+    var asset_manager = AssetManager.init(allocator, options.asset_folder);
     defer asset_manager.deinit();
 
-    try asset_manager.registerAssetType(Shader, init_1, Shader.deinit);
+    try asset_manager.registerAssetType(shaders.Vertex, shaders.Vertex.init, shaders.Vertex.deinit);
+    try asset_manager.registerAssetType(shaders.Fragment, shaders.Fragment.init, shaders.Fragment.deinit);
+    try asset_manager.registerAssetType(Material, Material.init, Material.deinit);
     try asset_manager.registerAssetType(Mesh, init_2, Mesh.deinit);
 
     var app: App(T) = .{
