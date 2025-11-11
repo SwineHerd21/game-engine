@@ -14,5 +14,7 @@ pub const KeyModifiers = packed struct {
     control: bool,
     alt: bool,
     super: bool,
+    caps_lock: bool,
+    num_lock: bool,
 };
 

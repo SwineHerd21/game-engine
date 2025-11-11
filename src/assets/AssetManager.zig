@@ -1,4 +1,7 @@
 //! Loads requested assets into caches with string identifiers.
+//!
+//! Getting an asset is somewhat expensive, especially if it has not been loaded yet,
+//! so it is recommended to get an asset once and store a reference to it.
 
 const std = @import("std");
 
@@ -115,26 +118,58 @@ pub fn registerAssetType(
     }
 
     entry.value_ptr.* = try self.createCache(T, init_fn, deinit_fn);
-    log.info("Registered asset type '{s}'", .{name});
+    log.debug("Registered asset type '{s}'", .{name});
 }
 
 // ========== Interface ==========
+
+/// Load an asset into memory.
+pub fn load(self: *AssetManager, comptime T: type, filepath: []const u8) EngineError!void {
+    const cache = try self.getCache(T);
+
+    const canon_path = try self.getCanonicalPath(filepath);
+    errdefer self.gpa.free(canon_path);
+
+    const asset = self.createAsset(T, cache.*, canon_path) catch {
+        log.err("Failed to load asset '{s}' of type '{s}'", .{canon_path, @typeName(T)});
+        return EngineError.AssetLoadError;
+    };
+    cache.hashmap.put(self.gpa, canon_path, asset) catch return outOfMemory();
+    log.debug("Loaded asset '{s}' of type '{s}'", .{canon_path, @typeName(T)});
+}
+
+/// Load a batch of asset into memory at once. If any asset could not be loaded return an error.
+pub fn loadBatch(self: *AssetManager, comptime T: type, files: []const []const u8) EngineError!void {
+    const cache = try self.getCache(T);
+
+    for (files, 0..files.len) |filepath, _| {
+        const canon_path = try self.getCanonicalPath(filepath);
+        errdefer self.gpa.free(canon_path);
+
+        const asset = self.createAsset(T, cache.*, canon_path) catch {
+            log.err("Failed to load asset '{s}' of type '{s}'", .{canon_path, @typeName(T)});
+            return EngineError.AssetLoadError;
+        };
+        cache.hashmap.put(self.gpa, canon_path, asset) catch return outOfMemory();
+        log.debug("Loaded asset '{s}' of type '{s}'", .{canon_path, @typeName(T)});
+    }
+}
 
 /// Get a pointer to an existing asset, or load it from file if it is not cached.
 pub fn getOrLoadPtr(self: *AssetManager, comptime T: type, filepath: []const u8) EngineError!*T {
     const cache = try self.getCache(T);
 
-    const realpath = try self.getRealpath(filepath);
-    errdefer self.gpa.free(realpath);
+    const canon_path = try self.getCanonicalPath(filepath);
+    errdefer self.gpa.free(canon_path);
 
-    const asset_entry = cache.hashmap.getOrPut(self.gpa, realpath) catch return outOfMemory();
-    errdefer _=cache.hashmap.remove(realpath);
+    const asset_entry = cache.hashmap.getOrPut(self.gpa, canon_path) catch return outOfMemory();
+    errdefer _=cache.hashmap.remove(canon_path);
     if (!asset_entry.found_existing) {
-        asset_entry.value_ptr.* = self.createAsset(T, cache.*, realpath) catch {
-            log.err("Failed to load asset '{s}' of type '{s}'", .{filepath, @typeName(T)});
+        asset_entry.value_ptr.* = self.createAsset(T, cache.*, canon_path) catch {
+            log.err("Failed to load asset '{s}' of type '{s}'", .{canon_path, @typeName(T)});
             return EngineError.AssetLoadError;
         };
-        log.debug("Loaded asset '{s}' of type '{s}'", .{filepath, @typeName(T)});
+        log.debug("Loaded asset '{s}' of type '{s}'", .{canon_path, @typeName(T)});
     }
 
     return asset_entry.value_ptr;
@@ -149,24 +184,24 @@ pub fn getOrLoad(self: *AssetManager, comptime T: type, filepath: []const u8) En
 pub fn getPtr(self: AssetManager, comptime T: type, filepath: []const u8) ?*T {
     const cache = self.getCache(T) catch return gotUnregistered(T);
 
-    const realpath = self.getRealpath(filepath) catch return null;
-    defer self.gpa.free(realpath);
+    const canon_path = self.getCanonicalPath(filepath) catch return null;
+    defer self.gpa.free(canon_path);
 
-    return cache.hashmap.getPtr(realpath);
+    return cache.hashmap.getPtr(canon_path);
 }
 
 /// Get a copy of an asset if it is loaded.
 pub fn get(self: AssetManager, comptime T: type, filepath: []const u8) ?T {
     const cache = self.getCache(T) catch return gotUnregistered(T);
-    const realpath = self.getRealpath(filepath) catch return null;
-    defer self.gpa.free(realpath);
+    const canon_path = self.getCanonicalPath(filepath) catch return null;
+    defer self.gpa.free(canon_path);
 
-    return cache.hashmap.get(realpath);
+    return cache.hashmap.get(canon_path);
 }
 
 fn createAsset(self: *AssetManager, comptime T: type, cache: AssetCache(T), filepath: []const u8) EngineError!T {
     const data = try self.readFile(filepath);
-    errdefer self.gpa.free(data);
+    defer self.gpa.free(data);
     return cache.init_fn(data, self) catch {
         log.err("Could not initialize asset '{s}'", .{filepath});
         return EngineError.AssetLoadError;
@@ -212,16 +247,10 @@ pub fn parseZon(self: AssetManager, comptime T: type, data: []const u8) EngineEr
     return value;
 }
 
-fn getRealpath(self: AssetManager, path: []const u8) EngineError![]const u8 {
-    const asset_path = std.mem.concat(self.gpa, u8, &.{self.asset_folder, "/", path}) catch return outOfMemory();
-    defer self.gpa.free(asset_path);
-    return std.fs.cwd().realpathAlloc(self.gpa, asset_path) catch |err| switch (err) {
-        error.OutOfMemory => return outOfMemory(),
-        else => {
-            log.err("Could not locate file '{s}'", .{path});
-            return EngineError.IOError;
-        },
-    };
+fn getCanonicalPath(self: AssetManager, path: []const u8) EngineError![]const u8 {
+    const here_path = std.mem.concat(self.gpa, u8, &.{"./", path}) catch return outOfMemory();
+    defer self.gpa.free(here_path);
+    return std.fs.path.resolve(self.gpa, &.{self.asset_folder, here_path}) catch return outOfMemory();
 }
 
 inline fn outOfMemory() EngineError {
@@ -232,4 +261,39 @@ inline fn outOfMemory() EngineError {
 inline fn gotUnregistered(comptime T: type) @TypeOf(null) {
     log.err("Tried to get unregistered asset type '{s}'", .{@typeName(T)});
     return null;
+}
+
+// ========== Tests ==========
+
+test "Create cache" {
+    const Material = @import("../graphics/Material.zig");
+    var assets = AssetManager.init(std.testing.allocator_instance.allocator(), "");
+    defer assets.deinit();
+
+    try assets.registerAssetType(Material, Material.init, Material.deinit);
+}
+
+test "Get cache" {
+    const Material = @import("../graphics/Material.zig");
+    var assets = AssetManager.init(std.testing.allocator_instance.allocator(), "");
+    defer assets.deinit();
+    try assets.registerAssetType(Material, Material.init, Material.deinit);
+
+    const cache = try assets.getCache(Material);
+    try std.testing.expectEqual(AssetCache(Material), @TypeOf(cache.*));
+}
+
+test "Load material" {
+    const Material = @import("../graphics/Material.zig");
+    const stub = struct {
+        pub fn init(_:[]const u8,_:*AssetManager) !Material{
+            return std.mem.zeroes(Material);
+        }
+        pub fn deinit(_:*Material,_:std.mem.Allocator)void{}
+    };
+    var assets = AssetManager.init(std.testing.allocator_instance.allocator(), "examples/shader/assets");
+    defer assets.deinit();
+    try assets.registerAssetType(Material, stub.init, stub.deinit);
+
+    try assets.load(Material, "default.mat");
 }

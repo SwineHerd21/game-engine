@@ -137,8 +137,8 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
         window.swapBuffers();
     }
 
-    log.info("Shutting down...", .{});
     try options.on_deinit(&app);
+    log.info("Shutting down...", .{});
 }
 
 test {

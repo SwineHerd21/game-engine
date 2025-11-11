@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const Window = @import("../Window.zig");
+const Input = @import("../Input.zig");
 const events = @import("../events.zig");
 const EngineError = @import("../lib.zig").EngineError;
 
@@ -41,7 +42,7 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
 
     var window_atts: c.XSetWindowAttributes = undefined;
     window_atts.colormap = cmap;
-    window_atts.event_mask = c.KeymapStateMask | c.KeyPressMask | c.KeyReleaseMask | c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask | c.FocusChangeMask | c.StructureNotifyMask | c.ExposureMask;
+    window_atts.event_mask = c.KeyPressMask | c.KeyReleaseMask | c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask | c.FocusChangeMask | c.StructureNotifyMask | c.ExposureMask;
 
     const window = c.XCreateWindow(display, root, 0, 0, width, height, 0, vi.depth, c.InputOutput, vi.visual, c.CWColormap | c.CWEventMask, &window_atts);
 
@@ -88,19 +89,13 @@ pub inline fn areEventsPending(ctx: Context) bool {
 pub inline fn consumeEvent(window: *Window) ?events.Event {
     _ = c.XNextEvent(window.inner.display, &window.inner.event);
     switch (window.inner.event.type) {
-        c.KeymapNotify => _ = c.XRefreshKeyboardMapping(&window.inner.event.xmapping),
         c.KeyPress => {
             const ev = window.inner.event.xkey;
 
             return events.Event{
                 .key_press = .{
                     .keycode = @truncate(ev.keycode),
-                    .modifiers = .{
-                        .shift = ev.state & (1<<0) == 1,
-                        .control = ev.state & (1<<2) == 1<<2,
-                        .alt = ev.state & (1<<3) == 1<<3,
-                        .super = ev.state & (1<<6) == 1<<6,
-                    },
+                    .modifiers = translateKeyPressState(ev.state),
                 },
             };
         },
@@ -110,12 +105,7 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
             return events.Event{
                 .key_release = .{
                     .keycode = @truncate(ev.keycode),
-                    .modifiers = .{
-                        .shift = ev.state & (1<<0) == 1,
-                        .control = ev.state & (1<<2) == 1<<2,
-                        .alt = ev.state & (1<<3) == 1<<3,
-                        .super = ev.state & (1<<6) == 1<<6,
-                    },
+                    .modifiers = translateKeyPressState(ev.state),
                 },
             };
         },
@@ -194,6 +184,17 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
         else => {},
     }
     return null;
+}
+
+inline fn translateKeyPressState(state: c_uint) Input.KeyModifiers {
+    return .{
+        .shift = state & c.ShiftMask != 0,
+        .control = state & c.ControlMask != 0,
+        .alt = state & c.Mod1Mask != 0,
+        .super = state & c.Mod4Mask != 0,
+        .caps_lock = state & c.LockMask != 0,
+        .num_lock = state & c.Mod2Mask != 0,
+    };
 }
 
 // ========== OTHER ==========

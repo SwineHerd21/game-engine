@@ -78,10 +78,10 @@ pub fn use(shader: Material) void {
     gl.UseProgram(shader.program);
 }
 
-/// Set a uniform value in the shader program. Returns false if the uniform could not be found.
+/// Set a uniform value in the shader program if it exists.
 /// Allowed types: bool, i32, u32, f32, math.VecN and arrays/slices of those types.
 /// Slices longer than max value of c_int will be truncated.
-pub fn setUniform(self: Material, name: []const u8, value: anytype) bool {
+pub fn setUniform(self: Material, name: []const u8, value: anytype) void {
     const T = @TypeOf(value);
     validateUniformType(T);
 
@@ -89,7 +89,7 @@ pub fn setUniform(self: Material, name: []const u8, value: anytype) bool {
     const location = gl.GetUniformLocation(self.program, @ptrCast(name));
 
     if (location == -1) {
-        return false;
+        return;
     }
 
     // OpenGL uniform functions apply to the currently bound shader
@@ -114,8 +114,6 @@ pub fn setUniform(self: Material, name: []const u8, value: anytype) bool {
         .pointer => |p| passUniformArray(p.child, location, @intCast(@as(gl.uint, @truncate(value.len))), @ptrCast(value.ptr)),
         else => unreachable,
     }
-
-    return true;
 }
 
 // The array data is passed through an opaque pointer to allow conversion of vectors.
