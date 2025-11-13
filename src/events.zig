@@ -1,12 +1,12 @@
 //! Contains handlers for various window events
 
-const input = @import("Input.zig");
+const Input = @import("Input.zig");
 
 pub const Event = union(enum) {
-    key_press: input.Key,
-    key_release: input.Key,
-    pointer_button_press: input.PointerButton,
-    pointer_button_release: input.PointerButton,
+    key_press: KeyEvent,
+    key_release: KeyEvent,
+    mouse_button_press: MouseButtonEvent,
+    mouse_button_release: MouseButtonEvent,
     pointer_motion: @Vector(2, i32),
     // TODO: ? give position on enter/exit
     pointer_enter: void,
@@ -16,6 +16,18 @@ pub const Event = union(enum) {
     window_resize: WindowResize,
     window_close: void,
     window_expose: void,
+};
+
+pub const KeyEvent = struct {
+    key: Input.Key,
+    modifiers: Input.ModifierKeys,
+    action: Input.ButtonAction,
+};
+
+pub const MouseButtonEvent = struct {
+    button: Input.MouseButton,
+    modifiers: Input.ModifierKeys,
+    action: Input.ButtonAction,
 };
 
 const WindowResize = struct {

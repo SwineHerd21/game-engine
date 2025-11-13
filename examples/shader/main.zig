@@ -82,15 +82,26 @@ fn on_update(app: *App) !void {
     const cur_fps = 1/app.time.deltaTime;
     avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);
     frames += 1;
-    std.debug.print("\rAverage FPS: {}; Current FPS: {}", .{avrg_fps,cur_fps});
+    // std.debug.print("\rAverage FPS: {}; Current FPS: {}", .{avrg_fps,cur_fps});
 }
 
 fn on_event(app: *App, event: engine.Event) !void {
     switch (event) {
-        .key_press => {
+        .key_press => |ev| {
+            if (ev.action == .Repeat) return;
             // Switch between solid and wireframe rendering
             app.state.rendermode = @enumFromInt(@intFromEnum(app.state.rendermode) ^ 1);
             engine.setRenderMode(app.state.rendermode);
+            std.debug.print("pressed {t} ", .{ev.key});
+        },
+        .key_release => |ev| {
+            std.debug.print("released {t} ", .{ev.key});
+        },
+        .mouse_button_press => |ev| {
+            std.debug.print("pressed m {t} ", .{ev.button});
+        },
+        .mouse_button_release => |ev| {
+            std.debug.print("released m {t} ", .{ev.button});
         },
         else => {},
     }
