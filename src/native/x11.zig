@@ -60,6 +60,19 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
 
     log.info("Running on Linux with X11", .{});
 
+    var min_keycodes: c_int = undefined;
+    var max_keycodes: c_int = undefined;
+    var keysyms_per_keycode: c_int = undefined;
+    _=c.XDisplayKeycodes(display, &min_keycodes, &max_keycodes);
+    const keysyms = c.XGetKeyboardMapping(display, @intCast(min_keycodes), max_keycodes-min_keycodes, &keysyms_per_keycode);
+    const keysyms_len: usize = @intCast(keysyms_per_keycode*(max_keycodes-min_keycodes));
+    for (0..keysyms_len) |i| {
+        if (i%@as(usize, @intCast(keysyms_per_keycode)) != 0) continue;
+        const keycode = @divFloor(@as(c_int, @intCast(i)), keysyms_per_keycode) + min_keycodes;
+        const str: ?[*:0]u8 = @ptrCast(c.XKeysymToString(keysyms[i]));
+        std.debug.print("{}: {X}, {s}\n", .{keycode, keysyms[i], str orelse ""});
+    }
+
     // OpenGL context
     const glx = c.glXCreateContext(display, vi, null, c.GL_TRUE);
     _ = c.glXMakeCurrent(display, window, glx);
@@ -91,7 +104,8 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
     switch (window.inner.event.type) {
         c.KeyPress => {
             const ev = window.inner.event.xkey;
-
+            const keysym = c.XKeycodeToKeysym(window.inner.display, @intCast(ev.keycode), 0);
+            std.debug.print("\n{}; {X}: {s}\n", .{ev.keycode, keysym, c.XKeysymToString(keysym)});
             return events.Event{
                 .key_press = .{
                     .keycode = @truncate(ev.keycode),
