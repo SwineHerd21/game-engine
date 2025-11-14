@@ -3,6 +3,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const AssetManager = @import("AssetManager.zig");
 
+// Inspired by https://devlog.hexops.com/2022/lets-build-ecs-part-2-databases/
+
 /// Stores a whole type of assets, knows how to initialize and deinitialize them.
 pub fn AssetCache(comptime T: type) type {
     return struct {

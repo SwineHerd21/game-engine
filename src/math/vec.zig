@@ -1,6 +1,8 @@
 const std = @import("std");
 const Type = std.builtin.Type;
 
+// Somewhat stolen from mach and Godot
+
 /// A vector with 2 elements of f32
 pub const Vec2 = extern struct {
     const Vec = @This();
