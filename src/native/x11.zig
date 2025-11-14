@@ -330,7 +330,7 @@ fn setupKeycodes(display: *c.Display) [256]Input.Key {
         .{ .key = .Numpad_7, .name = "KP7" },
         .{ .key = .Numpad_8, .name = "KP8" },
         .{ .key = .Numpad_9, .name = "KP9" },
-        .{ .key = .Numpad_Period, .name = "KPDL" },
+        .{ .key = .Numpad_Decimal, .name = "KPDL" },
         .{ .key = .Numpad_Divide, .name = "KPDV" },
         .{ .key = .Numpad_Multiply, .name = "KPMU" },
         .{ .key = .Numpad_Minus, .name = "KPSU" },

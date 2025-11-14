@@ -21,8 +21,7 @@ pub const Vertex = struct {
     pub fn deinit(self: *Self, _: Allocator) void {
         gl.DeleteShader(self.obj);
     }
-
-    };
+};
 
 pub const Fragment = struct {
     obj: gl.uint,

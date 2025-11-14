@@ -27,7 +27,7 @@ pub const OpaqueAssetCache = struct {
     ptr: *anyopaque,
     deinit: *const fn(OpaqueAssetCache, Allocator) void,
 
-    /// Cast inner pointer to 'AssetCache(T)'
+    /// Cast inner pointer to `AssetCache(T)`
     pub inline fn cast(self: OpaqueAssetCache, comptime T: type) *AssetCache(T) {
         return @alignCast(@ptrCast(self.ptr));
     }

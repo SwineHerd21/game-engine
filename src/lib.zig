@@ -63,8 +63,8 @@ fn init_2(_:[]const u8, _:*AssetManager) !Mesh {
     return undefined;
 }
 /// Call this function when you are ready to start your application.
-/// The 'your_context' argument is for your own application data and will be passed to callbacks
-/// as part of an 'App' struct.
+/// The `your_context` argument is for your own application data and will be passed to callbacks
+/// as part of an `App` struct.
 ///
 /// WARNING: This places the thread into an infinite update loop until the window closes.
 /// This function will not pass on error and will close on fatal ones (like failing to open a window).

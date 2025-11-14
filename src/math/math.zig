@@ -5,7 +5,7 @@
 // TODO: consider SIMD
 // Have vectors as structs because they are usually used one at a time.
 // If there is an operation where a large amount of vectors can be operated on at once (raycasts?),
-// combine them into 'wide' vectors which consist of structs with SIMD @Vector(T) fields
+// combine them into `wide` vectors which consist of structs with SIMD @Vector(T) fields
 // of the size recommended by std, do the operation and output back to normal vectors.
 
 const std = @import("std");

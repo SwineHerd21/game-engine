@@ -1,6 +1,6 @@
 //! Demonstrates basic mesh/shader loading and rendering
 //!
-//! Press any keyboard button to switch between solid and line rendering
+//! Press F1 to switch between solid and line rendering
 
 const std = @import("std");
 
@@ -88,20 +88,10 @@ fn on_update(app: *App) !void {
 fn on_event(app: *App, event: engine.Event) !void {
     switch (event) {
         .key_press => |ev| {
-            if (ev.action == .Repeat) return;
+            if (ev.key != .F1 or ev.action == .Repeat) return;
             // Switch between solid and wireframe rendering
             app.state.rendermode = @enumFromInt(@intFromEnum(app.state.rendermode) ^ 1);
             engine.setRenderMode(app.state.rendermode);
-            std.debug.print("pressed {t} ", .{ev.key});
-        },
-        .key_release => |ev| {
-            std.debug.print("released {t} ", .{ev.key});
-        },
-        .mouse_button_press => |ev| {
-            std.debug.print("pressed m {t} ", .{ev.button});
-        },
-        .mouse_button_release => |ev| {
-            std.debug.print("released m {t} ", .{ev.button});
         },
         else => {},
     }

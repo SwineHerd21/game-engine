@@ -38,7 +38,7 @@ pub fn deinit(self: *AssetManager) void {
 
 // ========== General =========
 
-/// Spits out a slice of the file's entire contents. Call 'free()' you are done using them.
+/// Spits out a slice of the file's entire contents. Call `free()` you are done using them.
 pub fn readFile(self: AssetManager, path: []const u8) EngineError![]const u8 {
     const file = std.fs.cwd().openFile(path, .{}) catch {
         log.err("File '{s}' does not exist or is inaccessible", .{path});
@@ -103,7 +103,7 @@ fn getCache(self: AssetManager, comptime T: type) !*AssetCache(T) {
 
 /// Must be called for any type you wish to use as an asset.
 ///
-/// 'init_fn' should be an initialization function and 'deinit_fn' should be used for any clean up needed.
+/// `init_fn` should be an initialization function and `deinit_fn` should be used for any clean up needed.
 pub fn registerAssetType(
     self: *AssetManager,
     comptime T: type,
@@ -208,7 +208,7 @@ fn createAsset(self: *AssetManager, comptime T: type, cache: AssetCache(T), file
     };
 }
 
-/// Put a pre-initialized asset into the database. Access with 'getNamed()' and 'getPtrNamed()'.
+/// Put a pre-initialized asset into the database. Access with `getNamed()` and `getPtrNamed()`.
 pub fn put(self: *AssetManager, name: []const u8, value: anytype) EngineError!void {
     const T = @TypeOf(value);
     const cache = try self.getCache(T);
@@ -216,13 +216,13 @@ pub fn put(self: *AssetManager, name: []const u8, value: anytype) EngineError!vo
     log.debug("Added named asset '{s}' of type '{s}'", .{name, @typeName(T)});
 }
 
-/// Get a pointer to an asset added with 'put()'
+/// Get a pointer to an asset added with `put()`
 pub fn getPtrNamed(self: *AssetManager, comptime T: type, name: []const u8) ?*T {
     const cache = self.getCache(T) catch return gotUnregistered(T);
     return cache.hashmap.getPtr(name);
 }
 
-/// Get a copy of an asset added with 'put()'
+/// Get a copy of an asset added with `put()`
 pub fn getNamed(self: *AssetManager, comptime T: type, name: []const u8) ?T {
     const cache = self.getCache(T) catch return gotUnregistered(T);
     return cache.hashmap.get(name);
@@ -247,6 +247,7 @@ pub fn parseZon(self: AssetManager, comptime T: type, data: []const u8) EngineEr
     return value;
 }
 
+/// Resolves the path to the asset inside the asset folder relative to cwd
 fn getCanonicalPath(self: AssetManager, path: []const u8) EngineError![]const u8 {
     const here_path = std.mem.concat(self.gpa, u8, &.{"./", path}) catch return outOfMemory();
     defer self.gpa.free(here_path);

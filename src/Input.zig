@@ -12,14 +12,11 @@ pub const ModifierKeys = packed struct {
 pub const ButtonAction = enum {
     Press,
     /// When a key is being held down keyboards will send repeated key presses.
-    /// This is a valid state only for 'key_press' events.
+    /// This is a valid state only for `key_press` events.
     Repeat,
     Release,
 };
 
-/// Represents physical keyboard keys. Keys that correspond to ASCII characters have
-/// integer values of their respective characters, however you should check if they
-/// are printable with 'is_ascii()'.
 pub const Key = enum(u8) {
     Unknown = 0,
 
@@ -55,20 +52,31 @@ pub const Key = enum(u8) {
     /// Also known as the Windows/Command key
     SuperRight,
 
-    Space = 32,
-    /// The ' key
-    Quote = 39,
+    Space,
     /// The , key
-    Comma = 44,
-    /// The - key
-    Minus = 45,
+    Comma,
     /// The . key
-    Period = 46,
-    /// The / key
-    Slash = 47,
+    Period,
     /// The ; key
-    Semicolon = 59,
-    @"0" = 48,
+    Semicolon,
+    /// The / key
+    Slash,
+    /// The \ key
+    Backslash,
+    /// The ' key
+    Quote,
+    /// The ` key
+    Backquote,
+    /// The - key
+    Minus,
+    /// The = key
+    Equal,
+    /// The [ key
+    BracketLeft,
+    /// The ] key
+    BracketRight,
+
+    @"0",
     @"1",
     @"2",
     @"3",
@@ -78,9 +86,8 @@ pub const Key = enum(u8) {
     @"7",
     @"8",
     @"9",
-    /// The = key
-    Equal = 61,
-    A = 65,
+
+    A,
     B,
     C,
     D,
@@ -106,16 +113,8 @@ pub const Key = enum(u8) {
     X,
     Y,
     Z,
-    /// The [ key
-    BracketLeft = 91,
-    /// The \ key
-    Backslash = 92,
-    /// The ] key
-    BracketRight = 93,
-    /// The ` key
-    Backquote = 96,
 
-    F1 = 128,
+    F1,
     F2,
     F3,
     F4,
@@ -141,7 +140,7 @@ pub const Key = enum(u8) {
     F24,
 
     NumLock,
-    Numpad_Period,
+    Numpad_Decimal,
     Numpad_Divide,
     Numpad_Multiply,
     Numpad_Plus,
@@ -157,12 +156,6 @@ pub const Key = enum(u8) {
     Numpad_7,
     Numpad_8,
     Numpad_9,
-
-    /// Keys for which this function returns true can be cast to u8 and printed as ASCII characters.
-    pub inline fn isAscii(k: Key) bool {
-        const value: u8 = @intFromEnum(k);
-        return value >= 32 and value <= 126;
-    }
 
     pub inline fn isShift(k: Key) bool {
         return k == .ShiftLeft or k == .ShiftRight;

@@ -1,6 +1,6 @@
 //! Keeps track of time passed between frames and since start of execution.
 //!
-//! For any other timing needs use 'std.time'
+//! For any other timing needs use `std.time`
 
 const std = @import("std");
 
