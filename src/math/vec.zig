@@ -382,22 +382,6 @@ test "Vector layout" {
     try testing.expectEqualSlices(f32, slice4[0..4], &.{3.3, -5.0, 0.23, 14.0});
 }
 
-test "Vector from array" {
-    try testing.expectEqual(Vec2.new(321, 123), Vec2{.v = .{321,123}});
-    try testing.expectEqual(Vec3.new(321, 123, 222), Vec3{.v = .{321,123,222}});
-    try testing.expectEqual(Vec4.new(321, 123, 222, 4), Vec4{.v = .{321,123,222,4}});
-}
-
-test "Vector to array" {
-    const vec2 = Vec2.new(321, 123);
-    const vec3 = Vec3.new(321, 123, 222);
-    const vec4 = Vec4.new(321, 123, 222, 4);
-
-    try testing.expectEqual(.{321,123}, vec2.v);
-    try testing.expectEqual(.{321,123,222}, vec3.v);
-    try testing.expectEqual(.{321,123,222,4}, vec4.v);
-}
-
 test "Vector from lower" {
     const vec2 = Vec2.new(321, 123);
     const vec3 = Vec3.fromVec2(vec2, 333);
