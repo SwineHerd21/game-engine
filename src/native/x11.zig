@@ -21,8 +21,9 @@ pub const Context = struct {
     window: c.Window,
     glx: c.GLXContext,
     event: c.XEvent,
-    /// Handles closing the window with 'x' button
+    /// Handles closing the window with `x` button
     wm_delete_window: c.Atom,
+    /// Mapping of hardware keycodes to `Key`s
     keycodes: [256]Input.Key,
     /// If true supresses key release events
     repeated_keypress: bool,
@@ -110,11 +111,8 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
             // If this was true then reset it to allow the actual release to go through
             window.inner.repeated_keypress = false;
 
-            // const keysym = c.XkbKeycodeToKeysym(window.inner.display, @intCast(ev.keycode), 0, 0);
-
             return events.Event{
                 .key_press = .{
-                    // .key = translateKeySym(keysym),
                     .key = window.inner.keycodes[ev.keycode],
                     .modifiers = translateKeyModifiers(ev.state),
                     .action = if (repeated) .Repeat else .Press,
@@ -135,11 +133,8 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
                 }
             }
 
-            // const keysym = c.XkbKeycodeToKeysym(window.inner.display, @intCast(ev.keycode), 0, 0);
-
             return events.Event{
                 .key_release = .{
-                    // .key = translateKeySym(keysym),
                     .key = window.inner.keycodes[ev.keycode],
                     .modifiers = translateKeyModifiers(ev.state),
                     .action = .Release,
@@ -234,18 +229,17 @@ fn setupKeycodes(display: *c.Display) [256]Input.Key {
         name: []const u8,
     };
     const keymap = [_]keys{
-        // <4 letter long names need to be appended with null bytes for comparasion with C strings
         .{ .key = .Backquote, .name = "TLDE" },
-        .{ .key = .Digit_1, .name = "AE01" },
-        .{ .key = .Digit_2, .name = "AE02" },
-        .{ .key = .Digit_3, .name = "AE03" },
-        .{ .key = .Digit_4, .name = "AE04" },
-        .{ .key = .Digit_5, .name = "AE05" },
-        .{ .key = .Digit_6, .name = "AE06" },
-        .{ .key = .Digit_7, .name = "AE07" },
-        .{ .key = .Digit_8, .name = "AE08" },
-        .{ .key = .Digit_9, .name = "AE09" },
-        .{ .key = .Digit_0, .name = "AE10" },
+        .{ .key = .@"1", .name = "AE01" },
+        .{ .key = .@"2", .name = "AE02" },
+        .{ .key = .@"3", .name = "AE03" },
+        .{ .key = .@"4", .name = "AE04" },
+        .{ .key = .@"5", .name = "AE05" },
+        .{ .key = .@"6", .name = "AE06" },
+        .{ .key = .@"7", .name = "AE07" },
+        .{ .key = .@"8", .name = "AE08" },
+        .{ .key = .@"9", .name = "AE09" },
+        .{ .key = .@"0", .name = "AE10" },
         .{ .key = .Minus, .name = "AE11" },
         .{ .key = .Equal, .name = "AE12" },
         .{ .key = .Q, .name = "AD01" },
@@ -283,20 +277,20 @@ fn setupKeycodes(display: *c.Display) [256]Input.Key {
         .{ .key = .Slash, .name = "AB10" },
         .{ .key = .Backslash, .name = "BKSL" },
         .{ .key = .Space, .name = "SPCE" },
-        .{ .key = .Escape, .name = "ESC\x00" },
+        .{ .key = .Escape, .name = "ESC" },
         .{ .key = .Enter, .name = "RTRN" },
-        .{ .key = .Tab, .name = "TAB\x00" },
+        .{ .key = .Tab, .name = "TAB" },
         .{ .key = .Backspace, .name = "BKSP" },
-        .{ .key = .Insert, .name = "INS\x00" },
+        .{ .key = .Insert, .name = "INS" },
         .{ .key = .Delete, .name = "DELE" },
         .{ .key = .ArrowRight, .name = "RGHT" },
         .{ .key = .ArrowLeft, .name = "LEFT" },
         .{ .key = .ArrowDown, .name = "DOWN" },
-        .{ .key = .ArrowUp, .name = "UP\x00\x00" },
+        .{ .key = .ArrowUp, .name = "UP" },
         .{ .key = .PageUp, .name = "PGUP" },
         .{ .key = .PageDown, .name = "PGDN" },
         .{ .key = .Home, .name = "HOME" },
-        .{ .key = .End, .name = "END\x00" },
+        .{ .key = .End, .name = "END" },
         .{ .key = .CapsLock, .name = "CAPS" },
         .{ .key = .ScrollLock, .name = "SCLK" },
         .{ .key = .NumLock, .name = "NMLK" },
@@ -326,16 +320,16 @@ fn setupKeycodes(display: *c.Display) [256]Input.Key {
         .{ .key = .F22, .name = "FK22" },
         .{ .key = .F23, .name = "FK23" },
         .{ .key = .F24, .name = "FK24" },
-        .{ .key = .Numpad_0, .name = "KP0\x00" },
-        .{ .key = .Numpad_1, .name = "KP1\x00" },
-        .{ .key = .Numpad_2, .name = "KP2\x00" },
-        .{ .key = .Numpad_3, .name = "KP3\x00" },
-        .{ .key = .Numpad_4, .name = "KP4\x00" },
-        .{ .key = .Numpad_5, .name = "KP5\x00" },
-        .{ .key = .Numpad_6, .name = "KP6\x00" },
-        .{ .key = .Numpad_7, .name = "KP7\x00" },
-        .{ .key = .Numpad_8, .name = "KP8\x00" },
-        .{ .key = .Numpad_9, .name = "KP9\x00" },
+        .{ .key = .Numpad_0, .name = "KP0" },
+        .{ .key = .Numpad_1, .name = "KP1" },
+        .{ .key = .Numpad_2, .name = "KP2" },
+        .{ .key = .Numpad_3, .name = "KP3" },
+        .{ .key = .Numpad_4, .name = "KP4" },
+        .{ .key = .Numpad_5, .name = "KP5" },
+        .{ .key = .Numpad_6, .name = "KP6" },
+        .{ .key = .Numpad_7, .name = "KP7" },
+        .{ .key = .Numpad_8, .name = "KP8" },
+        .{ .key = .Numpad_9, .name = "KP9" },
         .{ .key = .Numpad_Period, .name = "KPDL" },
         .{ .key = .Numpad_Divide, .name = "KPDV" },
         .{ .key = .Numpad_Multiply, .name = "KPMU" },
@@ -365,9 +359,8 @@ fn setupKeycodes(display: *c.Display) [256]Input.Key {
     for (@intCast(desc.min_key_code)..@intCast(desc.max_key_code)) |scancode| {
         var key: Input.Key = .Unknown;
 
-        std.debug.print("{}: {s}\n", .{scancode, desc.names.*.keys[scancode].name[0..4]});
         for (keymap) |map| {
-            if (std.mem.eql(u8, map.name, desc.names.*.keys[scancode].name[0..4])) {
+            if (std.mem.eql(u8, map.name, desc.names.*.keys[scancode].name[0..(map.name.len)])) {
                 key = map.key;
                 break;
             }
@@ -380,7 +373,7 @@ fn setupKeycodes(display: *c.Display) [256]Input.Key {
                 if (!std.mem.eql(u8, desc.names.*.key_aliases[i].real[0..4], desc.names.*.keys[scancode].name[0..4])) continue;
 
                 for (keymap) |map| {
-                    if (std.mem.eql(u8, map.name, desc.names.*.key_aliases[i].alias[0..4])) {
+                    if (std.mem.eql(u8, map.name, desc.names.*.key_aliases[i].alias[0..(map.name.len)])) {
                         key = map.key;
                         break :outer;
                     }
@@ -402,133 +395,6 @@ inline fn translateKeyModifiers(state: c_uint) Input.ModifierKeys {
         .super = state & c.Mod4Mask != 0,
         .caps_lock = state & c.LockMask != 0,
         .num_lock = state & c.Mod2Mask != 0,
-    };
-}
-
-fn translateKeySym(key: c.KeySym) Input.Key {
-    return switch (key) {
-        c.XK_Escape => .Escape,
-        c.XK_Delete => .Delete,
-        c.XK_BackSpace => .Backspace,
-        c.XK_Return => .Enter,
-        c.XK_Tab => .Tab,
-        c.XK_Up => .ArrowUp,
-        c.XK_Down => .ArrowDown,
-        c.XK_Right => .ArrowRight,
-        c.XK_Left => .ArrowLeft,
-        c.XK_Caps_Lock => .CapsLock,
-        c.XK_Menu => .Menu,
-        c.XK_Pause => .Pause,
-        c.XK_Print => .PrintScreen,
-        c.XK_Scroll_Lock => .ScrollLock,
-        c.XK_Insert => .Insert,
-        c.XK_Home => .Home,
-        c.XK_End => .End,
-        c.XK_Page_Up => .PageUp,
-        c.XK_Page_Down => .PageDown,
-
-        c.XK_Shift_L => .ShiftLeft,
-        c.XK_Shift_R => .ShiftRight,
-        c.XK_Control_L => .ControlLeft,
-        c.XK_Control_R => .ControlRight,
-        c.XK_Alt_L => .AltLeft,
-        c.XK_Alt_R => .AltRight,
-        c.XK_Super_L => .SuperLeft,
-        c.XK_Super_R => .SuperRight,
-
-        c.XK_F1 => .F1,
-        c.XK_F2 => .F2,
-        c.XK_F3 => .F3,
-        c.XK_F4 => .F4,
-        c.XK_F5 => .F5,
-        c.XK_F6 => .F6,
-        c.XK_F7 => .F7,
-        c.XK_F8 => .F8,
-        c.XK_F9 => .F9,
-        c.XK_F10 => .F10,
-        c.XK_F11 => .F11,
-        c.XK_F12 => .F12,
-        c.XK_F13 => .F13,
-        c.XK_F14 => .F14,
-        c.XK_F15 => .F15,
-        c.XK_F16 => .F16,
-        c.XK_F17 => .F17,
-        c.XK_F18 => .F18,
-        c.XK_F19 => .F19,
-        c.XK_F20 => .F20,
-        c.XK_F21 => .F21,
-        c.XK_F22 => .F22,
-        c.XK_F23 => .F23,
-        c.XK_F24 => .F24,
-
-        c.XK_Num_Lock => .NumLock,
-        c.XK_KP_0 => .Numpad_0,
-        c.XK_KP_1 => .Numpad_1,
-        c.XK_KP_2 => .Numpad_2,
-        c.XK_KP_3 => .Numpad_3,
-        c.XK_KP_4 => .Numpad_4,
-        c.XK_KP_5 => .Numpad_5,
-        c.XK_KP_6 => .Numpad_6,
-        c.XK_KP_7 => .Numpad_7,
-        c.XK_KP_8 => .Numpad_8,
-        c.XK_KP_9 => .Numpad_9,
-        c.XK_KP_Separator => .Numpad_Period,
-        c.XK_KP_Divide => .Numpad_Divide,
-        c.XK_KP_Multiply => .Numpad_Multiply,
-        c.XK_KP_Add => .Numpad_Plus,
-        c.XK_KP_Subtract => .Numpad_Minus,
-        c.XK_KP_Enter => .Numpad_Enter,
-
-        c.XK_space => .Space,
-        c.XK_comma => .Comma,
-        c.XK_period => .Period,
-        c.XK_semicolon => .Semicolon,
-        c.XK_apostrophe => .Quote,
-        c.XK_slash => .Slash,
-        c.XK_backslash => .Backslash,
-        c.XK_bracketleft => .BracketLeft,
-        c.XK_bracketright => .BracketRight,
-        c.XK_quoteleft => .Backquote,
-        c.XK_minus => .Minus,
-        c.XK_equal => .Equal,
-        c.XK_0 => .Digit_0,
-        c.XK_1 => .Digit_1,
-        c.XK_2 => .Digit_2,
-        c.XK_3 => .Digit_3,
-        c.XK_4 => .Digit_4,
-        c.XK_5 => .Digit_5,
-        c.XK_6 => .Digit_6,
-        c.XK_7 => .Digit_7,
-        c.XK_8 => .Digit_8,
-        c.XK_9 => .Digit_9,
-        c.XK_A => .A,
-        c.XK_B => .B,
-        c.XK_C => .C,
-        c.XK_D => .D,
-        c.XK_E => .E,
-        c.XK_F => .F,
-        c.XK_G => .G,
-        c.XK_H => .H,
-        c.XK_I => .I,
-        c.XK_J => .J,
-        c.XK_K => .K,
-        c.XK_L => .L,
-        c.XK_M => .M,
-        c.XK_N => .N,
-        c.XK_O => .O,
-        c.XK_P => .P,
-        c.XK_Q => .Q,
-        c.XK_R => .R,
-        c.XK_S => .S,
-        c.XK_T => .T,
-        c.XK_U => .U,
-        c.XK_V => .V,
-        c.XK_W => .W,
-        c.XK_X => .X,
-        c.XK_Y => .Y,
-        c.XK_Z => .Z,
-
-        else => .Unknown,
     };
 }
 

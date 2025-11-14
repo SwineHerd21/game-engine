@@ -68,26 +68,16 @@ pub const Key = enum(u8) {
     Slash = 47,
     /// The ; key
     Semicolon = 59,
-    /// The 0 key on the main part of the keyboard
-    Digit_0 = 48,
-    /// The 1 key on the main part of the keyboard
-    Digit_1,
-    /// The 2 key on the main part of the keyboard
-    Digit_2,
-    /// The 3 key on the main part of the keyboard
-    Digit_3,
-    /// The 4 key on the main part of the keyboard
-    Digit_4,
-    /// The 5 key on the main part of the keyboard
-    Digit_5,
-    /// The 6 key on the main part of the keyboard
-    Digit_6,
-    /// The 7 key on the main part of the keyboard
-    Digit_7,
-    /// The 8 key on the main part of the keyboard
-    Digit_8,
-    /// The 9 key on the main part of the keyboard
-    Digit_9,
+    @"0" = 48,
+    @"1",
+    @"2",
+    @"3",
+    @"4",
+    @"5",
+    @"6",
+    @"7",
+    @"8",
+    @"9",
     /// The = key
     Equal = 61,
     A = 65,
