@@ -66,7 +66,7 @@ fn on_init(app: *App) !void {
     try assets.put("tri", engine.Mesh.init(&verts2, &.{0,1,2}));
     app.state.tri = assets.getNamed(engine.Mesh, "tri").?;
 
-    std.debug.print("\nPress any key to switch between solid and line rendering\n\n", .{});
+    std.debug.print("\nPress F1 to switch between solid and line rendering\n\n", .{});
 }
 
 var avrg_fps: f32 = 0;
@@ -82,7 +82,7 @@ fn on_update(app: *App) !void {
     const cur_fps = 1/app.time.deltaTime;
     avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);
     frames += 1;
-    // std.debug.print("\rAverage FPS: {}; Current FPS: {}", .{avrg_fps,cur_fps});
+    std.debug.print("\rAverage FPS: {}; Current FPS: {}", .{avrg_fps,cur_fps});
 }
 
 fn on_event(app: *App, event: engine.Event) !void {

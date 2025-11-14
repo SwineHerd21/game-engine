@@ -14,3 +14,7 @@ pub const Vec2 = @import("vec.zig").Vec2;
 pub const Vec3 = @import("vec.zig").Vec3;
 pub const Vec4 = @import("vec.zig").Vec4;
 
+pub const Vec2i = @import("veci.zig").Vec2i;
+pub const Vec3i = @import("veci.zig").Vec3i;
+pub const Vec4i = @import("veci.zig").Vec4i;
+

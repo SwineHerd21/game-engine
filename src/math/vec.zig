@@ -1,5 +1,6 @@
+//! Floating point mathematical vectors
+
 const std = @import("std");
-const Type = std.builtin.Type;
 
 // Somewhat stolen from mach and Godot
 
@@ -211,7 +212,7 @@ pub const Vec4 = extern struct {
     }
 };
 
-fn Shared(Vec: type, N: comptime_int, T: type) type {
+pub fn Shared(Vec: type, N: comptime_int, T: type) type {
     std.debug.assert(@hasField(Vec, "v") and @FieldType(Vec, "v") == [N]T);
     return extern struct {
         /// Returns a vector with all elements set to `value`
@@ -274,8 +275,8 @@ fn Shared(Vec: type, N: comptime_int, T: type) type {
         }
 
         /// Dot (scalar) product of two vectors
-        pub inline fn dot(a: Vec, b: Vec) f32 {
-            var result: f32 = 0;
+        pub inline fn dot(a: Vec, b: Vec) T {
+            var result: T = 0;
             inline for (0..N) |i| {
                 result += a.v[i]*b.v[i];
             }
@@ -283,32 +284,32 @@ fn Shared(Vec: type, N: comptime_int, T: type) type {
         }
 
         pub inline fn length(v: Vec) f32 {
-            var result: f32 = 0;
+            var result: T = 0;
             inline for (0..N) |i| {
                 result += v.v[i]*v.v[i];
             }
-            return @sqrt(result);
+            return @sqrt(@as(f32, result));
         }
         /// Faster than `length()`
-        pub inline fn lengthSqr(v: Vec) f32 {
-            var result: f32 = 0;
+        pub inline fn lengthSqr(v: Vec) T {
+            var result: T = 0;
             inline for (0..N) |i| {
                 result += v.v[i]*v.v[i];
             }
             return result;
         }
 
-        /// Returns a vector pointing in the same direction but with length 1
-        pub inline fn normalized(v: Vec) Vec {
-            return v.div(v.length());
-        }
-
         pub inline fn distance(a: Vec, b: Vec) f32 {
             return b.sub(a).length();
         }
         /// Faster than `distance()`
-        pub inline fn distanceSqr(a: Vec, b: Vec) f32 {
+        pub inline fn distanceSqr(a: Vec, b: Vec) T {
             return b.sub(a).lengthSqr();
+        }
+
+        /// Returns a vector pointing in the same direction but with length 1
+        pub inline fn normalized(v: Vec) Vec {
+            return v.div(v.length());
         }
 
         /// Linearly interpolate between two vectors by `t`.
