@@ -167,7 +167,7 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
             const ev = window.inner.event.xmotion;
 
             return events.Event{
-                .pointer_motion = .{ev.x, ev.y},
+                .pointer_motion = .new(ev.x, ev.y),
             };
         },
         c.EnterNotify => {

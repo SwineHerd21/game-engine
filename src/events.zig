@@ -1,13 +1,14 @@
 //! Contains handlers for various window events
 
 const Input = @import("Input.zig");
+const math = @import("math/math.zig");
 
 pub const Event = union(enum) {
     key_press: KeyEvent,
     key_release: KeyEvent,
     mouse_button_press: MouseButtonEvent,
     mouse_button_release: MouseButtonEvent,
-    pointer_motion: @Vector(2, i32),
+    pointer_motion: math.Vec2i,
     // TODO: ? give position on enter/exit
     pointer_enter: void,
     pointer_exit: void,

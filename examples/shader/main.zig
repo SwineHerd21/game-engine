@@ -1,6 +1,7 @@
 //! Demonstrates basic mesh/shader loading and rendering
 //!
 //! Press F1 to switch between solid and line rendering
+//! Press F3 to enable FPS counter
 
 const std = @import("std");
 
@@ -66,11 +67,13 @@ fn on_init(app: *App) !void {
     try assets.put("tri", engine.Mesh.init(&verts2, &.{0,1,2}));
     app.state.tri = assets.getNamed(engine.Mesh, "tri").?;
 
-    std.debug.print("\nPress F1 to switch between solid and line rendering\n\n", .{});
+    std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});
+    std.debug.print("Press F3 to toggle FPS counter\n", .{});
 }
 
 var avrg_fps: f32 = 0;
 var frames: f32 = 0;
+var show_fps: bool = false;
 fn on_update(app: *App) !void {
     const timeSine = @sin(app.time.totalRuntime);
     app.state.fancy_mat.setUniform("timeSine", timeSine);
@@ -82,16 +85,27 @@ fn on_update(app: *App) !void {
     const cur_fps = 1/app.time.deltaTime;
     avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);
     frames += 1;
-    std.debug.print("\rAverage FPS: {}; Current FPS: {}", .{avrg_fps,cur_fps});
+    if (show_fps) {
+        std.debug.print("\rAverage FPS: {}; Current FPS: {}", .{avrg_fps, cur_fps});
+    }
 }
 
 fn on_event(app: *App, event: engine.Event) !void {
     switch (event) {
         .key_press => |ev| {
-            if (ev.key != .F1 or ev.action == .Repeat) return;
-            // Switch between solid and wireframe rendering
-            app.state.rendermode = @enumFromInt(@intFromEnum(app.state.rendermode) ^ 1);
-            engine.setRenderMode(app.state.rendermode);
+            if (ev.action == .Repeat) return;
+            switch (ev.key) {
+                .F1 => {
+                    // Switch between solid and wireframe rendering
+                    app.state.rendermode = @enumFromInt(@intFromEnum(app.state.rendermode) ^ 1);
+                    engine.setRenderMode(app.state.rendermode);
+                },
+                .F3 => {
+                    std.debug.print("\n", .{});
+                    show_fps = !show_fps;
+                },
+                else => return,
+            }
         },
         else => {},
     }
