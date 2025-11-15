@@ -79,8 +79,8 @@ pub fn use(shader: Material) void {
 }
 
 /// Set a uniform value in the shader program if it exists.
-/// Allowed types: bool, i32, u32, f32, math.VecN, math.VecNi and arrays/slices of those types.
-/// Slices longer than max value of c_int will be truncated.
+/// Allowed types: `bool`, `i32`, `u32`, `f32`, `math.VecNf`, `math.VecNi` and arrays/slices of those types.
+/// Slices longer than max value of `c_int` will be truncated.
 pub fn setUniform(self: Material, name: []const u8, value: anytype) void {
     const T = @TypeOf(value);
     validateUniformType(T);
@@ -104,9 +104,9 @@ pub fn setUniform(self: Material, name: []const u8, value: anytype) void {
         .float => gl.Uniform1f(location, value),
         .@"struct" => {
             switch (T) {
-                math.Vec2 => gl.Uniform2f(location, value.x(), value.y()),
-                math.Vec3 => gl.Uniform3f(location, value.x(), value.y(), value.z()),
-                math.Vec4 => gl.Uniform4f(location, value.x(), value.y(), value.z(), value.w()),
+                math.Vec2f => gl.Uniform2f(location, value.x(), value.y()),
+                math.Vec3f => gl.Uniform3f(location, value.x(), value.y(), value.z()),
+                math.Vec4f => gl.Uniform4f(location, value.x(), value.y(), value.z(), value.w()),
                 math.Vec2i => gl.Uniform2i(location, value.x(), value.y()),
                 math.Vec3i => gl.Uniform3i(location, value.x(), value.y(), value.z()),
                 math.Vec4i => gl.Uniform4i(location, value.x(), value.y(), value.z(), value.w()),
@@ -133,9 +133,9 @@ inline fn passUniformArray(comptime child: type, loc: gl.int, len: gl.int, val: 
         },
         .@"struct" => {
             switch (child) {
-                math.Vec2 => gl.Uniform2fv(loc, len, @alignCast(@ptrCast(val))),
-                math.Vec3 => gl.Uniform3fv(loc, len, @alignCast(@ptrCast(val))),
-                math.Vec4 => gl.Uniform4fv(loc, len, @alignCast(@ptrCast(val))),
+                math.Vec2f => gl.Uniform2fv(loc, len, @alignCast(@ptrCast(val))),
+                math.Vec3f => gl.Uniform3fv(loc, len, @alignCast(@ptrCast(val))),
+                math.Vec4f => gl.Uniform4fv(loc, len, @alignCast(@ptrCast(val))),
                 math.Vec2i => gl.Uniform2iv(loc, len, @alignCast(@ptrCast(val))),
                 math.Vec3i => gl.Uniform3iv(loc, len, @alignCast(@ptrCast(val))),
                 math.Vec4i => gl.Uniform4iv(loc, len, @alignCast(@ptrCast(val))),
@@ -148,7 +148,7 @@ inline fn passUniformArray(comptime child: type, loc: gl.int, len: gl.int, val: 
 
 
 pub fn validateUniformType(comptime T: type) void {
-    const error_msg = @typeName(T) ++ " is an invalid uniform type: GLSL uniforms can be only of type bool, i32, u32, f32, math.VecN, math.VecNi and arrays/slices of those types.";
+    const error_msg = @typeName(T) ++ " is an invalid uniform type: GLSL uniforms can be only of type bool, i32, u32, f32, math.VecNf, math.VecNi and arrays/slices of those types.";
 
     const inner = struct {
         pub inline fn validateType(comptime U: type, array: bool) void {
@@ -163,7 +163,7 @@ pub fn validateUniformType(comptime T: type) void {
                 },
                 .@"struct" => {
                     switch (U) {
-                        math.Vec2, math.Vec3, math.Vec4 => {},
+                        math.Vec2f, math.Vec3f, math.Vec4f => {},
                         else => @compileError(error_msg),
                     }
                 },

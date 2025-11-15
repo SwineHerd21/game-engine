@@ -10,9 +10,9 @@
 
 const std = @import("std");
 
-pub const Vec2 = @import("vec.zig").Vec2;
-pub const Vec3 = @import("vec.zig").Vec3;
-pub const Vec4 = @import("vec.zig").Vec4;
+pub const Vec2f = @import("vecf.zig").Vec2f;
+pub const Vec3f = @import("vecf.zig").Vec3f;
+pub const Vec4f = @import("vecf.zig").Vec4f;
 
 pub const Vec2i = @import("veci.zig").Vec2i;
 pub const Vec3i = @import("veci.zig").Vec3i;
