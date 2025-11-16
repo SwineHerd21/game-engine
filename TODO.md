@@ -1,9 +1,11 @@
 By priority
 
-# HIGH
+# High
 
-- Materials: loaded from ZON files, contain vertex and fragment shader references and preset uniforms
-- Asset file ID: each asset is referred to by its filepath
+- Separate engine systems into layers/modules
+
+- Immediate mode GUI for debugging
+
 - Models: contain meshes and materials
 - Textures: may be referenced by materials and passed to shaders
 - Loading models from files
@@ -14,17 +16,15 @@ By priority
 - Scenes: organized collections of objects
 - Gameobjects/Entities/???: a thing with attached components
 
-- Input translation: map keycodes and buttons to enums
-
-# MEDIUM
+# Medium
 
 - Input state: keep track of key/button states and mouse position
 
-# LOW
+# Low
 
-- Int and bool vectors
+- Bool vectors
 
-# PLANNED
+# Planned
 
 - Audio
 - Text rendering
@@ -32,4 +32,5 @@ By priority
 
 - Set up public engine API
 - Examples
+
 - Windows suppport

@@ -1,33 +1,38 @@
-# ABOUT  
+# About
 
-In development  
+In development
 
-Basic 3d game engine catered to my puzzle game.  
+Basic 3d game engine catered to my puzzle game.
 
-Currently runs on Linux through X11 and OpenGL.  
+Currently runs on Linux through X11 and OpenGL.
 
-# BUILD  
+# Build
 
-Requires Zig 0.15.2, OpenGL 3.3+ Core  
+Requires Zig 0.15.2, OpenGL 3.3+ Core
 
-System dependencies: libX11, libGL
-Zig packages: [zigglgen](https://github.com/castholm/zigglgen)  
+System dependencies: libX11, libGL  
+Zig packages: [zigglgen](https://github.com/castholm/zigglgen)
 
-Build by running:  
+Build by running:
 
-    zig build  
+```
+zig build
+```
 
-Run a test window:  
+Run a test window:
 
-    zig build run  
+```
+zig build run
+```
 
-Run unit tests:  
+Run unit tests:
 
-    zig build test --summary all  
+```
+zig build test --summary all
+```
 
-
-# Resources  
+# Resources
 
 https://x.org/releases/current/doc/libX11/libX11/libX11.html - Xlib reference  
 https://www.youtube.com/playlist?list=PLA0dXqQjCx0S04ntJKUftl6OaOgsiwHjA - OpenGL Tutorial  
-https://learnopengl.com - OpenGL resource  
+https://learnopengl.com - OpenGL resource
