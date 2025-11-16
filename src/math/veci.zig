@@ -1,7 +1,7 @@
 //! Signed integer mathematical vectors
 
 const std = @import("std");
-const Shared = @import("vec.zig").Shared;
+const Shared = @import("vecf.zig").Shared;
 
 /// A vector with 2 elements of i32
 pub const Vec2i = extern struct {

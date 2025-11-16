@@ -55,6 +55,7 @@ pub fn App(comptime T: type) type {
     return struct {
         state: *T,
         asset_manager: *AssetManager,
+        input: Input,
         time: Time,
     };
 }
@@ -99,6 +100,10 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
         .state = your_context,
         .asset_manager = &asset_manager,
         .time = try .init(),
+        .input = .{
+            .pointer_position = math.Vec2i.zero,
+            .pointer_delta = math.Vec2i.zero,
+        },
     };
 
     try options.on_init(&app);
@@ -120,6 +125,10 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
                     .window_expose => {
                         graphics.adjustViewport(@intCast(window.width), @intCast(window.height));
                     },
+                    .pointer_motion => |m| {
+                        app.input.pointer_delta = m.sub(app.input.pointer_position);
+                        app.input.pointer_position = m;
+                    },
                     else => {},
                 }
 
@@ -133,6 +142,9 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
 
         // TODO: engine update loop
         try options.on_update(&app);
+
+        // NOTE: maybe introduce a `post_update`?
+        app.input.pointer_delta = .zero;
 
         window.swapBuffers();
     }

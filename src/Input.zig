@@ -1,5 +1,16 @@
 //! Contains the state of the input devices during this frame and offers various utilities.
 
+const math = @import("math/math.zig");
+
+const Input = @This();
+
+// TODO: implement the below
+
+/// Current cursor position in window coordinates
+pointer_position: math.Vec2i,
+/// How much the pointer moved between frames
+pointer_delta: math.Vec2i,
+
 pub const ModifierKeys = packed struct {
     shift: bool,
     control: bool,
@@ -17,6 +28,7 @@ pub const ButtonAction = enum {
     Release,
 };
 
+/// Represents a portable keycode that corresponds to a hardware key location
 pub const Key = enum(u8) {
     Unknown = 0,
 
@@ -185,8 +197,8 @@ pub const MouseButton = enum {
     WheelLeft,
     /// Only exists on some mice
     WheelRight,
-    /// Usually called mouse button 4 in games
+    /// Usually placed on the side of the mouse and is sometimes called mouse button 4
     Back,
-    /// Usually called mouse button 5 in games
+    /// Usually placed on the side of the mouse and is sometimes called mouse button 5
     Front,
 };
