@@ -76,7 +76,7 @@ var frames: f64 = 0;
 var show_fps: bool = false;
 fn on_update(app: *App) !void {
     const timeSine = @sin(app.time.totalRuntime());
-    app.state.fancy_mat.setUniform("timeSine", @as(f32, @floatCast(timeSine)));
+    app.state.fancy_mat.setUniform("timeSine", timeSine);
 
     app.state.quad.draw(app.state.default_mat);
     app.state.tri.draw(app.state.fancy_mat);

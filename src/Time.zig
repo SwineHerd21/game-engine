@@ -36,11 +36,11 @@ pub fn update(self: *Time) void {
 }
 
 /// Gives time since last frame in seconds
-pub inline fn deltaTime(self: Time) f64 {
-    return @as(f64, @floatFromInt(self.dtNano)) / @as(f64, std.time.ns_per_s);
+pub inline fn deltaTime(self: Time) f32 {
+    return @as(f32, @floatFromInt(self.dtNano)) / @as(f32, std.time.ns_per_s);
 }
 
 /// Gives total application runtime in seconds
-pub inline fn totalRuntime(self: Time) f64 {
-    return @as(f64, @floatFromInt(self.runtimeNano)) / @as(f64, std.time.ns_per_s);
+pub inline fn totalRuntime(self: Time) f32 {
+    return @as(f32, @floatFromInt(self.runtimeNano)) / @as(f32, std.time.ns_per_s);
 }
