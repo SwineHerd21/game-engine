@@ -71,18 +71,18 @@ fn on_init(app: *App) !void {
     std.debug.print("Press F3 to toggle FPS counter\n", .{});
 }
 
-var avrg_fps: f32 = 0;
-var frames: f32 = 0;
+var avrg_fps: f64 = 0;
+var frames: f64 = 0;
 var show_fps: bool = false;
 fn on_update(app: *App) !void {
-    const timeSine = @sin(app.time.totalRuntime);
-    app.state.fancy_mat.setUniform("timeSine", timeSine);
+    const timeSine = @sin(app.time.totalRuntime());
+    app.state.fancy_mat.setUniform("timeSine", @as(f32, @floatCast(timeSine)));
 
     app.state.quad.draw(app.state.default_mat);
     app.state.tri.draw(app.state.fancy_mat);
 
 
-    const cur_fps = 1/app.time.deltaTime;
+    const cur_fps = 1/app.time.deltaTime();
     avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);
     frames += 1;
     if (show_fps) {

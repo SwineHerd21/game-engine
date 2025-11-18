@@ -4,6 +4,7 @@ const std = @import("std");
 const events = @import("events.zig");
 const native = @import("platform.zig").native;
 
+const Input = @import("Input.zig");
 const EngineError = @import("lib.zig").EngineError;
 
 const Window = @This();
@@ -35,8 +36,8 @@ pub fn areEventsPending(w: Window) bool {
 }
 
 /// Consume the next OS event
-pub fn consumeEvent(w: *Window) ?events.Event {
-    return native.consumeEvent(w);
+pub fn consumeEvent(w: *Window, input: Input) ?events.Event {
+    return native.consumeEvent(w, input);
 }
 
 pub fn swapBuffers(w: Window) void {

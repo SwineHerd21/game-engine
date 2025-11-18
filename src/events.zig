@@ -8,7 +8,7 @@ pub const Event = union(enum) {
     key_release: KeyEvent,
     mouse_button_press: MouseButtonEvent,
     mouse_button_release: MouseButtonEvent,
-    pointer_motion: math.Vec2i,
+    pointer_motion: PointerMotion,
     // TODO: ? give position on enter/exit
     pointer_enter: void,
     pointer_exit: void,
@@ -31,7 +31,14 @@ pub const MouseButtonEvent = struct {
     action: Input.ButtonAction,
 };
 
-const WindowResize = struct {
+pub const PointerMotion = struct {
+    /// In pixels, (0, 0) is the top left corner of the window
+    position: math.Vec2i,
+    /// How much the pointer moved since the last event in pixels
+    delta: math.Vec2i,
+};
+
+pub const WindowResize = struct {
     width: u32,
     height: u32,
 };

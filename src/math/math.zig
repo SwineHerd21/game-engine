@@ -10,11 +10,31 @@
 
 const std = @import("std");
 
-pub const Vec2f = @import("vecf.zig").Vec2f;
-pub const Vec3f = @import("vecf.zig").Vec3f;
-pub const Vec4f = @import("vecf.zig").Vec4f;
+pub const Vec2float = @import("vecf.zig").Vec2float;
+pub const Vec3float = @import("vecf.zig").Vec3float;
+pub const Vec4float = @import("vecf.zig").Vec4float;
+pub const Vec2int = @import("veci.zig").Vec2int;
+pub const Vec3int = @import("veci.zig").Vec3int;
+pub const Vec4int = @import("veci.zig").Vec4int;
 
-pub const Vec2i = @import("veci.zig").Vec2i;
-pub const Vec3i = @import("veci.zig").Vec3i;
-pub const Vec4i = @import("veci.zig").Vec4i;
+/// Has f32 elements
+pub const Vec2f = Vec2float(f32);
+/// Has f32 elements
+pub const Vec3f = Vec3float(f32);
+/// Has f32 elements
+pub const Vec4f = Vec4float(f32);
+
+/// Has f64 elements
+pub const Vec2d = Vec2float(f64);
+/// Has f64 elements
+pub const Vec3d = Vec3float(f64);
+/// Has f64 elements
+pub const Vec4d = Vec4float(f64);
+
+/// Has i32 elements
+pub const Vec2i = Vec2int(i32);
+/// Has i32 elements
+pub const Vec3i = Vec3int(i32);
+/// Has i32 elements
+pub const Vec4i = Vec4int(i32);
 

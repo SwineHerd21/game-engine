@@ -1,215 +1,215 @@
 //! Signed integer mathematical vectors
 
 const std = @import("std");
+const assert = std.debug.assert;
+
 const Shared = @import("vecf.zig").Shared;
 
-/// A vector with 2 elements of i32
-pub const Vec2i = extern struct {
-    const Vec = @This();
-    const N = 2;
-    const T = i32;
-
-    v: [N]T,
-
-    pub const zero: Vec = .splat(0);
-    pub const right: Vec = .new(1, 0);
-    pub const left: Vec = .new(-1, 0);
-    pub const up: Vec = .new(0, 1);
-    pub const down: Vec = .new(0, -1);
-    pub const one: Vec = .splat(1);
-
-    pub inline fn new(_x: T, _y: T) Vec {
-        return .{ .v = .{_x,_y} };
-    }
-
-    pub inline fn x(v: Vec) T {
-        return v.v[0];
-    }
-    pub inline fn y(v: Vec) T {
-        return v.v[1];
-    }
-
-    /// The length of the cross product gives the signed area of a parallelogram
-    /// constructed with two vectors. This function returns that length.
-    pub inline fn cross(a: Vec, b: Vec) T {
-        return a.x()*b.y() - a.y()*b.x();
-    }
-
-    /// Returns the angle between the vector and the positive X axis.
-    ///
-    /// See `angle_to()` for angle between vectors
-    pub inline fn angle(v: Vec) f32 {
-        return std.math.atan2(@as(f32, @floatFromInt(v.x())), @as(f32, @floatFromInt(v.y())));
-    }
-
-    /// Find the angle between two vectors.
-    pub inline fn angleTo(a: Vec, b: Vec) f32 {
-        return std.math.atan2(@as(f32, @floatFromInt(a.cross(b))), @as(f32, @floatFromInt(a.dot(b))));
-    }
-
-    const funcs = Shared(Vec, N, T);
-    const funcsi = Sharedi(Vec, N, T);
-    pub const splat = funcs.splat;
-    pub const negate = funcs.negate;
-    pub const add = funcs.add;
-    pub const sub = funcs.sub;
-    pub const scale = funcs.scale;
-    pub const mul = funcs.mul;
-    pub const div = funcs.div;
-    pub const dot = funcs.dot;
-    pub const distance = funcs.distance;
-    pub const distanceSqr = funcs.distanceSqr;
-    pub const length = funcsi.length;
-    pub const lengthSqr = funcs.lengthSqr;
-    pub const eql = funcs.eql;
-
-    pub fn format(
-        self: @This(),
-        writer: *std.Io.Writer,
-    ) std.Io.Writer.Error!void {
-        try writer.print("({}, {})", .{self.x(), self.y()});
-    }
-};
-
-/// A vector with 3 elements of i32
-pub const Vec3i = extern struct {
-    const Vec = @This();
-    const N = 3;
-    const T = i32;
-
-    v: [N]T,
-
-    pub const zero: Vec = .splat(0);
-    pub const right: Vec = .new(1, 0, 0);
-    pub const left: Vec = .new(-1, 0, 0);
-    pub const up: Vec = .new(0, 1, 0);
-    pub const down: Vec = .new(0, -1, 0);
-    pub const forward: Vec = .new(0, 0, 1);
-    pub const back: Vec = .new(0, 0, -1);
-    pub const one: Vec = .splat(1);
-
-    pub inline fn new(_x: T, _y: T, _z: T) Vec {
-        return .{ .v = .{_x,_y,_z} };
-    }
-    pub inline fn fromVec2(v: Vec2i, _z: T) Vec {
-        return .{ .v = .{v.x(),v.y(),_z} };
-    }
-
-    pub inline fn x(v: Vec) T {
-        return v.v[0];
-    }
-    pub inline fn y(v: Vec) T {
-        return v.v[1];
-    }
-    pub inline fn z(v: Vec) T {
-        return v.v[2];
-    }
-
-    /// Cross (vector) product of two vectors
-    ///
-    /// Gives a vector perpendicular to both inputs in the direction determined by the left-hand rule.
-    pub inline fn cross(a: Vec, b: Vec) Vec {
-        return .new(a.y()*b.z() - a.z()*b.y(), a.z()*b.x() - a.x()*b.z(), a.x()*b.y() - a.y()*b.x());
-    }
-
-    /// Find the angle between two vectors.
-    pub inline fn angleTo(a: Vec, b: Vec) f32 {
-        return std.math.atan2(a.cross(b).length(), @as(f32, @floatFromInt(a.dot(b))));
-    }
-
-    const funcs = Shared(Vec, N, T);
-    const funcsi = Sharedi(Vec, N, T);
-    pub const splat = funcs.splat;
-    pub const negate = funcs.negate;
-    pub const add = funcs.add;
-    pub const sub = funcs.sub;
-    pub const scale = funcs.scale;
-    pub const mul = funcs.mul;
-    pub const div = funcs.div;
-    pub const dot = funcs.dot;
-    pub const distance = funcs.distance;
-    pub const distanceSqr = funcs.distanceSqr;
-    pub const length = funcsi.length;
-    pub const lengthSqr = funcs.lengthSqr;
-    pub const eql = funcs.eql;
-
-    pub fn format(
-        self: @This(),
-        writer: *std.Io.Writer,
-    ) std.Io.Writer.Error!void {
-        try writer.print("({}, {}, {})", .{self.x(), self.y(), self.z()});
-    }
-};
-
-/// A vector with 4 elements of i32
-pub const Vec4i = extern struct {
-    const Vec = @This();
-    const N = 4;
-    const T = i32;
-
-    v: [N]T,
-
-    pub const zero: Vec = .splat(0);
-    pub const one: Vec = .splat(1);
-
-    pub inline fn new(_x: T, _y: T, _z: T, _w: T) Vec {
-        return .{ .v = .{_x,_y,_z,_w} };
-    }
-    pub inline fn fromVec3(v: Vec3i, _w: T) Vec {
-        return .{ .v = .{v.x(),v.y(),v.z(),_w} };
-    }
-
-    pub inline fn x(v: Vec) T {
-        return v.v[0];
-    }
-    pub inline fn y(v: Vec) T {
-        return v.v[1];
-    }
-    pub inline fn z(v: Vec) T {
-        return v.v[2];
-    }
-    pub inline fn w(v: Vec) T {
-        return v.v[3];
-    }
-
-    const funcs = Shared(Vec, N, T);
-    const funcsi = Sharedi(Vec, N, T);
-    pub const splat = funcs.splat;
-    pub const negate = funcs.negate;
-    pub const add = funcs.add;
-    pub const sub = funcs.sub;
-    pub const scale = funcs.scale;
-    pub const mul = funcs.mul;
-    pub const div = funcs.div;
-    pub const dot = funcs.dot;
-    pub const distance = funcs.distance;
-    pub const distanceSqr = funcs.distanceSqr;
-    pub const length = funcsi.length;
-    pub const lengthSqr = funcs.lengthSqr;
-    pub const eql = funcs.eql;
-
-    pub fn format(
-        self: @This(),
-        writer: *std.Io.Writer,
-    ) std.Io.Writer.Error!void {
-        try writer.print("({}, {}, {}, {})", .{self.x(), self.y(), self.z(), self.w()});
-    }
-};
-
-fn Sharedi(Vec: type, N: comptime_int, T: type) type {
-    std.debug.assert(@hasField(Vec, "v") and @FieldType(Vec, "v") == [N]T);
+/// A vector with 2 elements of T (must be an integer)
+pub fn Vec2int(comptime T: type) type {
+    assert(@typeInfo(T) == .int);
+    assert(@typeInfo(T).int.signedness == .signed);
     return extern struct {
-        pub inline fn length(v: Vec) f32 {
-            var result: T = 0;
-            inline for (0..N) |i| {
-                result += v.v[i]*v.v[i];
-            }
-            return @sqrt(@as(f32, @floatFromInt(result)));
+        const Vec = @This();
+        const N = 2;
+
+        v: [N]T,
+
+        pub const zero: Vec = .splat(0);
+        pub const right: Vec = .new(1, 0);
+        pub const left: Vec = .new(-1, 0);
+        pub const up: Vec = .new(0, 1);
+        pub const down: Vec = .new(0, -1);
+        pub const one: Vec = .splat(1);
+
+        pub inline fn new(_x: T, _y: T) Vec {
+            return .{ .v = .{_x,_y} };
+        }
+
+        pub inline fn x(v: Vec) T {
+            return v.v[0];
+        }
+        pub inline fn y(v: Vec) T {
+            return v.v[1];
+        }
+
+        /// The length of the cross product gives the signed area of a parallelogram
+        /// constructed with two vectors. This function returns that length.
+        pub inline fn cross(a: Vec, b: Vec) T {
+            return a.x()*b.y() - a.y()*b.x();
+        }
+
+        /// Returns the angle between the vector and the positive X axis.
+        ///
+        /// See `angle_to()` for angle between vectors
+        pub inline fn angle(v: Vec) f32 {
+            return std.math.atan2(@as(f32, @floatFromInt(v.x())), @as(f32, @floatFromInt(v.y())));
+        }
+
+        /// Find the angle between two vectors.
+        pub inline fn angleTo(a: Vec, b: Vec) f32 {
+            return std.math.atan2(@as(f32, @floatFromInt(a.cross(b))), @as(f32, @floatFromInt(a.dot(b))));
+        }
+
+        const funcs = Shared(Vec, N, T);
+        pub const splat = funcs.splat;
+        pub const negate = funcs.negate;
+        pub const add = funcs.add;
+        pub const sub = funcs.sub;
+        pub const scale = funcs.scale;
+        pub const mul = funcs.mul;
+        pub const div = funcs.div;
+        pub const dot = funcs.dot;
+        pub const distance = funcs.distance;
+        pub const distanceSqr = funcs.distanceSqr;
+        pub const length = funcs.length;
+        pub const lengthSqr = funcs.lengthSqr;
+        pub const eql = funcs.eql;
+
+        pub fn format(
+            self: @This(),
+            writer: *std.Io.Writer,
+        ) std.Io.Writer.Error!void {
+            try writer.print("({}, {})", .{self.x(), self.y()});
         }
     };
 }
 
+/// A vector with 3 elements of T (must be an integer)
+pub fn Vec3int(comptime T: type) type {
+    assert(@typeInfo(T) == .int);
+    assert(@typeInfo(T).int.signedness == .signed);
+    return extern struct {
+        const Vec = @This();
+        const N = 3;
+
+        v: [N]T,
+
+        pub const zero: Vec = .splat(0);
+        pub const right: Vec = .new(1, 0, 0);
+        pub const left: Vec = .new(-1, 0, 0);
+        pub const up: Vec = .new(0, 1, 0);
+        pub const down: Vec = .new(0, -1, 0);
+        pub const forward: Vec = .new(0, 0, 1);
+        pub const back: Vec = .new(0, 0, -1);
+        pub const one: Vec = .splat(1);
+
+        pub inline fn new(_x: T, _y: T, _z: T) Vec {
+            return .{ .v = .{_x,_y,_z} };
+        }
+        pub inline fn fromVec2(v: Vec2i, _z: T) Vec {
+            return .{ .v = .{v.x(),v.y(),_z} };
+        }
+
+        pub inline fn x(v: Vec) T {
+            return v.v[0];
+        }
+        pub inline fn y(v: Vec) T {
+            return v.v[1];
+        }
+        pub inline fn z(v: Vec) T {
+            return v.v[2];
+        }
+
+        /// Cross (vector) product of two vectors
+        ///
+        /// Gives a vector perpendicular to both inputs in the direction determined by the left-hand rule.
+        pub inline fn cross(a: Vec, b: Vec) Vec {
+            return .new(a.y()*b.z() - a.z()*b.y(), a.z()*b.x() - a.x()*b.z(), a.x()*b.y() - a.y()*b.x());
+        }
+
+        /// Find the angle between two vectors.
+        pub inline fn angleTo(a: Vec, b: Vec) f32 {
+            return std.math.atan2(a.cross(b).length(), @as(f32, @floatFromInt(a.dot(b))));
+        }
+
+        const funcs = Shared(Vec, N, T);
+        pub const splat = funcs.splat;
+        pub const negate = funcs.negate;
+        pub const add = funcs.add;
+        pub const sub = funcs.sub;
+        pub const scale = funcs.scale;
+        pub const mul = funcs.mul;
+        pub const div = funcs.div;
+        pub const dot = funcs.dot;
+        pub const distance = funcs.distance;
+        pub const distanceSqr = funcs.distanceSqr;
+        pub const length = funcs.length;
+        pub const lengthSqr = funcs.lengthSqr;
+        pub const eql = funcs.eql;
+
+        pub fn format(
+            self: @This(),
+            writer: *std.Io.Writer,
+        ) std.Io.Writer.Error!void {
+            try writer.print("({}, {}, {})", .{self.x(), self.y(), self.z()});
+        }
+    };
+}
+
+/// A vector with 4 elements of T (must be an integer)
+pub fn Vec4int(comptime T: type) type {
+    assert(@typeInfo(T) == .int);
+    assert(@typeInfo(T).int.signedness == .signed);
+    return extern struct {
+        const Vec = @This();
+        const N = 4;
+
+        v: [N]T,
+
+        pub const zero: Vec = .splat(0);
+        pub const one: Vec = .splat(1);
+
+        pub inline fn new(_x: T, _y: T, _z: T, _w: T) Vec {
+            return .{ .v = .{_x,_y,_z,_w} };
+        }
+        pub inline fn fromVec3(v: Vec3i, _w: T) Vec {
+            return .{ .v = .{v.x(),v.y(),v.z(),_w} };
+        }
+
+        pub inline fn x(v: Vec) T {
+            return v.v[0];
+        }
+        pub inline fn y(v: Vec) T {
+            return v.v[1];
+        }
+        pub inline fn z(v: Vec) T {
+            return v.v[2];
+        }
+        pub inline fn w(v: Vec) T {
+            return v.v[3];
+        }
+
+        const funcs = Shared(Vec, N, T);
+        pub const splat = funcs.splat;
+        pub const negate = funcs.negate;
+        pub const add = funcs.add;
+        pub const sub = funcs.sub;
+        pub const scale = funcs.scale;
+        pub const mul = funcs.mul;
+        pub const div = funcs.div;
+        pub const dot = funcs.dot;
+        pub const distance = funcs.distance;
+        pub const distanceSqr = funcs.distanceSqr;
+        pub const length = funcs.length;
+        pub const lengthSqr = funcs.lengthSqr;
+        pub const eql = funcs.eql;
+
+        pub fn format(
+            self: @This(),
+            writer: *std.Io.Writer,
+        ) std.Io.Writer.Error!void {
+            try writer.print("({}, {}, {}, {})", .{self.x(), self.y(), self.z(), self.w()});
+        }
+    };
+}
+
+// ========== Testing ==========
+
 const testing = std.testing;
+const Vec2i = Vec2int(i32);
+const Vec3i = Vec3int(i32);
+const Vec4i = Vec4int(i32);
 test "Vector int from lower" {
     const vec2 = Vec2i.new(321, 123);
     const vec3 = Vec3i.fromVec2(vec2, 333);

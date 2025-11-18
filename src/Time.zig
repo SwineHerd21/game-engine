@@ -11,16 +11,17 @@ const log = std.log.scoped(.engine);
 
 const Time = @This();
 
-/// Time since the last frame in seconds
-deltaTime: f32,
-/// Total application runtime in seconds
-totalRuntime: f32,
+/// Time since the last frame in nanoseconds
+dtNano: u64,
+/// Total application runtime in nanoseconds
+runtimeNano: u64,
+/// Internal time keeper, do not touch
 timer: Timer,
 
 pub fn init() EngineError!Time {
     return .{
-        .deltaTime = 0,
-        .totalRuntime = 0,
+        .dtNano = 0,
+        .runtimeNano = 0,
         .timer = Timer.start() catch {
             log.err("Failed to initialize timer", .{});
             return EngineError.InitFailure;
@@ -29,7 +30,17 @@ pub fn init() EngineError!Time {
 }
 
 pub fn update(self: *Time) void {
-    const dt: f32 = @as(f32, @floatFromInt(self.timer.lap())) / @as(f32, std.time.ns_per_s);
-    self.deltaTime = dt;
-    self.totalRuntime += dt;
+    const dt = self.timer.lap();
+    self.dtNano = dt;
+    self.runtimeNano += dt;
+}
+
+/// Gives time since last frame in seconds
+pub inline fn deltaTime(self: Time) f64 {
+    return @as(f64, @floatFromInt(self.dtNano)) / @as(f64, std.time.ns_per_s);
+}
+
+/// Gives total application runtime in seconds
+pub inline fn totalRuntime(self: Time) f64 {
+    return @as(f64, @floatFromInt(self.runtimeNano)) / @as(f64, std.time.ns_per_s);
 }

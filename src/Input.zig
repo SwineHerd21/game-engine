@@ -8,8 +8,6 @@ const Input = @This();
 
 /// Current cursor position in window coordinates
 pointer_position: math.Vec2i,
-/// How much the pointer moved between frames
-pointer_delta: math.Vec2i,
 
 pub const ModifierKeys = packed struct {
     shift: bool,

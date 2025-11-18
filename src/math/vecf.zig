@@ -1,219 +1,227 @@
 //! Floating point mathematical vectors
 
 const std = @import("std");
+const assert = std.debug.assert;
 
 // Somewhat stolen from mach and Godot
 
-/// A vector with 2 elements of f32
-pub const Vec2f = extern struct {
-    const Vec = @This();
-    const N = 2;
-    const T = f32;
+/// A vector with 4 elements of T (must be a float)
+pub fn Vec2float(comptime T: type) type {
+    assert(@typeInfo(T) == .float);
+    return extern struct {
+        const Vec = @This();
+        const N = 2;
 
-    v: [N]T,
+        v: [N]T,
 
-    pub const zero: Vec = .splat(0);
-    pub const right: Vec = .new(1, 0);
-    pub const left: Vec = .new(-1, 0);
-    pub const up: Vec = .new(0, 1);
-    pub const down: Vec = .new(0, -1);
-    pub const one: Vec = .splat(1);
+        pub const zero: Vec = .splat(0);
+        pub const right: Vec = .new(1, 0);
+        pub const left: Vec = .new(-1, 0);
+        pub const up: Vec = .new(0, 1);
+        pub const down: Vec = .new(0, -1);
+        pub const one: Vec = .splat(1);
 
-    pub inline fn new(_x: T, _y: T) Vec {
-        return .{ .v = .{_x,_y} };
-    }
+        pub inline fn new(_x: T, _y: T) Vec {
+            return .{ .v = .{_x,_y} };
+        }
 
-    pub inline fn x(v: Vec) T {
-        return v.v[0];
-    }
-    pub inline fn y(v: Vec) T {
-        return v.v[1];
-    }
+        pub inline fn x(v: Vec) T {
+            return v.v[0];
+        }
+        pub inline fn y(v: Vec) T {
+            return v.v[1];
+        }
 
-    /// The length of the cross product gives the signed area of a parallelogram
-    /// constructed with two vectors. This function returns that length.
-    pub inline fn cross(a: Vec, b: Vec) f32 {
-        return a.x()*b.y() - a.y()*b.x();
-    }
+        /// The length of the cross product gives the signed area of a parallelogram
+        /// constructed with two vectors. This function returns that length.
+        pub inline fn cross(a: Vec, b: Vec) T {
+            return a.x()*b.y() - a.y()*b.x();
+        }
 
-    /// Returns the angle between the vector and the positive X axis.
-    ///
-    /// See `angle_to()` for angle between vectors
-    pub inline fn angle(v: Vec) f32 {
-        return std.math.atan2(v.x(), v.y());
-    }
+        /// Returns the angle between the vector and the positive X axis.
+        ///
+        /// See `angle_to()` for angle between vectors
+        pub inline fn angle(v: Vec) T {
+            return std.math.atan2(v.x(), v.y());
+        }
 
-    /// Find the angle between two vectors.
-    pub inline fn angleTo(a: Vec, b: Vec) f32 {
-        return std.math.atan2(a.cross(b), a.dot(b));
-    }
+        /// Find the angle between two vectors.
+        pub inline fn angleTo(a: Vec, b: Vec) T {
+            return std.math.atan2(a.cross(b), a.dot(b));
+        }
 
-    const funcs = Shared(Vec, N, T);
-    pub const splat = funcs.splat;
-    pub const negate = funcs.negate;
-    pub const add = funcs.add;
-    pub const sub = funcs.sub;
-    pub const scale = funcs.scale;
-    pub const mul = funcs.mul;
-    pub const div = funcs.div;
-    pub const dot = funcs.dot;
-    pub const normalized = funcs.normalized;
-    pub const distance = funcs.distance;
-    pub const distanceSqr = funcs.distanceSqr;
-    pub const lerp = funcs.lerp;
-    pub const moveToward = funcs.moveToward;
-    pub const reflect = funcs.reflect;
-    pub const clampLength = funcs.clampLength;
-    pub const length = funcs.length;
-    pub const lengthSqr = funcs.lengthSqr;
-    pub const eql = funcs.eql;
-    pub const eqlApprox = funcs.eqlApprox;
+        const funcs = Shared(Vec, N, T);
+        pub const splat = funcs.splat;
+        pub const negate = funcs.negate;
+        pub const add = funcs.add;
+        pub const sub = funcs.sub;
+        pub const scale = funcs.scale;
+        pub const mul = funcs.mul;
+        pub const div = funcs.div;
+        pub const dot = funcs.dot;
+        pub const normalized = funcs.normalized;
+        pub const distance = funcs.distance;
+        pub const distanceSqr = funcs.distanceSqr;
+        pub const lerp = funcs.lerp;
+        pub const moveToward = funcs.moveToward;
+        pub const reflect = funcs.reflect;
+        pub const clampLength = funcs.clampLength;
+        pub const length = funcs.length;
+        pub const lengthSqr = funcs.lengthSqr;
+        pub const eql = funcs.eql;
+        pub const eqlApprox = funcs.eqlApprox;
 
-    pub fn format(
-        self: @This(),
-        writer: *std.Io.Writer,
-    ) std.Io.Writer.Error!void {
-        try writer.print("({}, {})", .{self.x(), self.y()});
-    }
-};
+        pub fn format(
+            self: @This(),
+            writer: *std.Io.Writer,
+        ) std.Io.Writer.Error!void {
+            try writer.print("({}, {})", .{self.x(), self.y()});
+        }
+    };
+}
 
-/// A vector with 3 elements of f32
-pub const Vec3f = extern struct {
-    const Vec = @This();
-    const N = 3;
-    const T = f32;
+/// A vector with 3 elements of T (must be a float)
+pub fn Vec3float(comptime T: type) type {
+    assert(@typeInfo(T) == .float);
+    return extern struct {
+        const Vec = @This();
+        const N = 3;
 
-    v: [N]T,
+        v: [N]T,
 
-    pub const zero: Vec = .splat(0);
-    pub const right: Vec = .new(1, 0, 0);
-    pub const left: Vec = .new(-1, 0, 0);
-    pub const up: Vec = .new(0, 1, 0);
-    pub const down: Vec = .new(0, -1, 0);
-    pub const forward: Vec = .new(0, 0, 1);
-    pub const back: Vec = .new(0, 0, -1);
-    pub const one: Vec = .splat(1);
+        pub const zero: Vec = .splat(0);
+        pub const right: Vec = .new(1, 0, 0);
+        pub const left: Vec = .new(-1, 0, 0);
+        pub const up: Vec = .new(0, 1, 0);
+        pub const down: Vec = .new(0, -1, 0);
+        pub const forward: Vec = .new(0, 0, 1);
+        pub const back: Vec = .new(0, 0, -1);
+        pub const one: Vec = .splat(1);
 
-    pub inline fn new(_x: T, _y: T, _z: T) Vec {
-        return .{ .v = .{_x,_y,_z} };
-    }
-    pub inline fn fromVec2(v: Vec2f, _z: T) Vec {
-        return .{ .v = .{v.x(),v.y(),_z} };
-    }
+        pub inline fn new(_x: T, _y: T, _z: T) Vec {
+            return .{ .v = .{_x,_y,_z} };
+        }
+        pub inline fn fromVec2(v: Vec2float(T), _z: T) Vec {
+            return .{ .v = .{v.x(),v.y(),_z} };
+        }
 
-    pub inline fn x(v: Vec) T {
-        return v.v[0];
-    }
-    pub inline fn y(v: Vec) T {
-        return v.v[1];
-    }
-    pub inline fn z(v: Vec) T {
-        return v.v[2];
-    }
+        pub inline fn x(v: Vec) T {
+            return v.v[0];
+        }
+        pub inline fn y(v: Vec) T {
+            return v.v[1];
+        }
+        pub inline fn z(v: Vec) T {
+            return v.v[2];
+        }
 
-    /// Cross (vector) product of two vectors
-    ///
-    /// Gives a vector perpendicular to both inputs in the direction determined by the left-hand rule.
-    pub inline fn cross(a: Vec, b: Vec) Vec {
-        return .new(a.y()*b.z() - a.z()*b.y(), a.z()*b.x() - a.x()*b.z(), a.x()*b.y() - a.y()*b.x());
-    }
+        /// Cross (vector) product of two vectors
+        ///
+        /// Gives a vector perpendicular to both inputs in the direction determined by the left-hand rule.
+        pub inline fn cross(a: Vec, b: Vec) Vec {
+            return .new(a.y()*b.z() - a.z()*b.y(), a.z()*b.x() - a.x()*b.z(), a.x()*b.y() - a.y()*b.x());
+        }
 
-    /// Find the angle between two vectors.
-    pub inline fn angleTo(a: Vec, b: Vec) f32 {
-        return std.math.atan2(a.cross(b).length(), a.dot(b));
-    }
+        /// Find the angle between two vectors.
+        pub inline fn angleTo(a: Vec, b: Vec) T {
+            return std.math.atan2(a.cross(b).length(), a.dot(b));
+        }
 
-    const funcs = Shared(Vec, N, T);
-    pub const splat = funcs.splat;
-    pub const negate = funcs.negate;
-    pub const add = funcs.add;
-    pub const sub = funcs.sub;
-    pub const scale = funcs.scale;
-    pub const mul = funcs.mul;
-    pub const div = funcs.div;
-    pub const dot = funcs.dot;
-    pub const normalized = funcs.normalized;
-    pub const distance = funcs.distance;
-    pub const distanceSqr = funcs.distanceSqr;
-    pub const lerp = funcs.lerp;
-    pub const moveToward = funcs.moveToward;
-    pub const reflect = funcs.reflect;
-    pub const clampLength = funcs.clampLength;
-    pub const length = funcs.length;
-    pub const lengthSqr = funcs.lengthSqr;
-    pub const eql = funcs.eql;
-    pub const eqlApprox = funcs.eqlApprox;
+        const funcs = Shared(Vec, N, T);
+        pub const splat = funcs.splat;
+        pub const negate = funcs.negate;
+        pub const add = funcs.add;
+        pub const sub = funcs.sub;
+        pub const scale = funcs.scale;
+        pub const mul = funcs.mul;
+        pub const div = funcs.div;
+        pub const dot = funcs.dot;
+        pub const normalized = funcs.normalized;
+        pub const distance = funcs.distance;
+        pub const distanceSqr = funcs.distanceSqr;
+        pub const lerp = funcs.lerp;
+        pub const moveToward = funcs.moveToward;
+        pub const reflect = funcs.reflect;
+        pub const clampLength = funcs.clampLength;
+        pub const length = funcs.length;
+        pub const lengthSqr = funcs.lengthSqr;
+        pub const eql = funcs.eql;
+        pub const eqlApprox = funcs.eqlApprox;
 
-    pub fn format(
-        self: @This(),
-        writer: *std.Io.Writer,
-    ) std.Io.Writer.Error!void {
-        try writer.print("({}, {}, {})", .{self.x(), self.y(), self.z()});
-    }
-};
+        pub fn format(
+            self: @This(),
+            writer: *std.Io.Writer,
+        ) std.Io.Writer.Error!void {
+            try writer.print("({}, {}, {})", .{self.x(), self.y(), self.z()});
+        }
+    };
+}
 
-/// A vector with 4 elements of f32
-pub const Vec4f = extern struct {
-    const Vec = @This();
-    const N = 4;
-    const T = f32;
+/// A vector with 4 elements of T (must be a float)
+pub fn Vec4float(comptime T: type) type {
+    assert(@typeInfo(T) == .float);
+    return extern struct {
+        const Vec = @This();
+        const N = 4;
 
-    v: [N]T,
+        v: [N]T,
 
-    pub const zero: Vec = .splat(0);
-    pub const one: Vec = .splat(1);
+        pub const zero: Vec = .splat(0);
+        pub const one: Vec = .splat(1);
 
-    pub inline fn new(_x: T, _y: T, _z: T, _w: T) Vec {
-        return .{ .v = .{_x,_y,_z,_w} };
-    }
-    pub inline fn fromVec3(v: Vec3f, _w: T) Vec {
-        return .{ .v = .{v.x(),v.y(),v.z(),_w} };
-    }
+        pub inline fn new(_x: T, _y: T, _z: T, _w: T) Vec {
+            return .{ .v = .{_x,_y,_z,_w} };
+        }
+        pub inline fn fromVec3(v: Vec3float(T), _w: T) Vec {
+            return .{ .v = .{v.x(),v.y(),v.z(),_w} };
+        }
 
-    pub inline fn x(v: Vec) T {
-        return v.v[0];
-    }
-    pub inline fn y(v: Vec) T {
-        return v.v[1];
-    }
-    pub inline fn z(v: Vec) T {
-        return v.v[2];
-    }
-    pub inline fn w(v: Vec) T {
-        return v.v[3];
-    }
+        pub inline fn x(v: Vec) T {
+            return v.v[0];
+        }
+        pub inline fn y(v: Vec) T {
+            return v.v[1];
+        }
+        pub inline fn z(v: Vec) T {
+            return v.v[2];
+        }
+        pub inline fn w(v: Vec) T {
+            return v.v[3];
+        }
 
-    const funcs = Shared(Vec, N, T);
-    pub const splat = funcs.splat;
-    pub const negate = funcs.negate;
-    pub const add = funcs.add;
-    pub const sub = funcs.sub;
-    pub const scale = funcs.scale;
-    pub const mul = funcs.mul;
-    pub const div = funcs.div;
-    pub const dot = funcs.dot;
-    pub const normalized = funcs.normalized;
-    pub const distance = funcs.distance;
-    pub const distanceSqr = funcs.distanceSqr;
-    pub const lerp = funcs.lerp;
-    pub const moveToward = funcs.moveToward;
-    pub const reflect = funcs.reflect;
-    pub const clampLength = funcs.clampLength;
-    pub const length = funcs.length;
-    pub const lengthSqr = funcs.lengthSqr;
-    pub const eql = funcs.eql;
-    pub const eqlApprox = funcs.eqlApprox;
+        const funcs = Shared(Vec, N, T);
+        pub const splat = funcs.splat;
+        pub const negate = funcs.negate;
+        pub const add = funcs.add;
+        pub const sub = funcs.sub;
+        pub const scale = funcs.scale;
+        pub const mul = funcs.mul;
+        pub const div = funcs.div;
+        pub const dot = funcs.dot;
+        pub const normalized = funcs.normalized;
+        pub const distance = funcs.distance;
+        pub const distanceSqr = funcs.distanceSqr;
+        pub const lerp = funcs.lerp;
+        pub const moveToward = funcs.moveToward;
+        pub const reflect = funcs.reflect;
+        pub const clampLength = funcs.clampLength;
+        pub const length = funcs.length;
+        pub const lengthSqr = funcs.lengthSqr;
+        pub const eql = funcs.eql;
+        pub const eqlApprox = funcs.eqlApprox;
 
-    pub fn format(
-        self: @This(),
-        writer: *std.Io.Writer,
-    ) std.Io.Writer.Error!void {
-        try writer.print("({}, {}, {}, {})", .{self.x(), self.y(), self.z(), self.w()});
-    }
-};
+        pub fn format(
+            self: @This(),
+            writer: *std.Io.Writer,
+        ) std.Io.Writer.Error!void {
+            try writer.print("({}, {}, {}, {})", .{self.x(), self.y(), self.z(), self.w()});
+        }
+    };
+}
 
 pub fn Shared(Vec: type, N: comptime_int, T: type) type {
-    std.debug.assert(@hasField(Vec, "v") and @FieldType(Vec, "v") == [N]T);
+    assert(@typeInfo(T) == .int or @typeInfo(T) == .float);
+    assert(@hasField(Vec, "v") and @FieldType(Vec, "v") == [N]T);
     return extern struct {
         /// Returns a vector with all elements set to `value`
         pub inline fn splat(value: T) Vec {
@@ -288,7 +296,11 @@ pub fn Shared(Vec: type, N: comptime_int, T: type) type {
             inline for (0..N) |i| {
                 result += v.v[i]*v.v[i];
             }
-            return @sqrt(@as(f32, result));
+            return switch (@typeInfo(T)) {
+                .float => @sqrt(@as(f32, @floatCast(result))),
+                .int => @sqrt(@as(f32, @floatFromInt(result))),
+                else => unreachable,
+            };
         }
         /// Faster than `length()`
         pub inline fn lengthSqr(v: Vec) T {
@@ -309,7 +321,7 @@ pub fn Shared(Vec: type, N: comptime_int, T: type) type {
 
         /// Returns a vector pointing in the same direction but with length 1
         pub inline fn normalized(v: Vec) Vec {
-            return v.div(v.length());
+            return v.div(@floatCast(v.length()));
         }
 
         /// Linearly interpolate between two vectors by `t`.
@@ -330,7 +342,7 @@ pub fn Shared(Vec: type, N: comptime_int, T: type) type {
         pub inline fn moveToward(a: Vec, b: Vec, delta: f32) Vec {
             const dir = b.sub(a);
             const len = dir.length();
-            return if (len <= delta or len < std.math.floatEps(f32)) b else a.add(dir.mul(delta / len));
+            return if (len <= delta or len < std.math.floatEps(T)) b else a.add(dir.mul(@floatCast(delta / len)));
         }
 
         /// Reflect the vector off a surface defined by the normal.
@@ -342,7 +354,7 @@ pub fn Shared(Vec: type, N: comptime_int, T: type) type {
         pub inline fn clampLength(v: Vec, len: f32) Vec {
             const l = v.length();
             if (len < 0 or len >= l) return v;
-            return v.mul(len / l);
+            return v.mul(@floatCast(len / l));
         }
 
         /// Checks if two vectors are exactly equal
@@ -366,7 +378,9 @@ pub fn Shared(Vec: type, N: comptime_int, T: type) type {
 // ========== Tests ==========
 
 const testing = std.testing;
-
+const Vec2f = Vec2float(f32);
+const Vec3f = Vec3float(f32);
+const Vec4f = Vec4float(f32);
 test "Vector layout" {
     const vec2 = Vec2f.new(3.3, -5.0);
     const vec3 = Vec3f.new(3.3, -5.0, 0.23);

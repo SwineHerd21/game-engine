@@ -101,8 +101,7 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
         .asset_manager = &asset_manager,
         .time = try .init(),
         .input = .{
-            .pointer_position = math.Vec2i.zero,
-            .pointer_delta = math.Vec2i.zero,
+            .pointer_position = .zero,
         },
     };
 
@@ -112,7 +111,7 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
     while (!window.should_close) {
         // Process pending OS events
         while (window.areEventsPending()) {
-            if (window.consumeEvent()) |ev| {
+            if (window.consumeEvent(app.input)) |ev| {
                 // Special handling for important events
                 switch (ev) {
                     .window_resize => |e| {
@@ -126,8 +125,7 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
                         graphics.adjustViewport(@intCast(window.width), @intCast(window.height));
                     },
                     .pointer_motion => |m| {
-                        app.input.pointer_delta = m.sub(app.input.pointer_position);
-                        app.input.pointer_position = m;
+                        app.input.pointer_position = m.position;
                     },
                     else => {},
                 }
@@ -144,7 +142,6 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
         try options.on_update(&app);
 
         // NOTE: maybe introduce a `post_update`?
-        app.input.pointer_delta = .zero;
 
         window.swapBuffers();
     }

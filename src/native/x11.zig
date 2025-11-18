@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const math = @import("../math/math.zig");
 const Window = @import("../Window.zig");
 const Input = @import("../Input.zig");
 const events = @import("../events.zig");
@@ -99,7 +100,7 @@ pub inline fn areEventsPending(ctx: Context) bool {
     return c.XPending(ctx.display) != 0;
 }
 
-pub inline fn consumeEvent(window: *Window) ?events.Event {
+pub inline fn consumeEvent(window: *Window, input: Input) ?events.Event {
     _ = c.XNextEvent(window.inner.display, &window.inner.event);
     switch (window.inner.event.type) {
         c.KeyPress => {
@@ -166,8 +167,12 @@ pub inline fn consumeEvent(window: *Window) ?events.Event {
         c.MotionNotify => {
             const ev = window.inner.event.xmotion;
 
+            const position = math.Vec2i.new(ev.x, ev.y);
             return events.Event{
-                .pointer_motion = .new(ev.x, ev.y),
+                .pointer_motion = .{
+                    .position = position,
+                    .delta = position.sub(input.pointer_position),
+                },
             };
         },
         c.EnterNotify => {
