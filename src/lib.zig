@@ -18,6 +18,7 @@ pub const Time = @import("Time.zig");
 
 pub const Mesh = @import("graphics/Mesh.zig");
 pub const Material = @import("graphics/Material.zig");
+pub const Texture = @import("graphics/Texture.zig");
 pub const shaders = @import("graphics/shaders.zig");
 
 const log = std.log.scoped(.engine);
@@ -92,6 +93,7 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
 
     try asset_manager.registerAssetType(shaders.Vertex, shaders.Vertex.init, shaders.Vertex.deinit);
     try asset_manager.registerAssetType(shaders.Fragment, shaders.Fragment.init, shaders.Fragment.deinit);
+    try asset_manager.registerAssetType(Texture, Texture.init, Texture.deinit);
     try asset_manager.registerAssetType(Material, Material.init, Material.deinit);
     try asset_manager.registerAssetType(Mesh, init_2, Mesh.deinit);
 

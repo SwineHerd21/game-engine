@@ -8,6 +8,7 @@ const EngineError = @import("../lib.zig").EngineError;
 const AssetManager = @import("../assets/AssetManager.zig");
 
 const shaders = @import("shaders.zig");
+const Texture = @import("Texture.zig");
 
 const log_gl = std.log.scoped(.opengl);
 
@@ -16,12 +17,14 @@ const Material = @This();
 program: gl.uint,
 vertex_shader: shaders.Vertex,
 fragment_shader: shaders.Fragment,
+texture: ?Texture,
 
 pub fn init(data: []const u8, assets: *AssetManager) EngineError!Material {
     // TODO: figure out how to embed unifroms into material files
     const Zon = struct {
         vertex: []const u8,
         fragment: []const u8,
+        texture: ?[]const u8,
     };
     const zon = try assets.parseZon(Zon, data);
 
@@ -59,11 +62,20 @@ pub fn init(data: []const u8, assets: *AssetManager) EngineError!Material {
         return EngineError.ShaderCompilationFailure;
     }
 
-    return .{
+    var material = Material{
         .program = shader_program,
         .vertex_shader = vertex_shader,
         .fragment_shader = fragment_shader,
+        .texture = null,
     };
+
+    if (zon.texture) |texture_path| {
+        const texture = try assets.getOrLoad(Texture, texture_path);
+        material.setUniform("Texture", @as(i32, 0));
+        material.texture = texture;
+    }
+
+    return material;
 }
 
 
@@ -74,8 +86,12 @@ pub fn deinit(self: *Material, _: std.mem.Allocator) void {
 }
 
 // Tells OpenGL to use the shader program.
-pub fn use(shader: Material) void {
-    gl.UseProgram(shader.program);
+pub fn use(self: Material) void {
+    gl.UseProgram(self.program);
+    if (self.texture) |texture| {
+        gl.ActiveTexture(gl.TEXTURE0);
+        gl.BindTexture(gl.TEXTURE_2D, texture.handle);
+    }
 }
 
 /// Set a uniform value in the shader program if it exists.
@@ -155,6 +171,7 @@ pub fn validateUniformType(comptime T: type) void {
             _=array;
             switch (@typeInfo(U)) {
                 .@"bool" => {},
+                .comptime_int, .comptime_float => @compileError("comptime_int/comptime_float values are not allowed in uniforms, please cast them"),
                 .int => |i| if (i.bits != 32) {
                     @compileError(error_msg);
                 },

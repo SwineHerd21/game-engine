@@ -7,7 +7,6 @@ By priority
 - Immediate mode GUI for debugging
 
 - Models: contain meshes and materials
-- Textures: may be referenced by materials and passed to shaders
 - Loading models from files
 
 - Matricies

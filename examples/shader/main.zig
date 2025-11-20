@@ -46,25 +46,36 @@ fn on_init(app: *App) !void {
 
     // TEMP
     const verts = [_]f32{
-        // positions        // colors
-        -0.5, -0.5, 0.0,    1.0, 1.0, 1.0,  // bottom left
-         0.5, -0.5, 0.0,    1.0, 0.0, 0.0,  // bottom right
-         0.5,  0.5, 0.0,    0.0, 1.0, 0.0,  // top right
-        -0.5,  0.5, 0.0,    0.0, 0.0, 1.0,  // top left
+        // positions
+        -0.5, -0.5, 0.0,    // bottom left
+         0.5, -0.5, 0.0,    // bottom right
+         0.5,  0.5, 0.0,    // top right
+        -0.5,  0.5, 0.0,    // top left
+    };
+    const uvs = [_]f32{
+        0.0, 0.0,
+        1.0, 0.0,
+        1.0, 1.0,
+        0.0, 1.0,
     };
     const indices = [_]c_uint{
         0, 1, 3,
         1, 2, 3,
     };
-    try assets.put("quad", engine.Mesh.init(&verts, &indices));
+    try assets.put("quad", engine.Mesh.init(&verts, &uvs, &indices));
     app.state.quad = assets.getNamed(engine.Mesh, "quad").?;
 
     const verts2 = [_]f32{
-        -0.5, -0.5, 0.0,    1.0, 0.0, 0.0,
-         0.5, -0.5, 0.0,    0.0, 1.0, 0.0,
-         0.0,  0.5, 0.0,    0.0, 0.0, 1.0,
+        -0.5, -0.5, 0.0,
+         0.5, -0.5, 0.0,
+         0.0,  0.5, 0.0,
     };
-    try assets.put("tri", engine.Mesh.init(&verts2, &.{0,1,2}));
+    const uvs2 = [_]f32{
+        0.0, 0.0,
+        1.0, 0.0,
+        0.5, 1.0,
+    };
+    try assets.put("tri", engine.Mesh.init(&verts2, &uvs2, &.{0,1,2}));
     app.state.tri = assets.getNamed(engine.Mesh, "tri").?;
 
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});

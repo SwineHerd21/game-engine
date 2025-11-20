@@ -22,7 +22,6 @@ pub fn build(b: *std.Build) void {
     }
     // OpenGL
     mod.linkSystemLibrary("GL", .{ .needed = true });
-
     const gl_bindings = @import("zigglgen").generateBindingsModule(b, .{
         .api = .gl,
         .version = .@"3.3",
@@ -31,13 +30,12 @@ pub fn build(b: *std.Build) void {
     });
     mod.addImport("gl", gl_bindings);
 
-    const lib = b.addLibrary(.{
-        .name = "gaming",
-        .root_module = mod,
-        .linkage = .static,
+    // zigimg
+    const zigimg = b.dependency("zigimg", .{
+        .target = target,
+        .optimize = optimize,
     });
-
-    b.installArtifact(lib);
+    mod.addImport("zigimg", zigimg.module("zigimg"));
 
     // Run tests
     const test_exe = b.addTest(.{.root_module = mod});

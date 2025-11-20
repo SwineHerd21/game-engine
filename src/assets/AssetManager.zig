@@ -233,7 +233,9 @@ pub fn getNamed(self: *AssetManager, comptime T: type, name: []const u8) ?T {
 /// Helper function for parsing a ZON file into a specific type
 pub fn parseZon(self: AssetManager, comptime T: type, data: []const u8) EngineError!T {
     var diag: std.zon.parse.Diagnostics = .{};
-    const value = std.zon.parse.fromSlice(T, self.gpa, @ptrCast(data), &diag, .{}) catch |err| switch (err) {
+    const data_z = self.gpa.dupeZ(u8, data) catch return outOfMemory();
+    defer self.gpa.free(data_z);
+    const value = std.zon.parse.fromSlice(T, self.gpa, @ptrCast(data_z), &diag, .{}) catch |err| switch (err) {
         error.OutOfMemory => {
             log.err("Out of memory", .{});
             return EngineError.OutOfMemory;

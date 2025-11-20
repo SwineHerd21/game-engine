@@ -1,11 +1,12 @@
 #version 330 core
 
-in vec3 vertexColor;
+in vec2 UV;
 
 out vec4 FragColor;
 
+uniform sampler2D Texture;
 uniform float timeSine;
 
 void main() {
-	FragColor = vec4(vertexColor.zxy * (timeSine / 2.0 + 0.5), 1.0);
+	FragColor = texture(Texture, UV) * timeSine / 2.0 + 0.5;
 }

@@ -1,4 +1,5 @@
 .{
 	.vertex = "./default.vert",
 	.fragment = "./default.frag",
+	.texture = "./cat.png",
 }
