@@ -23,7 +23,7 @@ pub inline fn closeWindow(ctx: Context) void {}
 
 pub inline fn areEventsPending(ctx: Context) bool {}
 
-pub inline fn consumeEvent(window: *Window) ?events.Event {}
+pub inline fn consumeEvent(ctx: *Context) ?events.Event {}
 
 // ========== OTHER ==========
 

@@ -11,8 +11,6 @@ const Window = @This();
 
 /// Platform-specific implementation, do not assume anything about its contents.
 inner: native.Context,
-width: u32,
-height: u32,
 /// Set to true when you want to close the window.
 /// Note: you can set this to false again if you want to prevent the user from closing the app.
 should_close: bool = false,
@@ -22,8 +20,6 @@ pub fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Wind
     // TODO: error handling
     return .{
         .inner = try native.createWindow(width, height, title),
-        .width = width,
-        .height = height,
     };
 }
 
@@ -37,7 +33,7 @@ pub fn areEventsPending(w: Window) bool {
 
 /// Consume the next OS event
 pub fn consumeEvent(w: *Window, input: Input) ?events.Event {
-    return native.consumeEvent(w, input);
+    return native.consumeEvent(&w.inner, input);
 }
 
 pub fn swapBuffers(w: Window) void {

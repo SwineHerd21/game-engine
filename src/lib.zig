@@ -114,15 +114,11 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
             if (window.consumeEvent(app.input)) |ev| {
                 // Special handling for important events
                 switch (ev) {
-                    .window_resize => |e| {
-                        window.width = e.width;
-                        window.height = e.height;
-                    },
                     .window_close => {
                         window.should_close = true;
                     },
-                    .window_expose => {
-                        graphics.adjustViewport(@intCast(window.width), @intCast(window.height));
+                    .window_resize => |r| {
+                        graphics.adjustViewport(@intCast(r.width), @intCast(r.height));
                     },
                     .pointer_motion => |m| {
                         app.input.pointer_position = m.position;

@@ -20,6 +20,8 @@ pub const c = @cImport({
 pub const Context = struct {
     display: *c.Display,
     window: c.Window,
+    width: u32,
+    height: u32,
     glx: c.GLXContext,
     event: c.XEvent,
     /// Handles closing the window with `x` button
@@ -80,6 +82,8 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
         // TODO: check for null pointers
         .display = display,
         .window = window,
+        .width = width,
+        .height = height,
         .glx = glx,
         .event = undefined,
         .wm_delete_window = wm_delete_window,
@@ -100,50 +104,50 @@ pub inline fn areEventsPending(ctx: Context) bool {
     return c.XPending(ctx.display) != 0;
 }
 
-pub inline fn consumeEvent(window: *Window, input: Input) ?events.Event {
-    _ = c.XNextEvent(window.inner.display, &window.inner.event);
-    switch (window.inner.event.type) {
+pub inline fn consumeEvent(ctx: *Context, input: Input) ?events.Event {
+    _ = c.XNextEvent(ctx.display, &ctx.event);
+    switch (ctx.event.type) {
         c.KeyPress => {
-            if (c.XFilterEvent(&window.inner.event, c.None) != 0) return null;
+            if (c.XFilterEvent(&ctx.event, c.None) != 0) return null;
 
-            const ev = window.inner.event.xkey;
+            const ev = ctx.event.xkey;
 
-            const repeated = window.inner.repeated_keypress;
+            const repeated = ctx.repeated_keypress;
             // If this was true then reset it to allow the actual release to go through
-            window.inner.repeated_keypress = false;
+            ctx.repeated_keypress = false;
 
             return events.Event{
                 .key_press = .{
-                    .key = window.inner.keycodes[ev.keycode],
+                    .key = ctx.keycodes[ev.keycode],
                     .modifiers = translateKeyModifiers(ev.state),
                     .action = if (repeated) .Repeat else .Press,
                 },
             };
         },
         c.KeyRelease => {
-            const ev = window.inner.event.xkey;
+            const ev = ctx.event.xkey;
 
             // Check if this keystroke is repeated
             var next: c.XEvent = undefined;
-            if (c.XPending(window.inner.display) != 0) {
-                _=c.XPeekEvent(window.inner.display, &next);
+            if (c.XPending(ctx.display) != 0) {
+                _=c.XPeekEvent(ctx.display, &next);
                 // For repeated key presses X11 will send a KeyPress and KeyRelease simultaneously
                 if (next.type == c.KeyPress and next.xkey.time == ev.time and next.xkey.keycode == ev.keycode) {
-                    window.inner.repeated_keypress = true;
+                    ctx.repeated_keypress = true;
                     return null;
                 }
             }
 
             return events.Event{
                 .key_release = .{
-                    .key = window.inner.keycodes[ev.keycode],
+                    .key = ctx.keycodes[ev.keycode],
                     .modifiers = translateKeyModifiers(ev.state),
                     .action = .Release,
                 },
             };
         },
         c.ButtonPress => {
-            const ev = window.inner.event.xbutton;
+            const ev = ctx.event.xbutton;
 
             return events.Event{
                 .mouse_button_press = .{
@@ -154,7 +158,7 @@ pub inline fn consumeEvent(window: *Window, input: Input) ?events.Event {
             };
         },
         c.ButtonRelease => {
-            const ev = window.inner.event.xbutton;
+            const ev = ctx.event.xbutton;
 
             return events.Event{
                 .mouse_button_release = .{
@@ -165,7 +169,7 @@ pub inline fn consumeEvent(window: *Window, input: Input) ?events.Event {
             };
         },
         c.MotionNotify => {
-            const ev = window.inner.event.xmotion;
+            const ev = ctx.event.xmotion;
 
             const position = math.Vec2i.new(ev.x, ev.y);
             return events.Event{
@@ -196,13 +200,17 @@ pub inline fn consumeEvent(window: *Window, input: Input) ?events.Event {
             };
         },
         c.ConfigureNotify => {
-            const ev = window.inner.event.xconfigure;
+            const ev = ctx.event.xconfigure;
 
-            if (ev.width != window.width or ev.height != window.height) {
+            if (ev.width != ctx.width or ev.height != ctx.height) {
+                ctx.width = @intCast(ev.width);
+                ctx.height = @intCast(ev.height);
+
                 return events.Event{
                     .window_resize = .{
                         .width = @intCast(ev.width),
-                        .height = @intCast(ev.height)},
+                        .height = @intCast(ev.height),
+                    },
                 };
             }
         },
@@ -213,11 +221,11 @@ pub inline fn consumeEvent(window: *Window, input: Input) ?events.Event {
         },
         c.Expose => {
             return events.Event{
-                .window_expose = {},
+                .window_redraw = {},
             };
         },
         // Weird thing without which the app crashes when the window manager closes the window
-        c.ClientMessage => if (@as(c.Atom, @intCast(window.inner.event.xclient.data.l[0])) == window.inner.wm_delete_window) {
+        c.ClientMessage => if (@as(c.Atom, @intCast(ctx.event.xclient.data.l[0])) == ctx.wm_delete_window) {
             return events.Event{
                 .window_close = {},
             };

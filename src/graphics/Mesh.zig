@@ -51,8 +51,8 @@ pub fn deinit(self: *Mesh, _: @import("std").mem.Allocator) void {
     gl.DeleteVertexArrays(1, @ptrCast(&self.vao));
 }
 
-pub fn draw(self: Mesh, shader: Material) void {
-    shader.use();
+pub fn draw(self: Mesh, material: Material) void {
+    material.use();
     gl.BindVertexArray(self.vao);
     gl.DrawElements(gl.TRIANGLES, self.index_count, gl.UNSIGNED_INT, 0);
 }

@@ -228,6 +228,8 @@ pub fn Shared(Vec: type, N: comptime_int, T: type) type {
             return .{.v = @splat(value)};
         }
 
+        // TODO: add safe op versions for integer vecs? (wrapped, saturating, etc.)
+
         /// Element-wise negation
         pub inline fn negate(v: Vec) Vec {
             var new: [N]T = undefined;

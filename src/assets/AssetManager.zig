@@ -138,7 +138,7 @@ pub fn load(self: *AssetManager, comptime T: type, filepath: []const u8) EngineE
     log.debug("Loaded asset '{s}' of type '{s}'", .{canon_path, @typeName(T)});
 }
 
-/// Load a batch of asset into memory at once. If any asset could not be loaded return an error.
+/// Load a batch of assets into memory at once. If any asset could not be loaded return an error.
 pub fn loadBatch(self: *AssetManager, comptime T: type, files: []const []const u8) EngineError!void {
     const cache = try self.getCache(T);
 
