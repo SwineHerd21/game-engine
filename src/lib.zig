@@ -68,8 +68,7 @@ fn init_2(_:[]const u8, _:*AssetManager) !Mesh {
 /// as part of an `App` struct.
 ///
 /// WARNING: This places the thread into an infinite update loop until the window closes.
-/// This function will not pass on error and will close on fatal ones (like failing to open a window).
-/// You should do all necessary cleanup before calling this function.
+/// You should do all necessary setup before calling this function.
 pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) EngineError!void {
     // Initialization
     var window = Window.createWindow(options.window_width, options.window_height, options.title) catch |e| {

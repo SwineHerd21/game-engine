@@ -36,18 +36,37 @@ pub const Context = struct {
 
 pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Context {
     const display = if (c.XOpenDisplay(null)) |d| d else return EngineError.InitFailure;
-    const root = c.DefaultRootWindow(display);
 
     // XKB check
     if (c.XkbQueryExtension(display, null, null, null, null, null) == 0) {
         log.err("Could not detect XKB", .{});
         return EngineError.InitFailure;
     }
+    // GLX check
+    {
+        var glx_major: c_int = undefined;
+        var glx_minor: c_int = undefined;
+        if (c.glXQueryVersion(display, &glx_major, &glx_minor) == 0) {
+            log.err("Could not get GLX version", .{});
+            return EngineError.InitFailure;
+        }
+        if (glx_major < 1 or (glx_major == 1 and glx_minor < 3)) {
+            log.err("Invalid GLX version {}.{}, require 1.3", .{glx_major, glx_minor});
+            return EngineError.InitFailure;
+        }
+    }
+
+    const root = c.DefaultRootWindow(display);
 
     // OpenGL attributes
     var gl_atts = [_]c_int{
         c.GLX_RGBA,
+        c.GLX_RED_SIZE, 8,
+        c.GLX_GREEN_SIZE, 8,
+        c.GLX_BLUE_SIZE, 8,
+        c.GLX_ALPHA_SIZE, 8,
         c.GLX_DEPTH_SIZE, 24,
+        c.GLX_STENCIL_SIZE, 8,
         c.GLX_DOUBLEBUFFER,
         c.None
     };
