@@ -148,5 +148,12 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
 }
 
 test {
-    _ = std.testing.refAllDeclsRecursive(@This());
+    std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(graphics);
+    std.testing.refAllDecls(AssetManager);
+    std.testing.refAllDecls(Input);
+    std.testing.refAllDecls(events);
+    std.testing.refAllDecls(Time);
+    std.testing.refAllDecls(@import("platform.zig"));
+    std.testing.refAllDecls(Window);
 }
