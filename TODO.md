@@ -2,8 +2,6 @@ By priority
 
 # High
 
-- Separate engine systems into layers/modules
-
 - Immediate mode GUI for debugging
 
 - Models: contain meshes and materials

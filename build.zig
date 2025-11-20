@@ -37,6 +37,13 @@ pub fn build(b: *std.Build) void {
     });
     mod.addImport("zigimg", zigimg.module("zigimg"));
 
+    // zlm
+    const zlm = b.dependency("zlm", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    mod.addImport("zlm", zlm.module("zlm"));
+
     // Run tests
     const test_exe = b.addTest(.{.root_module = mod});
     const run_test = b.addRunArtifact(test_exe);

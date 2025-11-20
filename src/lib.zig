@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 
 const graphics = @import("graphics/graphics.zig");
 
-pub const math = @import("math/math.zig");
+pub const math = @import("math.zig");
 pub const events = @import("events.zig");
 pub const Input = @import("Input.zig");
 

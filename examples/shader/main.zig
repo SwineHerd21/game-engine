@@ -41,7 +41,7 @@ fn on_init(app: *App) !void {
     app.state.default_mat = try assets.getOrLoad(engine.Material, "default.mat");
     app.state.fancy_mat = try assets.getOrLoad(engine.Material, "fancy.mat");
     // You can pass even arrays of VecN to shaders!
-    const values: [3]engine.math.Vec3f = .{ .splat(0.2), .splat(-0.2), .splat(0.0) };
+    const values: [3]engine.math.Vec3 = .{ .all(0.2), .all(-0.2), .all(0.0) };
     app.state.fancy_mat.setUniform("values", values);
 
     // TEMP

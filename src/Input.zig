@@ -1,6 +1,6 @@
 //! Contains the state of the input devices during this frame and offers various utilities.
 
-const math = @import("math/math.zig");
+const math = @import("math.zig");
 
 const Input = @This();
 

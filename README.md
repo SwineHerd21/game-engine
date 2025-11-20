@@ -11,7 +11,7 @@ Currently runs on Linux through X11 and OpenGL.
 Requires Zig 0.15.2, OpenGL 3.3+ Core
 
 System dependencies: libX11, libGL  
-Zig packages: [zigglgen](https://github.com/castholm/zigglgen), [zigimg](https://github.com/zigimg/zigimg)
+Zig packages: [zigglgen](https://github.com/castholm/zigglgen), [zigimg](https://github.com/zigimg/zigimg), [zlm](https://github.com/ziglibs/zlm)
 
 Build by running:
 
