@@ -9,12 +9,13 @@ const Vec2float = vecf.Vec2float;
 const Vec3float = vecf.Vec3float;
 const Vec4float = vecf.Vec4float;
 
-/// A vector with 2 elements of T (must be an integer)
+/// A vector with 2 elements of T (must be a signed integer)
 pub fn Vec2int(comptime T: type) type {
     assert(@typeInfo(T) == .int);
     assert(@typeInfo(T).int.signedness == .signed);
     return extern struct {
         const Self = @This();
+        pub const dimensions = 2;
 
         x: T,
         y: T,
@@ -29,11 +30,8 @@ pub fn Vec2int(comptime T: type) type {
         pub inline fn new(x: T, y: T) Self {
             return .{ .x = x, .y = y };
         }
-        pub inline fn fromVec2i(int_type: type, v: Vec2int(int_type)) Self {
-            return .{ .x = @floatFromInt(v.x), .y = @floatFromInt(v.y) };
-        }
 
-        pub inline fn toVec2f(v: Self, float_type: type) Vec2float(float_type) {
+        pub inline fn toFloat(v: Self, float_type: type) Vec2float(float_type) {
             return .{ .x = @floatFromInt(v.x), .y = @floatFromInt(v.y) };
         }
 
@@ -84,6 +82,7 @@ pub fn Vec3int(comptime T: type) type {
     assert(@typeInfo(T).int.signedness == .signed);
     return extern struct {
         const Self = @This();
+        pub const dimensions = 3;
 
         x: T,
         y: T,
@@ -105,7 +104,7 @@ pub fn Vec3int(comptime T: type) type {
             return .{ .x = v.x, .y = v.y, .z = z };
         }
 
-        pub inline fn toVec3f(v: Self, float_type: type) Vec3float(float_type) {
+        pub inline fn toFloat(v: Self, float_type: type) Vec3float(float_type) {
             return .{ .x = @floatFromInt(v.x), .y = @floatFromInt(v.y), .z = @floatFromInt(v.z) };
         }
 
@@ -150,6 +149,7 @@ pub fn Vec4int(comptime T: type) type {
     assert(@typeInfo(T).int.signedness == .signed);
     return extern struct {
         const Self = @This();
+        pub const dimensions = 4;
 
         x: T,
         y: T,
@@ -166,7 +166,7 @@ pub fn Vec4int(comptime T: type) type {
             return .{ .x = v.x, .y = v.y, .z = v.z, .w = w };
         }
 
-        pub inline fn toVec4f(v: Self, float_type: type) Vec4float(float_type) {
+        pub inline fn toFloat(v: Self, float_type: type) Vec4float(float_type) {
             return .{ .x = @floatFromInt(v.x), .y = @floatFromInt(v.y), .z = @floatFromInt(v.z), .w = @floatFromInt(v.w) };
         }
 
@@ -237,5 +237,5 @@ test "Vector int angle to" {
 }
 
 test "Vector int to float" {
-    try testing.expectEqual(Vec3float(f32).new(1.0, -1.0, 2.0), Vec3i.new(1, -1, 2).toVec3f(f32));
+    try testing.expectEqual(Vec3float(f32).new(1.0, -1.0, 2.0), Vec3i.new(1, -1, 2).toFloat(f32));
 }

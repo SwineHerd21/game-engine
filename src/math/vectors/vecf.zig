@@ -10,6 +10,7 @@ pub fn Vec2float(comptime T: type) type {
     assert(@typeInfo(T) == .float);
     return extern struct {
         const Self = @This();
+        pub const dimensions = 2;
 
         x: T,
         y: T,
@@ -79,6 +80,7 @@ pub fn Vec3float(comptime T: type) type {
     assert(@typeInfo(T) == .float);
     return extern struct {
         const Self = @This();
+        pub const dimensions = 3;
 
         x: T,
         y: T,
@@ -148,6 +150,7 @@ pub fn Vec4float(comptime T: type) type {
     assert(@typeInfo(T) == .float);
     return extern struct {
         const Self = @This();
+        pub const dimensions = 4;
 
         x: T,
         y: T,

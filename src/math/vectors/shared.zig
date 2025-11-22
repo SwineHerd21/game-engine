@@ -19,6 +19,14 @@ pub fn Shared(Vec: type, T: type) type {
             return new;
         }
 
+        /// Get component number `i`: 0 gives `x`, 1 gives `y` etc.
+        /// `i` must be less than the vectors dimensions
+        pub fn at(v: Vec, i: comptime_int) Vec {
+            if (i < 0 or i >= Vec.dimensions) @compileError("Vec field of bounds access");
+            const arr: [Vec.dimensions]T = @bitCast(v);
+            return arr[i];
+        }
+
         // TODO: add safe op versions for integer vecs? (wrapped, saturating, etc.)
 
         /// Element-wise negation
