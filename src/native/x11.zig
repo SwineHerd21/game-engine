@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const math = @import("../math.zig");
+const math = @import("../math/math.zig");
 const Window = @import("../Window.zig");
 const Input = @import("../Input.zig");
 const events = @import("../events.zig");

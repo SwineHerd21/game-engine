@@ -10,10 +10,6 @@
             .url = "git+https://github.com/zigimg/zigimg.git#b53e228986e127df1223975227969ed6a50126e7",
             .hash = "zigimg-0.1.0-8_eo2rwbFgCSVcvqipgjAQueoazrTAiIvqk0F2bKYpE1",
         },
-        .zlm = .{
-            .url = "git+https://github.com/ziglibs/zlm.git#35ab7df57cfb5392a11486f6e4b03a82f849a118",
-            .hash = "zlm-0.1.0-LoZ6yDawAADMopilIe9MDzer0UqmruCy_PuhNv4OMc7c",
-        },
     },
     .minimum_zig_version = "0.15.2",
     .paths = .{""},

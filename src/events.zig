@@ -1,7 +1,7 @@
 //! Contains handlers for various window events
 
 const Input = @import("Input.zig");
-const math = @import("math.zig");
+const math = @import("math/math.zig");
 
 pub const Event = union(enum) {
     key_press: KeyEvent,

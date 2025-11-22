@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 
 const graphics = @import("graphics/graphics.zig");
 
-pub const math = @import("math.zig");
+pub const math = @import("math/math.zig");
 pub const events = @import("events.zig");
 pub const Input = @import("Input.zig");
 
@@ -148,12 +148,5 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
 }
 
 test {
-    std.testing.refAllDecls(@This());
-    std.testing.refAllDecls(graphics);
-    std.testing.refAllDecls(AssetManager);
-    std.testing.refAllDecls(Input);
-    std.testing.refAllDecls(events);
-    std.testing.refAllDecls(Time);
-    std.testing.refAllDecls(@import("platform.zig"));
-    std.testing.refAllDecls(Window);
+    _ = std.testing.refAllDeclsRecursive(@This());
 }
