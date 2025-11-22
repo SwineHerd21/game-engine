@@ -1,6 +1,8 @@
 //! Vectors, matricies, etc.
 //!
-//! Coordinates are right-handed, positive Y axis is up.
+//! Coordinates are right-handed, positive Y axis is up. Matricies are stored in column-major order.
+//!
+//! Vectors and matricies can be bit cast to and from arrays of suitable length and types.
 
 // TODO: consider SIMD
 // Have vectors as structs because they are usually used one at a time.
@@ -10,12 +12,12 @@
 
 const std = @import("std");
 
-pub const Vec2float = @import("vecf.zig").Vec2float;
-pub const Vec3float = @import("vecf.zig").Vec3float;
-pub const Vec4float = @import("vecf.zig").Vec4float;
-pub const Vec2int = @import("veci.zig").Vec2int;
-pub const Vec3int = @import("veci.zig").Vec3int;
-pub const Vec4int = @import("veci.zig").Vec4int;
+pub const Vec2float = @import("vectors/vecf.zig").Vec2float;
+pub const Vec3float = @import("vectors/vecf.zig").Vec3float;
+pub const Vec4float = @import("vectors/vecf.zig").Vec4float;
+pub const Vec2int = @import("vectors/veci.zig").Vec2int;
+pub const Vec3int = @import("vectors/veci.zig").Vec3int;
+pub const Vec4int = @import("vectors/veci.zig").Vec4int;
 
 /// Has f32 elements
 pub const Vec2f = Vec2float(f32);

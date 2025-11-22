@@ -3,56 +3,50 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-// Somewhat stolen from mach and Godot
+const Shared = @import("shared.zig").Shared;
 
-/// A vector with 4 elements of T (must be a float)
+/// A vector with 2 elements of T (must be a float)
 pub fn Vec2float(comptime T: type) type {
     assert(@typeInfo(T) == .float);
     return extern struct {
-        const Vec = @This();
-        const N = 2;
+        const Self = @This();
 
-        v: [N]T,
+        x: T,
+        y: T,
 
-        pub const zero: Vec = .splat(0);
-        pub const right: Vec = .new(1, 0);
-        pub const left: Vec = .new(-1, 0);
-        pub const up: Vec = .new(0, 1);
-        pub const down: Vec = .new(0, -1);
-        pub const one: Vec = .splat(1);
+        pub const zero: Self = .splat(0);
+        pub const right: Self = .new(1, 0);
+        pub const left: Self = .new(-1, 0);
+        pub const up: Self = .new(0, 1);
+        pub const down: Self = .new(0, -1);
+        pub const one: Self = .splat(1);
 
-        pub inline fn new(_x: T, _y: T) Vec {
-            return .{ .v = .{_x,_y} };
-        }
-
-        pub inline fn x(v: Vec) T {
-            return v.v[0];
-        }
-        pub inline fn y(v: Vec) T {
-            return v.v[1];
+        pub inline fn new(x: T, y: T) Self {
+            return .{ .x = x, .y = y };
         }
 
         /// The length of the cross product gives the signed area of a parallelogram
         /// constructed with two vectors. This function returns that length.
-        pub inline fn cross(a: Vec, b: Vec) T {
-            return a.x()*b.y() - a.y()*b.x();
+        pub inline fn cross(a: Self, b: Self) T {
+            return a.x*b.y - a.y*b.x;
         }
 
         /// Returns the angle between the vector and the positive X axis.
         ///
-        /// See `angle_to()` for angle between vectors
-        pub inline fn angle(v: Vec) T {
-            return std.math.atan2(v.x(), v.y());
+        /// See `angleTo()` for angle between vectors
+        pub inline fn angle(v: Self) T {
+            return std.math.atan2(v.x, v.y);
         }
 
         /// Find the angle between two vectors.
-        pub inline fn angleTo(a: Vec, b: Vec) T {
+        pub inline fn angleTo(a: Self, b: Self) T {
             return std.math.atan2(a.cross(b), a.dot(b));
         }
 
-        const funcs = Shared(Vec, N, T);
+        const funcs = Shared(Self, T);
         pub const splat = funcs.splat;
-        pub const negate = funcs.negate;
+        pub const neg = funcs.neg;
+        pub const abs = funcs.abs;
         pub const add = funcs.add;
         pub const sub = funcs.sub;
         pub const scale = funcs.scale;
@@ -69,13 +63,13 @@ pub fn Vec2float(comptime T: type) type {
         pub const length = funcs.length;
         pub const lengthSqr = funcs.lengthSqr;
         pub const eql = funcs.eql;
-        pub const eqlApprox = funcs.eqlApprox;
+        pub const approxEql = funcs.approxEql;
 
         pub fn format(
             self: @This(),
             writer: *std.Io.Writer,
         ) std.Io.Writer.Error!void {
-            try writer.print("({}, {})", .{self.x(), self.y()});
+            try funcs.format(self, writer);
         }
     };
 }
@@ -84,52 +78,44 @@ pub fn Vec2float(comptime T: type) type {
 pub fn Vec3float(comptime T: type) type {
     assert(@typeInfo(T) == .float);
     return extern struct {
-        const Vec = @This();
-        const N = 3;
+        const Self = @This();
 
-        v: [N]T,
+        x: T,
+        y: T,
+        z: T,
 
-        pub const zero: Vec = .splat(0);
-        pub const right: Vec = .new(1, 0, 0);
-        pub const left: Vec = .new(-1, 0, 0);
-        pub const up: Vec = .new(0, 1, 0);
-        pub const down: Vec = .new(0, -1, 0);
-        pub const forward: Vec = .new(0, 0, 1);
-        pub const back: Vec = .new(0, 0, -1);
-        pub const one: Vec = .splat(1);
+        pub const zero: Self = .splat(0);
+        pub const right: Self = .new(1, 0, 0);
+        pub const left: Self = .new(-1, 0, 0);
+        pub const up: Self = .new(0, 1, 0);
+        pub const down: Self = .new(0, -1, 0);
+        pub const forward: Self = .new(0, 0, 1);
+        pub const back: Self = .new(0, 0, -1);
+        pub const one: Self = .splat(1);
 
-        pub inline fn new(_x: T, _y: T, _z: T) Vec {
-            return .{ .v = .{_x,_y,_z} };
+        pub inline fn new(x: T, y: T, z: T) Self {
+            return .{ .x = x, .y = y, .z = z };
         }
-        pub inline fn fromVec2(v: Vec2float(T), _z: T) Vec {
-            return .{ .v = .{v.x(),v.y(),_z} };
-        }
-
-        pub inline fn x(v: Vec) T {
-            return v.v[0];
-        }
-        pub inline fn y(v: Vec) T {
-            return v.v[1];
-        }
-        pub inline fn z(v: Vec) T {
-            return v.v[2];
+        pub inline fn fromVec2(v: Vec2float(T), z: T) Self {
+            return .{ .x = v.x, .y = v.y, .z = z };
         }
 
         /// Cross (vector) product of two vectors
         ///
         /// Gives a vector perpendicular to both inputs in the direction determined by the left-hand rule.
-        pub inline fn cross(a: Vec, b: Vec) Vec {
-            return .new(a.y()*b.z() - a.z()*b.y(), a.z()*b.x() - a.x()*b.z(), a.x()*b.y() - a.y()*b.x());
+        pub inline fn cross(a: Self, b: Self) Self {
+            return .new(a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x);
         }
 
         /// Find the angle between two vectors.
-        pub inline fn angleTo(a: Vec, b: Vec) T {
+        pub inline fn angleTo(a: Self, b: Self) T {
             return std.math.atan2(a.cross(b).length(), a.dot(b));
         }
 
-        const funcs = Shared(Vec, N, T);
+        const funcs = Shared(Self, T);
         pub const splat = funcs.splat;
-        pub const negate = funcs.negate;
+        pub const neg = funcs.neg;
+        pub const abs = funcs.abs;
         pub const add = funcs.add;
         pub const sub = funcs.sub;
         pub const scale = funcs.scale;
@@ -146,13 +132,13 @@ pub fn Vec3float(comptime T: type) type {
         pub const length = funcs.length;
         pub const lengthSqr = funcs.lengthSqr;
         pub const eql = funcs.eql;
-        pub const eqlApprox = funcs.eqlApprox;
+        pub const approxEql = funcs.approxEql;
 
         pub fn format(
             self: @This(),
             writer: *std.Io.Writer,
         ) std.Io.Writer.Error!void {
-            try writer.print("({}, {}, {})", .{self.x(), self.y(), self.z()});
+            try funcs.format(self, writer);
         }
     };
 }
@@ -161,37 +147,27 @@ pub fn Vec3float(comptime T: type) type {
 pub fn Vec4float(comptime T: type) type {
     assert(@typeInfo(T) == .float);
     return extern struct {
-        const Vec = @This();
-        const N = 4;
+        const Self = @This();
 
-        v: [N]T,
+        x: T,
+        y: T,
+        z: T,
+        w: T,
 
-        pub const zero: Vec = .splat(0);
-        pub const one: Vec = .splat(1);
+        pub const zero: Self = .splat(0);
+        pub const one: Self = .splat(1);
 
-        pub inline fn new(_x: T, _y: T, _z: T, _w: T) Vec {
-            return .{ .v = .{_x,_y,_z,_w} };
+        pub inline fn new(x: T, y: T, z: T, w: T) Self {
+            return .{ .x = x, .y = y, .z = z, .w = w };
         }
-        pub inline fn fromVec3(v: Vec3float(T), _w: T) Vec {
-            return .{ .v = .{v.x(),v.y(),v.z(),_w} };
-        }
-
-        pub inline fn x(v: Vec) T {
-            return v.v[0];
-        }
-        pub inline fn y(v: Vec) T {
-            return v.v[1];
-        }
-        pub inline fn z(v: Vec) T {
-            return v.v[2];
-        }
-        pub inline fn w(v: Vec) T {
-            return v.v[3];
+        pub inline fn fromVec3(v: Vec3float(T), w: T) Self {
+            return .{ .x = v.x, .y = v.y, .z = v.z, .w = w };
         }
 
-        const funcs = Shared(Vec, N, T);
+        const funcs = Shared(Self, T);
         pub const splat = funcs.splat;
-        pub const negate = funcs.negate;
+        pub const neg = funcs.neg;
+        pub const abs = funcs.abs;
         pub const add = funcs.add;
         pub const sub = funcs.sub;
         pub const scale = funcs.scale;
@@ -203,176 +179,17 @@ pub fn Vec4float(comptime T: type) type {
         pub const distanceSqr = funcs.distanceSqr;
         pub const lerp = funcs.lerp;
         pub const moveToward = funcs.moveToward;
-        pub const reflect = funcs.reflect;
         pub const clampLength = funcs.clampLength;
         pub const length = funcs.length;
         pub const lengthSqr = funcs.lengthSqr;
         pub const eql = funcs.eql;
-        pub const eqlApprox = funcs.eqlApprox;
+        pub const approxEql = funcs.approxEql;
 
         pub fn format(
             self: @This(),
             writer: *std.Io.Writer,
         ) std.Io.Writer.Error!void {
-            try writer.print("({}, {}, {}, {})", .{self.x(), self.y(), self.z(), self.w()});
-        }
-    };
-}
-
-pub fn Shared(Vec: type, N: comptime_int, T: type) type {
-    assert(@typeInfo(T) == .int or @typeInfo(T) == .float);
-    assert(@hasField(Vec, "v") and @FieldType(Vec, "v") == [N]T);
-    return extern struct {
-        /// Returns a vector with all elements set to `value`
-        pub inline fn splat(value: T) Vec {
-            return .{.v = @splat(value)};
-        }
-
-        // TODO: add safe op versions for integer vecs? (wrapped, saturating, etc.)
-
-        /// Element-wise negation
-        pub inline fn negate(v: Vec) Vec {
-            var new: [N]T = undefined;
-            inline for (0..N) |i| {
-                new[i] = -v.v[i];
-            }
-            return .{.v = new};
-        }
-
-        /// Element-wise addition
-        pub inline fn add(a: Vec, b: Vec) Vec {
-            var new: [N]T = undefined;
-            inline for (0..N) |i| {
-                new[i] = a.v[i] + b.v[i];
-            }
-            return .{.v = new};
-        }
-
-        /// Element-wise subtraction
-        pub inline fn sub(a: Vec, b: Vec) Vec {
-            var new: [N]T = undefined;
-            inline for (0..N) |i| {
-                new[i] = a.v[i] - b.v[i];
-            }
-            return .{.v = new};
-        }
-
-        /// Element-wise multiplication
-        pub inline fn scale(a: Vec, b: Vec) Vec {
-            var new: [N]T = undefined;
-            inline for (0..N) |i| {
-                new[i] = a.v[i] * b.v[i];
-            }
-            return .{.v = new};
-        }
-
-        /// Element-wise multiplication by a scalar
-        pub inline fn mul(a: Vec, scalar: T) Vec {
-            var new: [N]T = undefined;
-            inline for (0..N) |i| {
-                new[i] = a.v[i] * scalar;
-            }
-            return .{.v = new};
-        }
-
-        /// Element-wise division by a scalar
-        pub inline fn div(a: Vec, scalar: T) Vec {
-            var new: [N]T = undefined;
-            inline for (0..N) |i| {
-                new[i] = a.v[i] / scalar;
-            }
-            return .{.v = new};
-        }
-
-        /// Dot (scalar) product of two vectors
-        pub inline fn dot(a: Vec, b: Vec) T {
-            var result: T = 0;
-            inline for (0..N) |i| {
-                result += a.v[i]*b.v[i];
-            }
-            return result;
-        }
-
-        pub inline fn length(v: Vec) f32 {
-            var result: T = 0;
-            inline for (0..N) |i| {
-                result += v.v[i]*v.v[i];
-            }
-            return switch (@typeInfo(T)) {
-                .float => @sqrt(@as(f32, @floatCast(result))),
-                .int => @sqrt(@as(f32, @floatFromInt(result))),
-                else => unreachable,
-            };
-        }
-        /// Faster than `length()`
-        pub inline fn lengthSqr(v: Vec) T {
-            var result: T = 0;
-            inline for (0..N) |i| {
-                result += v.v[i]*v.v[i];
-            }
-            return result;
-        }
-
-        pub inline fn distance(a: Vec, b: Vec) f32 {
-            return b.sub(a).length();
-        }
-        /// Faster than `distance()`
-        pub inline fn distanceSqr(a: Vec, b: Vec) T {
-            return b.sub(a).lengthSqr();
-        }
-
-        /// Returns a vector pointing in the same direction but with length 1
-        pub inline fn normalized(v: Vec) Vec {
-            return v.div(@floatCast(v.length()));
-        }
-
-        /// Linearly interpolate between two vectors by `t`.
-        ///
-        /// `t` is clamped to [[0,1]]
-        ///
-        /// When `t` = `0` return `a`
-        /// When `t` = `0.5` return midpoint of `a` and `b`
-        /// When `t` = `1` return `b`
-        pub inline fn lerp(a: Vec, b: Vec, t: f32) Vec {
-            const tc = std.math.clamp(t, 0, 1);
-            return a.mul(1 - tc).add(b.mul(tc));
-        }
-
-        /// Move from `a` to `b` by a distance of `delta`.
-        ///
-        /// Will not go further than `b`.
-        pub inline fn moveToward(a: Vec, b: Vec, delta: f32) Vec {
-            const dir = b.sub(a);
-            const len = dir.length();
-            return if (len <= delta or len < std.math.floatEps(T)) b else a.add(dir.mul(@floatCast(delta / len)));
-        }
-
-        /// Reflect the vector off a surface defined by the normal.
-        pub inline fn reflect(v: Vec, normal: Vec) Vec {
-            return v.sub(normal.mul(2 * v.dot(normal)));
-        }
-
-        /// Returns a vector pointing in the same direction but with length <= `len`
-        pub inline fn clampLength(v: Vec, len: f32) Vec {
-            const l = v.length();
-            if (len < 0 or len >= l) return v;
-            return v.mul(@floatCast(len / l));
-        }
-
-        /// Checks if two vectors are exactly equal
-        pub inline fn eql(a: Vec, b: Vec) bool {
-            inline for (0..N) |i| {
-                if (a.v[i] != b.v[i]) return false;
-            }
-            return true;
-        }
-
-        /// Checks if two vectors are approximately equal
-        pub inline fn eqlApprox(a: Vec, b: Vec) bool {
-            inline for (0..N) |i| {
-                if (!std.math.approxEqRel(T, a.v[i], b.v[i], std.math.floatEps(T))) return false;
-            }
-            return true;
+            try funcs.format(self, writer);
         }
     };
 }
@@ -455,7 +272,7 @@ test "Vector cross 3D" {
     try testing.expectEqual(Vec3f.forward, Vec3f.right.cross(Vec3f.up));
     try testing.expectEqual(Vec3f.back, Vec3f.up.cross(Vec3f.right));
     try testing.expectEqual(Vec3f.new(18.5, 46, 42), Vec3f.new(2, -4, 3.5).cross(Vec3f.new(8, 5, -9)));
-    try testing.expectEqual(Vec3f.new(18.5, 46, 42).negate(), Vec3f.new(8, 5, -9).cross(Vec3f.new(2, -4, 3.5)));
+    try testing.expectEqual(Vec3f.new(18.5, 46, 42).neg(), Vec3f.new(8, 5, -9).cross(Vec3f.new(2, -4, 3.5)));
 }
 
 test "Vector angle 2D" {
@@ -472,9 +289,9 @@ test "Vector normalized" {
     try testing.expectEqual(Vec3f.right, Vec3f.new(2, 0, 0).normalized());
     try testing.expectEqual(Vec4f.new(1,0,0,0), Vec4f.new(2, 0, 0, 0).normalized());
 
-    try testing.expect(Vec2f.new(4.0/5.0, 3.0/5.0).eqlApprox(Vec2f.new(4, 3).normalized()));
-    try testing.expect(Vec3f.new(4.0/@sqrt(41.0), 3.0/@sqrt(41.0), 4.0/@sqrt(41.0)).eqlApprox(Vec3f.new(4, 3, 4).normalized()));
-    try testing.expect(Vec4f.new(1.0/2.0,3.0/8.0,1.0/2.0,@sqrt(23.0)/8.0).eqlApprox(Vec4f.new(4, 3, 4, @sqrt(23.0)).normalized()));
+    try testing.expect(Vec2f.new(4.0/5.0, 3.0/5.0).approxEql(Vec2f.new(4, 3).normalized()));
+    try testing.expect(Vec3f.new(4.0/@sqrt(41.0), 3.0/@sqrt(41.0), 4.0/@sqrt(41.0)).approxEql(Vec3f.new(4, 3, 4).normalized()));
+    try testing.expect(Vec4f.new(1.0/2.0,3.0/8.0,1.0/2.0,@sqrt(23.0)/8.0).approxEql(Vec4f.new(4, 3, 4, @sqrt(23.0)).normalized()));
 }
 
 test "Vector distance" {
@@ -512,3 +329,8 @@ test "Vector clampLength" {
     try testing.expectEqual(Vec4f.normalized(Vec4f.one), Vec4f.clampLength(Vec4f.one, 1));
 }
 
+test "Vector format" {
+    try testing.expectEqualStrings("(0, -1)", std.fmt.comptimePrint("{f}", .{comptime Vec2f.new(0.0, -1.0)}));
+    try testing.expectEqualStrings("(0, -1, 2.3)", std.fmt.comptimePrint("{f}", .{comptime Vec3f.new(0.0, -1.0, 2.3)}));
+    try testing.expectEqualStrings("(0, -1, 2.3, 12.4)", std.fmt.comptimePrint("{f}", .{comptime Vec4f.new(0.0, -1.0, 2.3, 12.4)}));
+}
