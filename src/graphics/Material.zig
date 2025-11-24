@@ -126,6 +126,12 @@ pub fn setUniform(self: Material, name: []const u8, value: anytype) void {
                 math.Vec2i => gl.Uniform2i(location, value.x(), value.y()),
                 math.Vec3i => gl.Uniform3i(location, value.x(), value.y(), value.z()),
                 math.Vec4i => gl.Uniform4i(location, value.x(), value.y(), value.z(), value.w()),
+                math.Mat2x3, math.Mat2x4,
+                math.Mat3x2, math.Mat3x4,
+                math.Mat4x2, math.Mat4x3 => |m| {
+                    const arr: [m.rows*m.columns]f32 = @bitCast(value);
+                    passUniformArray(T, location, 1, @ptrCast(&arr));
+                },
                 else => unreachable,
             }
         },
@@ -155,6 +161,15 @@ inline fn passUniformArray(comptime child: type, loc: gl.int, len: gl.int, val: 
                 math.Vec2i => gl.Uniform2iv(loc, len, @alignCast(@ptrCast(val))),
                 math.Vec3i => gl.Uniform3iv(loc, len, @alignCast(@ptrCast(val))),
                 math.Vec4i => gl.Uniform4iv(loc, len, @alignCast(@ptrCast(val))),
+                math.Mat2 => gl.UniformMatrix2fv(loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat3 => gl.UniformMatrix3fv(loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat4 => gl.UniformMatrix4fv(loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat2x3 => gl.UniformMatrix2x3fv(loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat2x4 => gl.UniformMatrix2x4fv(loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat3x2 => gl.UniformMatrix3x2fv(loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat3x4 => gl.UniformMatrix3x4fv(loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat4x2 => gl.UniformMatrix4x2fv(loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat4x3 => gl.UniformMatrix4x3fv(loc, len, 0, @alignCast(@ptrCast(val))),
                 else => unreachable,
             }
         },
@@ -181,7 +196,11 @@ pub fn validateUniformType(comptime T: type) void {
                 .@"struct" => {
                     switch (U) {
                         math.Vec2f, math.Vec3f, math.Vec4f,
-                        math.Vec2i, math.Vec3i, math.Vec4i => {},
+                        math.Vec2i, math.Vec3i, math.Vec4i,
+                        math.Mat2, math.Mat3, math.Mat4,
+                        math.Mat2x3, math.Mat2x4,
+                        math.Mat3x2, math.Mat3x4,
+                        math.Mat4x2, math.Mat4x3 => {},
                         else => @compileError(error_msg),
                     }
                 },

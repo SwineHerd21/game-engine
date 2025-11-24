@@ -53,7 +53,7 @@ pub fn Vec2int(comptime T: type) type {
             return std.math.atan2(@as(return_type, @floatFromInt(a.cross(b))), @as(return_type, @floatFromInt(a.dot(b))));
         }
 
-        const funcs = Shared(Self, T);
+        const funcs = Shared(Self, T, dimensions);
         pub const splat = funcs.splat;
         pub const neg = funcs.neg;
         pub const abs = funcs.abs;
@@ -120,7 +120,7 @@ pub fn Vec3int(comptime T: type) type {
             return std.math.atan2(@sqrt(@as(return_type, @floatFromInt(a.cross(b).lengthSqr()))), @as(return_type, @floatFromInt(a.dot(b))));
         }
 
-        const funcs = Shared(Self, T);
+        const funcs = Shared(Self, T, dimensions);
         pub const splat = funcs.splat;
         pub const neg = funcs.neg;
         pub const abs = funcs.abs;
@@ -170,7 +170,7 @@ pub fn Vec4int(comptime T: type) type {
             return .{ .x = @floatFromInt(v.x), .y = @floatFromInt(v.y), .z = @floatFromInt(v.z), .w = @floatFromInt(v.w) };
         }
 
-        const funcs = Shared(Self, T);
+        const funcs = Shared(Self, T, dimensions);
         pub const splat = funcs.splat;
         pub const neg = funcs.neg;
         pub const abs = funcs.abs;

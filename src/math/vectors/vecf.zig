@@ -44,7 +44,7 @@ pub fn Vec2float(comptime T: type) type {
             return std.math.atan2(a.cross(b), a.dot(b));
         }
 
-        const funcs = Shared(Self, T);
+        const funcs = Shared(Self, T, dimensions);
         pub const splat = funcs.splat;
         pub const neg = funcs.neg;
         pub const abs = funcs.abs;
@@ -64,7 +64,8 @@ pub fn Vec2float(comptime T: type) type {
         pub const length = funcs.length;
         pub const lengthSqr = funcs.lengthSqr;
         pub const eql = funcs.eql;
-        pub const approxEql = funcs.approxEql;
+        pub const approxEqlRel = funcs.approxEqlRel;
+        pub const approxEqlAbs = funcs.approxEqlAbs;
 
         pub fn format(
             self: @This(),
@@ -114,7 +115,7 @@ pub fn Vec3float(comptime T: type) type {
             return std.math.atan2(a.cross(b).length(), a.dot(b));
         }
 
-        const funcs = Shared(Self, T);
+        const funcs = Shared(Self, T, dimensions);
         pub const splat = funcs.splat;
         pub const neg = funcs.neg;
         pub const abs = funcs.abs;
@@ -134,7 +135,8 @@ pub fn Vec3float(comptime T: type) type {
         pub const length = funcs.length;
         pub const lengthSqr = funcs.lengthSqr;
         pub const eql = funcs.eql;
-        pub const approxEql = funcs.approxEql;
+        pub const approxEqlRel = funcs.approxEqlRel;
+        pub const approxEqlAbs = funcs.approxEqlAbs;
 
         pub fn format(
             self: @This(),
@@ -167,7 +169,7 @@ pub fn Vec4float(comptime T: type) type {
             return .{ .x = v.x, .y = v.y, .z = v.z, .w = w };
         }
 
-        const funcs = Shared(Self, T);
+        const funcs = Shared(Self, T, dimensions);
         pub const splat = funcs.splat;
         pub const neg = funcs.neg;
         pub const abs = funcs.abs;
@@ -186,7 +188,8 @@ pub fn Vec4float(comptime T: type) type {
         pub const length = funcs.length;
         pub const lengthSqr = funcs.lengthSqr;
         pub const eql = funcs.eql;
-        pub const approxEql = funcs.approxEql;
+        pub const approxEqlRel = funcs.approxEqlRel;
+        pub const approxEqlAbs = funcs.approxEqlAbs;
 
         pub fn format(
             self: @This(),
@@ -292,9 +295,9 @@ test "Vector normalized" {
     try testing.expectEqual(Vec3f.right, Vec3f.new(2, 0, 0).normalized());
     try testing.expectEqual(Vec4f.new(1,0,0,0), Vec4f.new(2, 0, 0, 0).normalized());
 
-    try testing.expect(Vec2f.new(4.0/5.0, 3.0/5.0).approxEql(Vec2f.new(4, 3).normalized()));
-    try testing.expect(Vec3f.new(4.0/@sqrt(41.0), 3.0/@sqrt(41.0), 4.0/@sqrt(41.0)).approxEql(Vec3f.new(4, 3, 4).normalized()));
-    try testing.expect(Vec4f.new(1.0/2.0,3.0/8.0,1.0/2.0,@sqrt(23.0)/8.0).approxEql(Vec4f.new(4, 3, 4, @sqrt(23.0)).normalized()));
+    try testing.expect(Vec2f.new(4.0/5.0, 3.0/5.0).approxEqlRel(Vec2f.new(4, 3).normalized()));
+    try testing.expect(Vec3f.new(4.0/@sqrt(41.0), 3.0/@sqrt(41.0), 4.0/@sqrt(41.0)).approxEqlRel(Vec3f.new(4, 3, 4).normalized()));
+    try testing.expect(Vec4f.new(1.0/2.0,3.0/8.0,1.0/2.0,@sqrt(23.0)/8.0).approxEqlRel(Vec4f.new(4, 3, 4, @sqrt(23.0)).normalized()));
 }
 
 test "Vector distance" {

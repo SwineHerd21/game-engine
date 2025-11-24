@@ -5,9 +5,11 @@ const comptimePrint = std.fmt.comptimePrint;
 // using std.meta.fieldNames complains about the names not being comptime resolvable for some reason
 const fields = std.meta.fields;
 
+const VecN = @import("../math.zig").Vec;
+
 // Somewhat inspired by mach, zlm and Godot
 
-pub fn Shared(Vec: type, T: type) type {
+pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
     assert(@typeInfo(T) == .int or @typeInfo(T) == .float);
     return extern struct {
         /// Returns a vector with all elements set to `value`
@@ -22,8 +24,8 @@ pub fn Shared(Vec: type, T: type) type {
         /// Get component number `i`: 0 gives `x`, 1 gives `y` etc.
         /// `i` must be less than the vectors dimensions
         pub fn at(v: Vec, i: comptime_int) Vec {
-            if (i < 0 or i >= Vec.dimensions) @compileError("Vec field of bounds access");
-            const arr: [Vec.dimensions]T = @bitCast(v);
+            if (i < 0 or i >= dimensions) @compileError("Vec field of bounds access");
+            const arr: [dimensions]T = @bitCast(v);
             return arr[i];
         }
 
@@ -176,16 +178,24 @@ pub fn Shared(Vec: type, T: type) type {
 
         /// Checks if two vectors are exactly equal
         pub fn eql(a: Vec, b: Vec) bool {
-            inline for (fields(Vec)) |f| {
-                if (@field(a, f.name) != @field(b, f.name)) return false;
-            }
-            return true;
+            const a_arr: [dimensions]T = @bitCast(a);
+            const b_arr: [dimensions]T = @bitCast(b);
+            return std.mem.eql(T, &a_arr, &b_arr);
         }
 
         /// Checks if two vectors are approximately equal
-        pub fn approxEql(a: Vec, b: Vec) bool {
+        /// For values around zero use `approxEqlAbs`
+        pub fn approxEqlRel(a: Vec, b: Vec) bool {
             inline for (fields(Vec)) |f| {
                 if (!std.math.approxEqRel(T, @field(a, f.name), @field(b, f.name), std.math.floatEps(T))) return false;
+            }
+            return true;
+        }
+        /// Checks if two vectors are approximately equal
+        /// This function is useful around zero, use `approxEqlRel` in other cases
+        pub fn approxEqlAbs(a: Vec, b: Vec) bool {
+            inline for (fields(Vec)) |f| {
+                if (!std.math.approxEqAbs(T, @field(a, f.name), @field(b, f.name), 5*std.math.floatEps(T))) return false;
             }
             return true;
         }

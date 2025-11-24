@@ -87,14 +87,18 @@ pub fn MatNxM(T: type, rows: comptime_int, columns: comptime_int) type {
     const errMsg = std.fmt.comptimePrint("Matricies of size {}x{} are not supported", .{rows, columns});
     if (rows < 2 or columns < 2 or rows > 4 or columns > 4) @compileError(errMsg);
 
-    if (rows == columns) return switch (rows) {
-        2 => mat_square.Mat2x2(T),
+    // Doing this more compactly breaks zls type inferance
+    return switch (rows) {
+        2 => if (rows == columns) mat_square.Mat2x2(T) else MatRectangle(T, rows, columns),
+        3 => if (rows == columns) mat_square.Mat3x3(T) else MatRectangle(T, rows, columns),
+        4 => if (rows == columns) mat_square.Mat4x4(T) else MatRectangle(T, rows, columns),
         else => @compileError(errMsg),
     };
-    return MatRectangle(T, rows, columns);
 }
 
 pub const Mat2 = MatNxM(f32, 2, 2);
+pub const Mat3 = MatNxM(f32, 3, 3);
+pub const Mat4 = MatNxM(f32, 4, 4);
 
 pub const Mat2x3 = MatNxM(f32, 2, 3);
 pub const Mat2x4 = MatNxM(f32, 2, 4);
