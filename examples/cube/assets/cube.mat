@@ -1,0 +1,5 @@
+.{
+	.vertex = "./cube.vert",
+	.fragment = "./cube.frag",
+	.texture = "./cat.png",
+}

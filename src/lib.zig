@@ -25,9 +25,9 @@ const log = std.log.scoped(.engine);
 
 pub const EngineError = error {
     InitFailure,
-    ShaderCompilationFailure,
     IOError,
     OutOfMemory,
+    ShaderCompilationFailure,
     InvalidAssetType,
     AssetLoadError,
 };

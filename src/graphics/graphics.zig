@@ -27,6 +27,7 @@ pub fn init() EngineError!void {
     const gl_version: [*:0]const u8 = gl.GetString(gl.VERSION).?;
     log.info("Rendering with OpenGL {s}", .{ gl_version });
 
+    gl.Enable(gl.DEPTH_TEST);
     // Default winding order is CCW
     // gl.Enable(gl.CULL_FACE);
 }
@@ -52,5 +53,5 @@ pub fn setRenderMode(mode: RenderMode) void {
 
 pub fn clear() void {
     gl.ClearColor(0.0, 0.0, 0.0, 1.0);
-    gl.Clear(gl.COLOR_BUFFER_BIT);
+    gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }

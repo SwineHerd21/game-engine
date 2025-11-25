@@ -140,7 +140,7 @@ pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
 
         /// Returns a vector pointing in the same direction but with length 1
         pub inline fn normalized(v: Vec) Vec {
-            return v.div(@floatCast(v.length()));
+            return v.mul(@floatCast(1.0 / v.length()));
         }
 
         /// Linearly interpolate between two vectors by `t`.

@@ -1,4 +1,4 @@
-//! Demonstrates basic mesh/shader loading and rendering
+//! Demonstrates basic mesh/shader loading, matrix math and rendering
 //!
 //! Press F1 to switch between solid and line rendering
 //! Press F3 to enable FPS counter
@@ -14,7 +14,7 @@ pub fn main() !void {
         .title = "Gaming",
         .window_width = 800,
         .window_height = 600,
-        .asset_folder = "examples/shader/assets/",
+        .asset_folder = "examples/cube/assets/",
         .on_init = on_init,
         .on_update = on_update,
         .on_event = on_event,
@@ -27,10 +27,8 @@ pub fn main() !void {
 }
 
 const State = struct {
-    quad: engine.Mesh,
-    fancy_mat: engine.Material,
-    tri: engine.Mesh,
-    default_mat: engine.Material,
+    cube: engine.Mesh,
+    material: engine.Material,
     rendermode: engine.RenderMode,
 };
 const App = engine.App(State);
@@ -38,47 +36,54 @@ const App = engine.App(State);
 fn on_init(app: *App) !void {
     var assets = app.asset_manager;
 
-    app.state.default_mat = try assets.getOrLoad(engine.Material, "default.mat");
-    app.state.fancy_mat = try assets.getOrLoad(engine.Material, "fancy.mat");
+    app.state.material = try assets.getOrLoad(engine.Material, "cube.mat");
 
     const view = engine.math.Mat4.translation(0, 0, -3);
     const projection = engine.math.Mat4.perspective(45, 800/600, 0.1, 100);
-    app.state.fancy_mat.setUniform("view", view);
-    app.state.fancy_mat.setUniform("projection", projection);
+    app.state.material.setUniform("view", view);
+    app.state.material.setUniform("projection", projection);
 
     // TEMP
     const verts = [_]f32{
-        // positions
-        -0.5, -0.5, 0.0,    // bottom left
-         0.5, -0.5, 0.0,    // bottom right
-         0.5,  0.5, 0.0,    // top right
-        -0.5,  0.5, 0.0,    // top left
+        // front face
+        -0.5, -0.5, 0.5,    // bottom left
+         0.5, -0.5, 0.5,    // bottom right
+         0.5,  0.5, 0.5,    // top right
+        -0.5,  0.5, 0.5,    // top left
+        // back face
+        -0.5, -0.5, -0.5,    // bottom left
+         0.5, -0.5, -0.5,    // bottom right
+         0.5,  0.5, -0.5,    // top right
+        -0.5,  0.5, -0.5,    // top left
     };
     const uvs = [_]f32{
         0.0, 0.0,
         1.0, 0.0,
         1.0, 1.0,
         0.0, 1.0,
-    };
+    } ** 2;
     const indices = [_]c_uint{
+        // front face
         0, 1, 3,
         1, 2, 3,
+        // back face
+        4, 7, 5,
+        5, 7, 6,
+        // right face
+        1, 5, 2,
+        5, 6, 2,
+        // left face
+        0, 3, 4,
+        3, 7, 4,
+        // top face
+        3, 2, 7,
+        2, 6, 7,
+        // bottom face,
+        0, 4, 1,
+        4, 5, 1,
     };
-    try assets.put("quad", engine.Mesh.init(&verts, &uvs, &indices));
-    app.state.quad = assets.getNamed(engine.Mesh, "quad").?;
-
-    const verts2 = [_]f32{
-        -0.5, -0.5, 0.0,
-         0.5, -0.5, 0.0,
-         0.0,  0.5, 0.0,
-    };
-    const uvs2 = [_]f32{
-        0.0, 0.0,
-        1.0, 0.0,
-        0.5, 1.0,
-    };
-    try assets.put("tri", engine.Mesh.init(&verts2, &uvs2, &.{0,1,2}));
-    app.state.tri = assets.getNamed(engine.Mesh, "tri").?;
+    try assets.put("cube", engine.Mesh.init(&verts, &uvs, &indices));
+    app.state.cube = assets.getNamed(engine.Mesh, "cube").?;
 
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});
     std.debug.print("Press F3 to toggle FPS counter\n", .{});
@@ -89,18 +94,18 @@ var frames: f64 = 0;
 var show_fps: bool = false;
 fn on_update(app: *App) !void {
     const timeSine = @sin(app.time.totalRuntime());
-    app.state.fancy_mat.setUniform("timeSine", timeSine);
+    app.state.material.setUniform("timeSine", timeSine);
 
-    // app.state.quad.draw(app.state.default_mat);
-    app.state.tri.draw(app.state.fancy_mat);
+    app.state.cube.draw(app.state.material);
 
     const time = app.time.totalRuntime();
+    const scale_factor = (@abs(timeSine)+1)/2;
     const translate = engine.math.Mat4.translation(0, 0, 1);
-    const rotation = engine.math.Mat4.rotationX(time);
-    const scale = engine.math.Mat4.scaling(timeSine, timeSine, 1);
+    const rotation = engine.math.Mat4.rotation(.new(1, 1, 1), time);
+    const scale = engine.math.Mat4.scaling(scale_factor, scale_factor, scale_factor);
     const transform = engine.math.transform(&.{translate,rotation,scale});
 
-    app.state.fancy_mat.setUniform("transform", transform);
+    app.state.material.setUniform("transform", transform);
 
     const cur_fps = 1/app.time.deltaTime();
     avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);

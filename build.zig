@@ -46,7 +46,7 @@ pub fn build(b: *std.Build) void {
 
     // Run test game
     const game_mod = b.createModule(.{
-        .root_source_file = b.path("examples/shader/main.zig"),
+        .root_source_file = b.path("examples/cube/main.zig"),
         .target = target,
         .optimize = optimize,
     });

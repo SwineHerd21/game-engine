@@ -3,6 +3,8 @@
 //! Getting an asset is somewhat expensive, especially if it has not been loaded yet,
 //! so it is recommended to get an asset once and store a reference to it.
 
+// TODO: consider switching to UUIDs stored in meta files which map to file paths
+
 const std = @import("std");
 
 const EngineError = @import("../lib.zig").EngineError;
@@ -138,24 +140,30 @@ pub fn load(self: *AssetManager, comptime T: type, filepath: []const u8) EngineE
     log.debug("Loaded asset '{s}' of type '{s}'", .{canon_path, @typeName(T)});
 }
 
-/// Load a batch of assets into memory at once. If any asset could not be loaded return an error.
+/// Load a batch of assets into memory at once. If any asset could not be loaded returns an error after finishing.
+/// If the engine runs out of memory the function will exit early
 pub fn loadBatch(self: *AssetManager, comptime T: type, files: []const []const u8) EngineError!void {
     const cache = try self.getCache(T);
 
+    var fail = false;
     for (files, 0..files.len) |filepath, _| {
         const canon_path = try self.getCanonicalPath(filepath);
         errdefer self.gpa.free(canon_path);
 
         const asset = self.createAsset(T, cache.*, canon_path) catch {
             log.err("Failed to load asset '{s}' of type '{s}'", .{canon_path, @typeName(T)});
-            return EngineError.AssetLoadError;
+            fail = true;
+            continue;
         };
+        // being out of memory is probably a good reason to quit entirely
         cache.hashmap.put(self.gpa, canon_path, asset) catch return outOfMemory();
         log.debug("Loaded asset '{s}' of type '{s}'", .{canon_path, @typeName(T)});
     }
+    if (fail) return EngineError.AssetLoadError;
 }
 
 /// Get a pointer to an existing asset, or load it from file if it is not cached.
+/// This function is slow so it is recommended to cache the result.
 pub fn getOrLoadPtr(self: *AssetManager, comptime T: type, filepath: []const u8) EngineError!*T {
     const cache = try self.getCache(T);
 
@@ -176,11 +184,13 @@ pub fn getOrLoadPtr(self: *AssetManager, comptime T: type, filepath: []const u8)
 }
 
 /// Get a copy of an existing asset, or load it from file if it is not cached.
+/// This function is slow so it is recommended to cache the result.
 pub fn getOrLoad(self: *AssetManager, comptime T: type, filepath: []const u8) EngineError!T {
     return (try self.getOrLoadPtr(T, filepath)).*;
 }
 
 /// Get a pointer to an asset if it is loaded.
+/// This function is slow so it is recommended to cache the result.
 pub fn getPtr(self: AssetManager, comptime T: type, filepath: []const u8) ?*T {
     const cache = self.getCache(T) catch return gotUnregistered(T);
 
@@ -191,6 +201,7 @@ pub fn getPtr(self: AssetManager, comptime T: type, filepath: []const u8) ?*T {
 }
 
 /// Get a copy of an asset if it is loaded.
+/// This function is slow so it is recommended to cache the result.
 pub fn get(self: AssetManager, comptime T: type, filepath: []const u8) ?T {
     const cache = self.getCache(T) catch return gotUnregistered(T);
     const canon_path = self.getCanonicalPath(filepath) catch return null;
@@ -209,20 +220,23 @@ fn createAsset(self: *AssetManager, comptime T: type, cache: AssetCache(T), file
 }
 
 /// Put a pre-initialized asset into the database. Access with `getNamed()` and `getPtrNamed()`.
+/// If an asset with the same name is already loaded returns `AssetLoadError`
 pub fn put(self: *AssetManager, name: []const u8, value: anytype) EngineError!void {
     const T = @TypeOf(value);
     const cache = try self.getCache(T);
-    cache.hashmap.put(self.gpa, name, value) catch return outOfMemory();
+    const entry = cache.hashmap.getOrPut(self.gpa, name) catch return outOfMemory();
+    if (entry.found_existing) return EngineError.AssetLoadError;
+    entry.value_ptr.* = value;
     log.debug("Added named asset '{s}' of type '{s}'", .{name, @typeName(T)});
 }
 
-/// Get a pointer to an asset added with `put()`
+/// Get a pointer to an asset added with `put()` if it is loaded
 pub fn getPtrNamed(self: *AssetManager, comptime T: type, name: []const u8) ?*T {
     const cache = self.getCache(T) catch return gotUnregistered(T);
     return cache.hashmap.getPtr(name);
 }
 
-/// Get a copy of an asset added with `put()`
+/// Get a copy of an asset added with `put()` if it is loaded
 pub fn getNamed(self: *AssetManager, comptime T: type, name: []const u8) ?T {
     const cache = self.getCache(T) catch return gotUnregistered(T);
     return cache.hashmap.get(name);
