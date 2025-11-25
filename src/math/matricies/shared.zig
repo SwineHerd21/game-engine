@@ -120,6 +120,15 @@ pub fn Shared(Mat: type, T: type, rows: comptime_int, columns: comptime_int) typ
             return @bitCast(new);
         }
 
+        /// Multiple many matricies in order
+        pub fn mulBatch(matricies: []const Mat) Mat {
+            var tr: Mat = matricies[0];
+            for (1..matricies.len) |i| {
+                tr = tr.mulMatrix(matricies[i]);
+            }
+            return tr;
+        }
+
         /// Checks if two matricies are exactly equal
         pub fn eql(a: Mat, b: Mat) bool {
             const a_arr: [rows*columns]T = @bitCast(a);

@@ -41,6 +41,11 @@ fn on_init(app: *App) !void {
     app.state.default_mat = try assets.getOrLoad(engine.Material, "default.mat");
     app.state.fancy_mat = try assets.getOrLoad(engine.Material, "fancy.mat");
 
+    const view = engine.math.Mat4.translation(0, 0, -3);
+    const projection = engine.math.Mat4.perspective(45, 800/600, 0.1, 100);
+    app.state.fancy_mat.setUniform("view", view);
+    app.state.fancy_mat.setUniform("projection", projection);
+
     // TEMP
     const verts = [_]f32{
         // positions
@@ -86,29 +91,16 @@ fn on_update(app: *App) !void {
     const timeSine = @sin(app.time.totalRuntime());
     app.state.fancy_mat.setUniform("timeSine", timeSine);
 
-    app.state.quad.draw(app.state.default_mat);
+    // app.state.quad.draw(app.state.default_mat);
     app.state.tri.draw(app.state.fancy_mat);
 
     const time = app.time.totalRuntime();
-    const rotate = engine.math.Mat4.fromArrays(.{
-        .{@cos(time), @sin(time), 0, 0},
-        .{-@sin(time), @cos(time), 0, 0},
-        .{0,0,1,0},
-        .{0,0,0,1},
-    });
-    const translate = engine.math.Mat4.fromArrays(.{
-        .{1,0,0,0},
-        .{0,1,0,0},
-        .{0,0,1,0},
-        .{timeSine, timeSine, 1, 1},
-    });
-    const scale = engine.math.Mat4.fromVecs(.{
-        engine.math.Vec4f.new(1,0,0,0).mul(timeSine),
-        engine.math.Vec4f.new(0,1,0,0).mul(timeSine),
-        engine.math.Vec4f.new(0,0,1,0).mul(timeSine),
-        engine.math.Vec4f.new(0,0,0,1),
-    });
-    app.state.fancy_mat.setUniform("transform", translate.mulMatrix(rotate).mulMatrix(scale));
+    const translate = engine.math.Mat4.translation(0, 0, 1);
+    const rotation = engine.math.Mat4.rotationX(time);
+    const scale = engine.math.Mat4.scaling(timeSine, timeSine, 1);
+    const transform = engine.math.transform(&.{translate,rotation,scale});
+
+    app.state.fancy_mat.setUniform("transform", transform);
 
     const cur_fps = 1/app.time.deltaTime();
     avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);

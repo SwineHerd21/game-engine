@@ -36,12 +36,13 @@ pub fn Mat2x2(T: type) type {
         pub const mulScalar = funcs.mulScalar;
         pub const divScalar = funcs.divScalar;
         pub const mul = funcs.mul;
+        pub const mulBatch = funcs.mulBatch;
         pub const transposed = funcs.transposed;
         pub const eql = funcs.eql;
         pub const approxEqlRel = funcs.approxEqlRel;
         pub const approxEqlAbs = funcs.approxEqlAbs;
 
-        pub fn determinant(m: Self) T {
+        pub inline fn determinant(m: Self) T {
             const arr: [columns*rows]T = @bitCast(m);
             // [0 2]
             // [1 3]
@@ -88,12 +89,13 @@ pub fn Mat3x3(T: type) type {
         pub const mulScalar = funcs.mulScalar;
         pub const divScalar = funcs.divScalar;
         pub const mul = funcs.mul;
+        pub const mulBatch = funcs.mulBatch;
         pub const transposed = funcs.transposed;
         pub const eql = funcs.eql;
         pub const approxEqlRel = funcs.approxEqlRel;
         pub const approxEqlAbs = funcs.approxEqlAbs;
 
-        pub fn determinant(m: Self) T {
+        pub inline fn determinant(m: Self) T {
             // [0 3 6]
             // [1 4 7]
             // [2 5 8]
@@ -158,6 +160,7 @@ pub fn Mat4x4(T: type) type {
         pub const mulScalar = funcs.mulScalar;
         pub const divScalar = funcs.divScalar;
         pub const mulMatrix = funcs.mul;
+        pub const mulBatch = funcs.mulBatch;
         pub const transposed = funcs.transposed;
         pub const eql = funcs.eql;
         pub const approxEqlRel = funcs.approxEqlRel;
@@ -194,6 +197,82 @@ pub fn Mat4x4(T: type) type {
                 new = new.add(a.data[i].mul(@field(b, f.name)));
             }
             return new;
+        }
+
+        /// Make a scaling matrix
+        pub inline fn scaling(x: T, y: T, z: T) Self {
+            return fromArrays(.{
+                .{x,0,0,0},
+                .{0,y,0,0},
+                .{0,0,z,0},
+                .{0,0,0,1},
+            });
+        }
+
+        /// Make a translation matrix
+        pub inline fn translation(x: T, y: T, z: T) Self {
+            return fromArrays(.{
+                .{1,0,0,0},
+                .{0,1,0,0},
+                .{0,0,1,0},
+                .{x,y,z,1},
+            });
+        }
+
+        /// Make a rotation matrix around the X axis
+        pub inline fn rotationX(angle: T) Self {
+            return fromArrays(.{
+                .{1,0,0,0},
+                .{0, @cos(angle), @sin(angle), 0},
+                .{0, -@sin(angle), @cos(angle), 0},
+                .{0,0,0,1},
+            });
+        }
+        /// Make a rotation matrix around the Y axis
+        pub inline fn rotationY(angle: T) Self {
+            return fromArrays(.{
+                .{@cos(angle), 0, -@sin(angle), 0},
+                .{0,1,0,0},
+                .{@sin(angle), 0, @cos(angle), 0},
+                .{0,0,0,1},
+            });
+        }
+        /// Make a rotation matrix around the Z axis
+        pub inline fn rotationZ(angle: T) Self {
+            return fromArrays(.{
+                .{@cos(angle), @sin(angle), 0, 0},
+                .{-@sin(angle), @cos(angle), 0, 0},
+                .{0,0,1,0},
+                .{0,0,0,1},
+            });
+        }
+
+        /// Make a perspective projection matrix based on horizontal FOV and aspect ratio
+        pub fn perspective(fov: T, aspectRatio: T, clip_near: T, clip_far: T) Self {
+            // https://songho.ca/opengl/gl_projectionmatrix.html
+            const tan = @tan(std.math.degreesToRadians(fov/2));
+            const right = clip_near * tan;
+            const top = right / aspectRatio;
+
+            return Self.fromArrays(.{
+                .{clip_near/right, 0, 0, 0},
+                .{0, clip_near/top, 0, 0},
+                .{0, 0, -(clip_far+clip_near)/(clip_far-clip_near), -1},
+                .{0, 0, -2*clip_far*clip_near/(clip_far-clip_near), 0},
+            });
+        }
+
+        /// Make an orthographic projection matrix based on horizontal FOV and aspect ratio
+        pub fn orthographic(width: T, height: T, clip_near: T, clip_far: T) Self {
+            // https://songho.ca/opengl/gl_projectionmatrix.html
+            const right = width/2;
+            const top = height/2;
+            return Self.fromArrays(.{
+                .{1/right, 0, 0, 0},
+                .{0, 1/top, 0, 0},
+                .{0, 0, -2/(clip_far-clip_near), 0},
+                .{0, 0, 0, 1},
+            });
         }
     };
 }

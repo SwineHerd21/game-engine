@@ -28,7 +28,7 @@ pub fn init() EngineError!void {
     log.info("Rendering with OpenGL {s}", .{ gl_version });
 
     // Default winding order is CCW
-    gl.Enable(gl.CULL_FACE);
+    // gl.Enable(gl.CULL_FACE);
 }
 
 pub fn deinit() void {
