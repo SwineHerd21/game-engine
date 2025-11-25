@@ -5,11 +5,10 @@ layout(location = 1) in vec2 aUV;
 
 out vec2 UV;
 
-uniform vec3 values[3];
-uniform float timeSine;
+uniform mat4 transform;
 
 void main() {
-	gl_Position = vec4(aPos.x + values[0].x * timeSine, aPos.y + values[1].y * timeSine, aPos.z + values[2].z * timeSine, 1.0);
+	gl_Position = transform * vec4(aPos, 1.0);
 	UV = aUV;
 }
 

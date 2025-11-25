@@ -126,6 +126,7 @@ pub fn setUniform(self: Material, name: []const u8, value: anytype) void {
                 math.Vec2i => gl.Uniform2i(location, value.x(), value.y()),
                 math.Vec3i => gl.Uniform3i(location, value.x(), value.y(), value.z()),
                 math.Vec4i => gl.Uniform4i(location, value.x(), value.y(), value.z(), value.w()),
+                math.Mat2, math.Mat3, math.Mat4,
                 math.Mat2x3, math.Mat2x4,
                 math.Mat3x2, math.Mat3x4,
                 math.Mat4x2, math.Mat4x3 => |m| {

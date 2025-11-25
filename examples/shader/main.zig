@@ -40,9 +40,6 @@ fn on_init(app: *App) !void {
 
     app.state.default_mat = try assets.getOrLoad(engine.Material, "default.mat");
     app.state.fancy_mat = try assets.getOrLoad(engine.Material, "fancy.mat");
-    // You can pass even arrays of VecN to shaders!
-    const values: [3]engine.math.Vec3f = .{ .splat(0.2), .splat(-0.2), .splat(0.0) };
-    app.state.fancy_mat.setUniform("values", values);
 
     // TEMP
     const verts = [_]f32{
@@ -92,6 +89,26 @@ fn on_update(app: *App) !void {
     app.state.quad.draw(app.state.default_mat);
     app.state.tri.draw(app.state.fancy_mat);
 
+    const time = app.time.totalRuntime();
+    const rotate = engine.math.Mat4.fromArrays(.{
+        .{@cos(time), @sin(time), 0, 0},
+        .{-@sin(time), @cos(time), 0, 0},
+        .{0,0,1,0},
+        .{0,0,0,1},
+    });
+    const translate = engine.math.Mat4.fromArrays(.{
+        .{1,0,0,0},
+        .{0,1,0,0},
+        .{0,0,1,0},
+        .{timeSine, timeSine, 1, 1},
+    });
+    const scale = engine.math.Mat4.fromVecs(.{
+        engine.math.Vec4f.new(1,0,0,0).mul(timeSine),
+        engine.math.Vec4f.new(0,1,0,0).mul(timeSine),
+        engine.math.Vec4f.new(0,0,1,0).mul(timeSine),
+        engine.math.Vec4f.new(0,0,0,1),
+    });
+    app.state.fancy_mat.setUniform("transform", translate.mulMatrix(rotate).mulMatrix(scale));
 
     const cur_fps = 1/app.time.deltaTime();
     avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);

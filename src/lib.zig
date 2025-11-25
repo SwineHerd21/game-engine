@@ -84,9 +84,6 @@ pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) E
     };
     defer graphics.deinit();
 
-    const mat = math.MatNxM(f32, 2, 3).splat(2.0);
-    std.debug.print("{f}\n{f}\n", .{mat.data[0], mat.data[1]});
-
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();

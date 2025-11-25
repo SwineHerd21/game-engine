@@ -157,7 +157,7 @@ pub fn Mat4x4(T: type) type {
         pub const sub = funcs.sub;
         pub const mulScalar = funcs.mulScalar;
         pub const divScalar = funcs.divScalar;
-        pub const mul = funcs.mul;
+        pub const mulMatrix = funcs.mul;
         pub const transposed = funcs.transposed;
         pub const eql = funcs.eql;
         pub const approxEqlRel = funcs.approxEqlRel;
@@ -187,6 +187,14 @@ pub fn Mat4x4(T: type) type {
         }
 
         // TODO: useful functions (transforms, projections, ...)
+
+        pub fn mulVec(a: Self, b: Vec(T, 4)) @TypeOf(b) {
+            var new: ColumnVec = undefined;
+            inline for (@typeInfo(ColumnVec).@"struct".fields, 0..) |f, i| {
+                new = new.add(a.data[i].mul(@field(b, f.name)));
+            }
+            return new;
+        }
     };
 }
 
@@ -276,4 +284,11 @@ test "Matrix 3x3 inverse" {
     }).divScalar(5.0);
     try testing.expect(mat.inverse().?.approxEqlRel(inv));
     try testing.expect(mat.mul(inv).approxEqlAbs(Mat3x3(f32).identity));
+}
+
+test "Matrix 4x4 by Vec4" {
+    const mat = Mat4x4(f32).identity.mulScalar(2);
+    const vec = Vec(f32, 4).one;
+
+    try testing.expectEqual(mat.mulVec(vec), Vec(f32, 4).splat(2));
 }

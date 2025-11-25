@@ -96,9 +96,9 @@ pub fn MatNxM(T: type, rows: comptime_int, columns: comptime_int) type {
     };
 }
 
-pub const Mat2 = MatNxM(f32, 2, 2);
-pub const Mat3 = MatNxM(f32, 3, 3);
-pub const Mat4 = MatNxM(f32, 4, 4);
+pub const Mat2 = mat_square.Mat2x2(f32);
+pub const Mat3 = mat_square.Mat3x3(f32);
+pub const Mat4 = mat_square.Mat4x4(f32);
 
 pub const Mat2x3 = MatNxM(f32, 2, 3);
 pub const Mat2x4 = MatNxM(f32, 2, 4);
