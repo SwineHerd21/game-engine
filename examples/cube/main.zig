@@ -38,9 +38,7 @@ fn on_init(app: *App) !void {
 
     app.state.material = try assets.getOrLoad(engine.Material, "cube.mat");
 
-    const view = engine.math.Mat4.translation(0, 0, -3);
     const projection = engine.math.Mat4.perspective(45, 800/600, 0.1, 100);
-    app.state.material.setUniform("view", view);
     app.state.material.setUniform("projection", projection);
 
     // TEMP
@@ -93,19 +91,29 @@ var avrg_fps: f64 = 0;
 var frames: f64 = 0;
 var show_fps: bool = false;
 fn on_update(app: *App) !void {
-    const timeSine = @sin(app.time.totalRuntime());
+    const time = app.time.totalRuntime();
+    const timeSine = @sin(time);
     app.state.material.setUniform("timeSine", timeSine);
+
+    const radius = 5;
+    const camX = timeSine * radius;
+    const camZ = @cos(time) * radius;
+    const view = engine.math.Mat4.lookAt(.new(camX, 0, camZ), .zero, .up);
+    app.state.material.setUniform("view", view);
+
+    const scale_factor = (@abs(timeSine)+1)/4;
+    const translate = engine.math.Mat4.translation(.new(0, 0, 1));
+    const rotate = engine.math.Mat4.rotation(.new(1, 1, 1), time);
+    const scale = engine.math.Mat4.scaling(.splat(scale_factor));
+
+    const transform = engine.math.transform(&.{translate,rotate,scale});
+    app.state.material.setUniform("transform", transform);
 
     app.state.cube.draw(app.state.material);
 
-    const time = app.time.totalRuntime();
-    const scale_factor = (@abs(timeSine)+1)/2;
-    const translate = engine.math.Mat4.translation(0, 0, 1);
-    const rotation = engine.math.Mat4.rotation(.new(1, 1, 1), time);
-    const scale = engine.math.Mat4.scaling(scale_factor, scale_factor, scale_factor);
-    const transform = engine.math.transform(&.{translate,rotation,scale});
-
-    app.state.material.setUniform("transform", transform);
+    //
+    app.state.material.setUniform("transform", engine.math.Mat4.identity);
+    app.state.cube.draw(app.state.material);
 
     const cur_fps = 1/app.time.deltaTime();
     avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);

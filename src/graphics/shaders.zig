@@ -64,7 +64,7 @@ fn compileShader(source: []const u8, shader_type: gl.uint) EngineError!gl.uint {
                     gl.VERTEX_SHADER => "vertex",
                     gl.FRAGMENT_SHADER => "fragment",
                     gl.GEOMETRY_SHADER => "geometry",
-                    else => "",
+                    else => "INVALID SHADER TYPE!!!",
                 },
                 info_log,
             });

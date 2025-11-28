@@ -97,6 +97,7 @@ fn createCache(
 
 fn getCache(self: AssetManager, comptime T: type) !*AssetCache(T) {
     const cache_opaque = self.database.getPtr(@typeName(T)) orelse {
+        @branchHint(.cold);
         log.err("Tried to load an asset of unregistered type '{s}'", .{@typeName(T)});
         return EngineError.InvalidAssetType;
     };
@@ -115,6 +116,7 @@ pub fn registerAssetType(
     const name = @typeName(T);
     const entry = self.database.getOrPut(self.gpa, name) catch return outOfMemory();
     if (entry.found_existing) {
+        @branchHint(.cold);
         log.warn("Tried to re-register asset type '{s}'", .{name});
         return;
     }
@@ -125,7 +127,7 @@ pub fn registerAssetType(
 
 // ========== Interface ==========
 
-/// Load an asset into memory.
+/// Load an asset into memory, potentially updating an existing entry.
 pub fn load(self: *AssetManager, comptime T: type, filepath: []const u8) EngineError!void {
     const cache = try self.getCache(T);
 
@@ -192,7 +194,7 @@ pub fn getOrLoad(self: *AssetManager, comptime T: type, filepath: []const u8) En
 /// Get a pointer to an asset if it is loaded.
 /// This function is slow so it is recommended to cache the result.
 pub fn getPtr(self: AssetManager, comptime T: type, filepath: []const u8) ?*T {
-    const cache = self.getCache(T) catch return gotUnregistered(T);
+    const cache = self.getCache(T) catch return null;
 
     const canon_path = self.getCanonicalPath(filepath) catch return null;
     defer self.gpa.free(canon_path);
@@ -203,7 +205,7 @@ pub fn getPtr(self: AssetManager, comptime T: type, filepath: []const u8) ?*T {
 /// Get a copy of an asset if it is loaded.
 /// This function is slow so it is recommended to cache the result.
 pub fn get(self: AssetManager, comptime T: type, filepath: []const u8) ?T {
-    const cache = self.getCache(T) catch return gotUnregistered(T);
+    const cache = self.getCache(T) catch return null;
     const canon_path = self.getCanonicalPath(filepath) catch return null;
     defer self.gpa.free(canon_path);
 
@@ -232,13 +234,13 @@ pub fn put(self: *AssetManager, name: []const u8, value: anytype) EngineError!vo
 
 /// Get a pointer to an asset added with `put()` if it is loaded
 pub fn getPtrNamed(self: *AssetManager, comptime T: type, name: []const u8) ?*T {
-    const cache = self.getCache(T) catch return gotUnregistered(T);
+    const cache = self.getCache(T) catch return null;
     return cache.hashmap.getPtr(name);
 }
 
 /// Get a copy of an asset added with `put()` if it is loaded
 pub fn getNamed(self: *AssetManager, comptime T: type, name: []const u8) ?T {
-    const cache = self.getCache(T) catch return gotUnregistered(T);
+    const cache = self.getCache(T) catch return null;
     return cache.hashmap.get(name);
 }
 
@@ -250,10 +252,7 @@ pub fn parseZon(self: AssetManager, comptime T: type, data: []const u8) EngineEr
     const data_z = self.gpa.dupeZ(u8, data) catch return outOfMemory();
     defer self.gpa.free(data_z);
     const value = std.zon.parse.fromSlice(T, self.gpa, @ptrCast(data_z), &diag, .{}) catch |err| switch (err) {
-        error.OutOfMemory => {
-            log.err("Out of memory", .{});
-            return EngineError.OutOfMemory;
-        },
+        error.OutOfMemory => return outOfMemory(),
         else => {
             log.err("Invalid ZON file: {f}", .{diag});
             return EngineError.AssetLoadError;
@@ -271,13 +270,9 @@ fn getCanonicalPath(self: AssetManager, path: []const u8) EngineError![]const u8
 }
 
 inline fn outOfMemory() EngineError {
+    @branchHint(.cold);
     log.err("Out of memory", .{});
     return EngineError.OutOfMemory;
-}
-
-inline fn gotUnregistered(comptime T: type) @TypeOf(null) {
-    log.err("Tried to get unregistered asset type '{s}'", .{@typeName(T)});
-    return null;
 }
 
 // ========== Tests ==========

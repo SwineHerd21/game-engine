@@ -55,8 +55,7 @@ pub fn Mat2x2(T: type) type {
             if (std.math.approxEqAbs(T, det, 0, 0.01 * std.math.floatEps(T))) return null;
 
             const arr: [columns * rows]T = @bitCast(m);
-            const data = @as([columns]ColumnVec, @bitCast([columns*rows]T{arr[3], -arr[2], -arr[1], arr[0]}));
-            return (Self{ .data = data }).mulScalar(1.0 / det);
+            return (@as(Self, @bitCast([columns*rows]T{arr[3], -arr[2], -arr[1], arr[0]}))).mulScalar(1.0 / det);
         }
     };
 }
@@ -169,8 +168,11 @@ pub fn Mat4x4(T: type) type {
         pub fn determinant(m: Self) T {
             const arr: [columns*rows]T = @bitCast(m);
             _ = arr;
+
             // TODO
-            return 606;
+            @compileError("not implemented");
+
+            // return @bitCast(arr);
         }
 
         /// Calculate the inverse matrix. If it does not exist returns `null`
@@ -185,12 +187,12 @@ pub fn Mat4x4(T: type) type {
             _ = arr;
 
             // TODO
+            @compileError("not implemented");
 
-            return @as(Self, @bitCast(inv)).mulScalar(1.0 / det);
+            // return @as(Self, @bitCast(inv)).mulScalar(1.0 / det);
         }
 
-        // TODO: useful functions (transforms, projections, ...)
-
+        /// Matrix by vector multiplication
         pub fn mulVec(a: Self, b: Vec(T, 4)) @TypeOf(b) {
             var new: ColumnVec = undefined;
             inline for (@typeInfo(ColumnVec).@"struct".fields, 0..) |f, i| {
@@ -200,26 +202,27 @@ pub fn Mat4x4(T: type) type {
         }
 
         /// Make a scaling matrix
-        pub inline fn scaling(x: T, y: T, z: T) Self {
+        pub inline fn scaling(factor: Vec(T, 3)) Self {
             return fromArrays(.{
-                .{x,0,0,0},
-                .{0,y,0,0},
-                .{0,0,z,0},
+                .{factor.x,0,0,0},
+                .{0,factor.y,0,0},
+                .{0,0,factor.z,0},
                 .{0,0,0,1},
             });
         }
 
-        /// Make a translation matrix
-        pub inline fn translation(x: T, y: T, z: T) Self {
+        /// Makes a translation matrix
+        pub inline fn translation(move: Vec(T, 3)) Self {
             return fromArrays(.{
                 .{1,0,0,0},
                 .{0,1,0,0},
                 .{0,0,1,0},
-                .{x,y,z,1},
+                .{move.x,move.y,move.z,1},
             });
         }
 
         /// Make a rotation matrix around an arbitrary axis
+        /// Using rotationX/Y/Z is much more efficient for those axis
         pub fn rotation(axis: Vec(T, 3), angle: T) Self {
             const sin = @sin(angle);
             const cos = @cos(angle);
@@ -259,6 +262,19 @@ pub fn Mat4x4(T: type) type {
                 .{-@sin(angle), @cos(angle), 0, 0},
                 .{0,0,1,0},
                 .{0,0,0,1},
+            });
+        }
+
+        /// Make a view matrix that is looking at `target` from `position` with up axis being `up`
+        pub fn lookAt(position: Vec(T, 3), target: Vec(T, 3), up: Vec(T, 3)) Self {
+            const forward = position.sub(target).normalized();
+            const left = up.cross(forward);
+            const up_n = forward.cross(left);
+            return fromArrays(.{
+                .{left.x, up_n.x, forward.x, 0},
+                .{left.y, up_n.y, forward.y, 0},
+                .{left.z, up_n.z, forward.z, 0},
+                .{-left.dot(position), -up_n.dot(position), -forward.dot(position), 1},
             });
         }
 

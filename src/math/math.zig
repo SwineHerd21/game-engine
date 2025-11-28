@@ -31,18 +31,18 @@ pub fn Vec(T: type, dimension: comptime_int) type {
     const errMsg = std.fmt.comptimePrint("Vectors of type {s} and dimension {} are not supported", .{@typeName(T), dimension});
     return switch (dimension) {
         2 => switch (@typeInfo(T)) {
-            .int => |i| if (i.signedness == .signed) Vec2int(T) else @compileError(errMsg),
             .float => Vec2float(T),
+            .int => |i| if (i.signedness == .signed) Vec2int(T) else @compileError(errMsg),
             else => @compileError(errMsg),
         },
         3 => switch (@typeInfo(T)) {
-            .int => |i| if (i.signedness == .signed) Vec3int(T) else @compileError(errMsg),
             .float => Vec3float(T),
+            .int => |i| if (i.signedness == .signed) Vec3int(T) else @compileError(errMsg),
             else => @compileError(errMsg),
         },
         4 => switch (@typeInfo(T)) {
-            .int => |i| if (i.signedness == .signed) Vec4int(T) else @compileError(errMsg),
             .float => Vec4float(T),
+            .int => |i| if (i.signedness == .signed) Vec4int(T) else @compileError(errMsg),
             else => @compileError(errMsg),
         },
         else => @compileError(errMsg),

@@ -108,13 +108,23 @@ pub fn Shared(Mat: type, T: type, rows: comptime_int, columns: comptime_int) typ
             const a_arr: [Mat.columns][Mat.rows]T = @bitCast(a);
             const b_arr: [Mat2.columns][Mat2.rows]T = @bitCast(b);
             var new: [Mat2.columns][Mat.rows]T = undefined;
-            inline for (0..Mat2.columns) |c| {
-                inline for (0..Mat.rows) |r| {
+            // remember that matricies are column-major and the indicies are changed
+            // from the common row-major formula!
+            // Example:
+            //  A = [a00 a10 a20]       B = [b00 b10]
+            //      [a01 a11 a21]           [b01 b11]
+            //                              [b02 b12]
+            // C = A*B = [a00*b00 + a10*b01 + a20*b02 | a00*b10 + a10*b11 + a20*b12]
+            //           [a01*b00 + a11*b01 + a21*b02 | a01*b10 + a11*b11 + a21*b12]
+            //
+            // More generally, cij = sum from k=0 to n-1 of akj*bik
+            inline for (0..Mat2.columns) |i| {
+                inline for (0..Mat.rows) |j| {
                     var el: T = 0;
                     for (0..Mat2.rows) |k| {
-                        el += a_arr[k][r] * b_arr[c][k];
+                        el += a_arr[k][j] * b_arr[i][k];
                     }
-                    new[c][r] = el;
+                    new[i][j] = el;
                 }
             }
             return @bitCast(new);
