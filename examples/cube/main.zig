@@ -111,7 +111,6 @@ fn on_update(app: *App) !void {
 
     app.state.cube.draw(app.state.material);
 
-    //
     app.state.material.setUniform("transform", engine.math.Mat4.identity);
     app.state.cube.draw(app.state.material);
 

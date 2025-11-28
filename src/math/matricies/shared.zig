@@ -122,7 +122,7 @@ pub fn Shared(Mat: type, T: type, rows: comptime_int, columns: comptime_int) typ
                 inline for (0..Mat.rows) |j| {
                     var el: T = 0;
                     for (0..Mat2.rows) |k| {
-                        el += a_arr[k][j] * b_arr[i][k];
+                        el = @mulAdd(T, a_arr[k][j], b_arr[i][k], el);
                     }
                     new[i][j] = el;
                 }

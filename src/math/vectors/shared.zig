@@ -109,7 +109,7 @@ pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
         pub fn dot(a: Vec, b: Vec) T {
             var result: T = 0;
             inline for (fields(Vec)) |f| {
-                result += @field(a, f.name) * @field(b, f.name);
+                result = @mulAdd(T, @field(a, f.name), @field(b, f.name), result);
             }
             return result;
         }
@@ -117,7 +117,7 @@ pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
         pub fn length(v: Vec) T {
             var result: T = 0;
             inline for (fields(Vec)) |f| {
-                result += @field(v, f.name) * @field(v, f.name);
+                result = @mulAdd(T, @field(v, f.name), @field(v, f.name), result);
             }
             return @sqrt(result);
         }
@@ -125,7 +125,7 @@ pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
         pub fn lengthSqr(v: Vec) T {
             var result: T = 0;
             inline for (fields(Vec)) |f| {
-                result += @field(v, f.name) * @field(v, f.name);
+                result = @mulAdd(T, @field(v, f.name), @field(v, f.name), result);
             }
             return result;
         }
