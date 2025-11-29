@@ -38,7 +38,7 @@ fn on_init(app: *App) !void {
 
     app.state.material = try assets.getOrLoad(engine.Material, "cube.mat");
 
-    const projection = engine.math.Mat4.perspective(45, 800/600, 0.1, 100);
+    const projection = engine.math.Mat4.perspective(45, 800.0/600.0, 0.1, 100);
     app.state.material.setUniform("projection", projection);
 
     // TEMP
