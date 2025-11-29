@@ -91,6 +91,9 @@ fn on_init(app: *App) !void {
 var avrg_fps: f64 = 0;
 var frames: f64 = 0;
 var show_fps: bool = false;
+var cube_pos: engine.math.Vec3f = .zero;
+
+var jumping = false;
 fn on_update(app: *App) !void {
     const time = app.time.totalRuntime();
     const timeSine = @sin(time);
@@ -112,7 +115,16 @@ fn on_update(app: *App) !void {
 
     app.state.cube.draw(app.state.material);
 
-    app.state.material.setUniform("transform", engine.math.Mat4.identity);
+    if (jumping) {
+        cube_pos.y += 3 * app.time.deltaTime();
+        if (cube_pos.y >= 0.5) jumping = false;
+    } else if (cube_pos.y > 0) {
+        cube_pos.y -= 3 * app.time.deltaTime();
+    } else {
+        cube_pos.y = 0;
+    }
+    const big_translate = engine.math.Mat4.translation(cube_pos);
+    app.state.material.setUniform("transform", big_translate);
     app.state.cube.draw(app.state.material);
 
     const cur_fps = 1/app.time.deltaTime();
@@ -136,6 +148,10 @@ fn on_event(app: *App, event: engine.Event) !void {
                 .F3 => {
                     std.debug.print("\n", .{});
                     show_fps = !show_fps;
+                },
+                .Space => {
+                    if (jumping) return;
+                    jumping = true;
                 },
                 else => return,
             }
