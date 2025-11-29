@@ -91,8 +91,9 @@ fn on_init(app: *App) !void {
 var avrg_fps: f64 = 0;
 var frames: f64 = 0;
 var show_fps: bool = false;
-var cube_pos: engine.math.Vec3f = .zero;
 
+var cube_pos: engine.math.Vec3f = .zero;
+var cube_angle: f32 = 0;
 var jumping = false;
 fn on_update(app: *App) !void {
     const time = app.time.totalRuntime();
@@ -117,14 +118,18 @@ fn on_update(app: *App) !void {
 
     if (jumping) {
         cube_pos.y += 3 * app.time.deltaTime();
+        cube_angle += 2*std.math.pi * (3.0)*app.time.deltaTime();
         if (cube_pos.y >= 0.5) jumping = false;
     } else if (cube_pos.y > 0) {
         cube_pos.y -= 3 * app.time.deltaTime();
+        cube_angle += 2*std.math.pi * (3.0)*app.time.deltaTime();
     } else {
         cube_pos.y = 0;
     }
     const big_translate = engine.math.Mat4.translation(cube_pos);
-    app.state.material.setUniform("transform", big_translate);
+    const big_rotate = engine.math.Mat4.rotation(.forward, cube_angle);
+    const big_transform = engine.math.transform(&.{big_translate,big_rotate});
+    app.state.material.setUniform("transform", big_transform);
     app.state.cube.draw(app.state.material);
 
     const cur_fps = 1/app.time.deltaTime();
