@@ -10,50 +10,51 @@ const Material = @import("Material.zig");
 const Mesh = @This();
 
 vao: gl.uint,
-vbo: gl.uint,
-ebo: gl.uint,
+buffer: gl.uint,
+ibo: gl.uint,
 index_count: gl.int,
 
-pub fn init(positions: []const f32, uv: []const f32, indices: []const u32) Mesh {
+pub fn init(verticies: []const f32, indices: []const u32) Mesh {
     var mesh: Mesh = .{
         .vao = undefined,
-        .vbo = undefined,
-        .ebo = undefined,
+        .buffer = undefined,
+        .ibo = undefined,
         .index_count = @intCast(@as(gl.uint, @truncate(indices.len))),
     };
 
-    gl.GenVertexArrays(1, @ptrCast(&mesh.vao));
-    gl.GenBuffers(1, @ptrCast(&mesh.vbo));
-    gl.GenBuffers(1, @ptrCast(&mesh.ebo));
-
-    gl.BindVertexArray(mesh.vao);
-    defer gl.BindVertexArray(0);
-
-    const pos_size = @as(isize, @intCast(positions.len)) * @sizeOf(f32);
-    const uv_size = @as(isize, @intCast(uv.len)) * @sizeOf(f32);
+    const vert_size = @as(isize, @intCast(verticies.len)) * @sizeOf(f32);
     const ind_size = @as(isize, @intCast(indices.len)) * @sizeOf(u32);
 
-    gl.BindBuffer(gl.ARRAY_BUFFER, mesh.vbo);
-    gl.BufferData(gl.ARRAY_BUFFER, pos_size + uv_size, null, gl.STATIC_DRAW);
-    gl.BufferSubData(gl.ARRAY_BUFFER, 0, pos_size, positions.ptr);
-    gl.BufferSubData(gl.ARRAY_BUFFER, pos_size, uv_size, uv.ptr);
+    // https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions
 
-    gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.ebo);
-    gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, ind_size, indices.ptr, gl.STATIC_DRAW);
+    gl.CreateBuffers(1, @ptrCast(&mesh.buffer));
+    gl.NamedBufferStorage(mesh.buffer, vert_size, verticies.ptr, gl.DYNAMIC_STORAGE_BIT);
+
+    gl.CreateBuffers(1, @ptrCast(&mesh.ibo));
+    gl.NamedBufferStorage(mesh.ibo, ind_size, indices.ptr, gl.DYNAMIC_STORAGE_BIT);
+
+    gl.CreateVertexArrays(1, @ptrCast(&mesh.vao));
+    // 3 positions + 2 uvs
+    gl.VertexArrayVertexBuffer(mesh.vao, 0, mesh.buffer, 0, 5 * @sizeOf(f32));
+    gl.VertexArrayElementBuffer(mesh.vao, mesh.ibo);
+
+    gl.EnableVertexArrayAttrib(mesh.vao, 0);
+    gl.EnableVertexArrayAttrib(mesh.vao, 1);
 
     // position attribute
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * @sizeOf(f32), 0);
-    gl.EnableVertexAttribArray(0);
+    gl.VertexArrayAttribFormat(mesh.vao, 0, 3, gl.FLOAT, gl.FALSE, 0);
     // uv attribute
-    gl.VertexAttribPointer(1, 2, gl.FLOAT, gl.FALSE, 2 * @sizeOf(f32), @intCast(pos_size));
-    gl.EnableVertexAttribArray(1);
+    gl.VertexArrayAttribFormat(mesh.vao, 1, 2, gl.FLOAT, gl.FALSE, 3);
+
+    gl.VertexArrayAttribBinding(mesh.vao, 0, 0);
+    gl.VertexArrayAttribBinding(mesh.vao, 1, 0);
 
     return mesh;
 }
 
 pub fn deinit(self: *Mesh, _: @import("std").mem.Allocator) void {
-    gl.DeleteBuffers(1, @ptrCast(&self.vbo));
-    gl.DeleteBuffers(1, @ptrCast(&self.ebo));
+    gl.DeleteBuffers(1, @ptrCast(&self.buffer));
+    gl.DeleteBuffers(1, @ptrCast(&self.ibo));
     gl.DeleteVertexArrays(1, @ptrCast(&self.vao));
 }
 

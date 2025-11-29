@@ -34,5 +34,6 @@ zig build test --summary all
 # Resources
 
 https://x.org/releases/current/doc/libX11/libX11/libX11.html - Xlib reference  
+https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions - modern OpenGL guide  
+https://learnopengl.com - general OpenGL resource  
 https://www.youtube.com/playlist?list=PLA0dXqQjCx0S04ntJKUftl6OaOgsiwHjA - OpenGL Tutorial  
-https://learnopengl.com - OpenGL resource

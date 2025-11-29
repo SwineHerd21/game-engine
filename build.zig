@@ -24,7 +24,7 @@ pub fn build(b: *std.Build) void {
     mod.linkSystemLibrary("GL", .{ .needed = true });
     const gl_bindings = @import("zigglgen").generateBindingsModule(b, .{
         .api = .gl,
-        .version = .@"3.3",
+        .version = .@"4.6",
         .profile = .core,
         .extensions = &.{ },
     });

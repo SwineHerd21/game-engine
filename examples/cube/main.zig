@@ -45,22 +45,16 @@ fn on_init(app: *App) !void {
     // TEMP
     const verts = [_]f32{
         // front face
-        -0.5, -0.5, 0.5,    // bottom left
-         0.5, -0.5, 0.5,    // bottom right
-         0.5,  0.5, 0.5,    // top right
-        -0.5,  0.5, 0.5,    // top left
+        -0.5, -0.5,  0.5,    0.0, 0.0,  // bottom left
+         0.5, -0.5,  0.5,    1.0, 0.0,  // bottom right
+         0.5,  0.5,  0.5,    1.0, 1.0,  // top right
+        -0.5,  0.5,  0.5,    0.0, 1.0,  // top left
         // back face
-        -0.5, -0.5, -0.5,    // bottom left
-         0.5, -0.5, -0.5,    // bottom right
-         0.5,  0.5, -0.5,    // top right
-        -0.5,  0.5, -0.5,    // top left
+        -0.5, -0.5, -0.5,    0.0, 0.0,  // bottom left
+         0.5, -0.5, -0.5,    1.0, 0.0,  // bottom right
+         0.5,  0.5, -0.5,    1.0, 1.0,  // top right
+        -0.5,  0.5, -0.5,    0.0, 1.0,  // top left
     };
-    const uvs = [_]f32{
-        0.0, 0.0,
-        1.0, 0.0,
-        1.0, 1.0,
-        0.0, 1.0,
-    } ** 2;
     const indices = [_]c_uint{
         // front face
         0, 1, 3,
@@ -81,7 +75,7 @@ fn on_init(app: *App) !void {
         0, 4, 1,
         4, 5, 1,
     };
-    try assets.put("cube", engine.Mesh.init(&verts, &uvs, &indices));
+    try assets.put("cube", engine.Mesh.init(&verts, &indices));
     app.state.cube = assets.getNamed(engine.Mesh, "cube").?;
 
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});

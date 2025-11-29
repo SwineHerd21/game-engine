@@ -89,8 +89,7 @@ pub fn deinit(self: *Material, _: std.mem.Allocator) void {
 pub fn use(self: Material) void {
     gl.UseProgram(self.program);
     if (self.texture) |texture| {
-        gl.ActiveTexture(gl.TEXTURE0);
-        gl.BindTexture(gl.TEXTURE_2D, texture.handle);
+        gl.BindTextureUnit(0, texture.handle);
     }
 }
 
@@ -108,69 +107,67 @@ pub fn setUniform(self: Material, name: []const u8, value: anytype) void {
         return;
     }
 
-    // OpenGL uniform functions apply to the currently bound shader
-    self.use();
     switch (@typeInfo(T)) {
-        .@"bool" => gl.Uniform1i(location, @intFromBool(value)),
+        .@"bool" => gl.ProgramUniform1i(self.program, location, @intFromBool(value)),
         .int => |i| if (i.signedness == .signed) {
-            gl.Uniform1i(location, value);
+            gl.ProgramUniform1i(self.program, location, value);
         } else {
-            gl.Uniform1ui(location, value);
+            gl.ProgramUniform1ui(self.program, location, value);
         },
-        .float => gl.Uniform1f(location, value),
+        .float => gl.ProgramUniform1f(self.program, location, value),
         .@"struct" => {
             switch (T) {
-                math.Vec2f => gl.Uniform2f(location, value.x(), value.y()),
-                math.Vec3f => gl.Uniform3f(location, value.x(), value.y(), value.z()),
-                math.Vec4f => gl.Uniform4f(location, value.x(), value.y(), value.z(), value.w()),
-                math.Vec2i => gl.Uniform2i(location, value.x(), value.y()),
-                math.Vec3i => gl.Uniform3i(location, value.x(), value.y(), value.z()),
-                math.Vec4i => gl.Uniform4i(location, value.x(), value.y(), value.z(), value.w()),
+                math.Vec2f => gl.ProgramUniform2f(self.program, location, value.x(), value.y()),
+                math.Vec3f => gl.ProgramUniform3f(self.program, location, value.x(), value.y(), value.z()),
+                math.Vec4f => gl.ProgramUniform4f(self.program, location, value.x(), value.y(), value.z(), value.w()),
+                math.Vec2i => gl.ProgramUniform2i(self.program, location, value.x(), value.y()),
+                math.Vec3i => gl.ProgramUniform3i(self.program, location, value.x(), value.y(), value.z()),
+                math.Vec4i => gl.ProgramUniform4i(self.program, location, value.x(), value.y(), value.z(), value.w()),
                 math.Mat2, math.Mat3, math.Mat4,
                 math.Mat2x3, math.Mat2x4,
                 math.Mat3x2, math.Mat3x4,
                 math.Mat4x2, math.Mat4x3 => |m| {
                     const arr: [m.rows*m.columns]f32 = @bitCast(value);
-                    passUniformArray(T, location, 1, @ptrCast(&arr));
+                    passUniformArray(self.program, T, location, 1, @ptrCast(&arr));
                 },
                 else => unreachable,
             }
         },
-        .array => |a| passUniformArray(a.child, location, @intCast(a.len), @ptrCast(&value)),
-        .pointer => |p| passUniformArray(p.child, location, @intCast(@as(gl.uint, @truncate(value.len))), @ptrCast(value.ptr)),
+        .array => |a| passUniformArray(self.program, a.child, location, @intCast(a.len), @ptrCast(&value)),
+        .pointer => |p| passUniformArray(self.program, p.child, location, @intCast(@as(gl.uint, @truncate(value.len))), @ptrCast(value.ptr)),
         else => unreachable,
     }
 }
 
 // The array data is passed through an opaque pointer to allow conversion of vectors.
-inline fn passUniformArray(comptime child: type, loc: gl.int, len: gl.int, val: *const anyopaque) void {
+inline fn passUniformArray(program: gl.uint, comptime child: type, loc: gl.int, len: gl.int, val: *const anyopaque) void {
     switch (@typeInfo(child)) {
-        .bool => gl.Uniform1iv(loc, len, @alignCast(@ptrCast(val))),
+        .bool => gl.ProgramUniform1iv(program, loc, len, @alignCast(@ptrCast(val))),
         .int => |i| if (i.signedness == .signed) {
-            gl.Uniform1iv(loc, len, @alignCast(@ptrCast(val)));
+            gl.ProgramUniform1iv(program, loc, len, @alignCast(@ptrCast(val)));
         } else {
-            gl.Uniform1uiv(loc, len, @alignCast(@ptrCast(val)));
+            gl.ProgramUniform1uiv(program, loc, len, @alignCast(@ptrCast(val)));
         },
         .float => {
-            gl.Uniform1fv(loc, len, @alignCast(@ptrCast(val)));
+            gl.ProgramUniform1fv(program, loc, len, @alignCast(@ptrCast(val)));
         },
         .@"struct" => {
             switch (child) {
-                math.Vec2f => gl.Uniform2fv(loc, len, @alignCast(@ptrCast(val))),
-                math.Vec3f => gl.Uniform3fv(loc, len, @alignCast(@ptrCast(val))),
-                math.Vec4f => gl.Uniform4fv(loc, len, @alignCast(@ptrCast(val))),
-                math.Vec2i => gl.Uniform2iv(loc, len, @alignCast(@ptrCast(val))),
-                math.Vec3i => gl.Uniform3iv(loc, len, @alignCast(@ptrCast(val))),
-                math.Vec4i => gl.Uniform4iv(loc, len, @alignCast(@ptrCast(val))),
-                math.Mat2 => gl.UniformMatrix2fv(loc, len, 0, @alignCast(@ptrCast(val))),
-                math.Mat3 => gl.UniformMatrix3fv(loc, len, 0, @alignCast(@ptrCast(val))),
-                math.Mat4 => gl.UniformMatrix4fv(loc, len, 0, @alignCast(@ptrCast(val))),
-                math.Mat2x3 => gl.UniformMatrix2x3fv(loc, len, 0, @alignCast(@ptrCast(val))),
-                math.Mat2x4 => gl.UniformMatrix2x4fv(loc, len, 0, @alignCast(@ptrCast(val))),
-                math.Mat3x2 => gl.UniformMatrix3x2fv(loc, len, 0, @alignCast(@ptrCast(val))),
-                math.Mat3x4 => gl.UniformMatrix3x4fv(loc, len, 0, @alignCast(@ptrCast(val))),
-                math.Mat4x2 => gl.UniformMatrix4x2fv(loc, len, 0, @alignCast(@ptrCast(val))),
-                math.Mat4x3 => gl.UniformMatrix4x3fv(loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Vec2f => gl.ProgramUniform2fv(program, loc, len, @alignCast(@ptrCast(val))),
+                math.Vec3f => gl.ProgramUniform3fv(program, loc, len, @alignCast(@ptrCast(val))),
+                math.Vec4f => gl.ProgramUniform4fv(program, loc, len, @alignCast(@ptrCast(val))),
+                math.Vec2i => gl.ProgramUniform2iv(program, loc, len, @alignCast(@ptrCast(val))),
+                math.Vec3i => gl.ProgramUniform3iv(program, loc, len, @alignCast(@ptrCast(val))),
+                math.Vec4i => gl.ProgramUniform4iv(program, loc, len, @alignCast(@ptrCast(val))),
+                math.Mat2 => gl.ProgramUniformMatrix2fv(program, loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat3 => gl.ProgramUniformMatrix3fv(program, loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat4 => gl.ProgramUniformMatrix4fv(program, loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat2x3 => gl.ProgramUniformMatrix2x3fv(program, loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat2x4 => gl.ProgramUniformMatrix2x4fv(program, loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat3x2 => gl.ProgramUniformMatrix3x2fv(program, loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat3x4 => gl.ProgramUniformMatrix3x4fv(program, loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat4x2 => gl.ProgramUniformMatrix4x2fv(program, loc, len, 0, @alignCast(@ptrCast(val))),
+                math.Mat4x3 => gl.ProgramUniformMatrix4x3fv(program, loc, len, 0, @alignCast(@ptrCast(val))),
                 else => unreachable,
             }
         },

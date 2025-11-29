@@ -26,16 +26,20 @@ pub fn init(data: []const u8, assets: *AssetManager) EngineError!Texture {
     }
 
     var texture: gl.uint = undefined;
-    gl.GenTextures(1, @ptrCast(&texture));
-    gl.BindTexture(gl.TEXTURE_2D, texture);
+    gl.CreateTextures(gl.TEXTURE_2D, 1, @ptrCast(&texture));
 
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.TextureParameteri(texture, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.TextureParameteri(texture, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.TextureParameteri(texture, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.TextureParameteri(texture, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-    gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, @intCast(image.width), @intCast(image.height), 0, gl.RGBA, gl.UNSIGNED_BYTE, image.pixels.rgba32.ptr);
-    gl.GenerateMipmap(gl.TEXTURE_2D);
+    const w: gl.sizei = @intCast(image.width);
+    const h: gl.sizei = @intCast(image.height);
+    gl.TextureStorage2D(texture, 1, gl.RGBA8, w, h);
+    gl.TextureSubImage2D(texture, 0, 0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, image.pixels.rgba32.ptr);
+    gl.GenerateTextureMipmap(texture);
+
+    // TODO: texture appears white for some reason
 
     return .{
         .handle = texture,
