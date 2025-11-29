@@ -30,6 +30,7 @@ const State = struct {
     cube: engine.Mesh,
     material: engine.Material,
     rendermode: engine.RenderMode,
+    perspective: engine.math.Mat4,
 };
 const App = engine.App(State);
 
@@ -38,8 +39,8 @@ fn on_init(app: *App) !void {
 
     app.state.material = try assets.getOrLoad(engine.Material, "cube.mat");
 
-    const projection = engine.math.Mat4.perspective(45, 800.0/600.0, 0.1, 100);
-    app.state.material.setUniform("projection", projection);
+    app.state.perspective = engine.math.Mat4.perspective(45, 800.0/600.0, 0.1, 100);
+    app.state.material.setUniform("projection", app.state.perspective);
 
     // TEMP
     const verts = [_]f32{
@@ -138,6 +139,12 @@ fn on_event(app: *App, event: engine.Event) !void {
                 },
                 else => return,
             }
+        },
+        .window_resize => |ev| {
+            const w: f32 = @floatFromInt(ev.width);
+            const h: f32 = @floatFromInt(ev.height);
+            app.state.perspective = engine.math.Mat4.perspective(45, w/h, 0.1, 100);
+            app.state.material.setUniform("projection", app.state.perspective);
         },
         else => {},
     }
