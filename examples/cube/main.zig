@@ -143,6 +143,10 @@ fn on_update(app: *App) !void {
 fn on_event(app: *App, event: engine.Event) !void {
     switch (event) {
         .key_press => |ev| {
+            if (ev.key == .Space) {
+                if (jumping) return;
+                jumping = true;
+            }
             if (ev.action == .Repeat) return;
             switch (ev.key) {
                 .F1 => {
@@ -153,10 +157,6 @@ fn on_event(app: *App, event: engine.Event) !void {
                 .F3 => {
                     std.debug.print("\n", .{});
                     show_fps = !show_fps;
-                },
-                .Space => {
-                    if (jumping) return;
-                    jumping = true;
                 },
                 else => return,
             }
