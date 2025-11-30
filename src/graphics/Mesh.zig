@@ -59,7 +59,7 @@ pub fn deinit(self: *Mesh, _: @import("std").mem.Allocator) void {
 }
 
 pub fn draw(self: Mesh, material: Material) void {
-    gl.BindVertexArray(self.vao);
     material.use();
+    gl.BindVertexArray(self.vao);
     gl.DrawElements(gl.TRIANGLES, self.index_count, gl.UNSIGNED_INT, 0);
 }
