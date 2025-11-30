@@ -64,7 +64,10 @@ fn compileShader(source: []const u8, shader_type: gl.uint) EngineError!gl.uint {
                     gl.VERTEX_SHADER => "vertex",
                     gl.FRAGMENT_SHADER => "fragment",
                     gl.GEOMETRY_SHADER => "geometry",
-                    else => "INVALID SHADER TYPE!!!",
+                    gl.COMPUTE_SHADER => "compute",
+                    gl.TESS_EVALUATION_SHADER => "tesselation evaluation",
+                    gl.TESS_CONTROL_SHADER => "tesselation control",
+                    else => unreachable,
                 },
                 info_log,
             });

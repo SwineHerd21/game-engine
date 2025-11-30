@@ -38,7 +38,7 @@ pub fn init() EngineError!void {
 
     gl.Enable(gl.DEPTH_TEST);
     // Default winding order is CCW
-    // gl.Enable(gl.CULL_FACE);
+    gl.Enable(gl.CULL_FACE);
 }
 
 pub fn deinit() void {
@@ -52,13 +52,19 @@ pub fn adjustViewport(width: i32, height: i32) void {
 }
 
 pub fn setRenderMode(mode: RenderMode) void {
-    gl.PolygonMode(gl.FRONT_AND_BACK, switch (mode) {
-        .Solid => gl.FILL,
-        .Wireframe => gl.LINE,
-    });
+    switch (mode) {
+        .Solid => {
+            gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL);
+            gl.Enable(gl.CULL_FACE);
+        },
+        .Wireframe => {
+            gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE);
+            gl.Disable(gl.CULL_FACE);
+        },
+    }
 }
 
-export fn messageCallback(source: gl.@"enum", msg_type: gl.@"enum", id: gl.uint, severity: gl.@"enum", length: gl.sizei, message: [*]const u8, _: ?*const anyopaque) void {
+fn messageCallback(source: gl.@"enum", msg_type: gl.@"enum", id: gl.uint, severity: gl.@"enum", length: gl.sizei, message: [*]const u8, _: ?*const anyopaque) callconv(.c) void {
     const src = switch (source) {
         gl.DEBUG_SOURCE_API => "API",
         gl.DEBUG_SOURCE_WINDOW_SYSTEM => "Window system",
