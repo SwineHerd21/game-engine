@@ -44,7 +44,7 @@ pub fn init(verticies: []const f32, indices: []const u32) Mesh {
     // position attribute
     gl.VertexArrayAttribFormat(mesh.vao, 0, 3, gl.FLOAT, gl.FALSE, 0);
     // uv attribute
-    gl.VertexArrayAttribFormat(mesh.vao, 1, 2, gl.FLOAT, gl.FALSE, 3);
+    gl.VertexArrayAttribFormat(mesh.vao, 1, 2, gl.FLOAT, gl.FALSE, 3*@sizeOf(f32));
 
     gl.VertexArrayAttribBinding(mesh.vao, 0, 0);
     gl.VertexArrayAttribBinding(mesh.vao, 1, 0);
