@@ -1,25 +1,34 @@
 By priority
 
-# High
+# Extreme
 
-- Immediate mode GUI for debugging
+- Compile assets into a blob at build time
+- Introduce meta files for assets which assign a UUID and allow to set options
+- Load assets from the blob into memory when requested
+- Use a special importer interface for custom file types
 
-- Models: contain meshes and materials
 - Loading models from files
 
-- Scenes: organized collections of objects
-- Gameobjects/Entities/???: a thing with attached components
+# High
+
+- Use a custom allocator/some kind of reference counting to manage asset memory
 
 - Text rendering
 
-# Low
+# Medium
 
-- Bool vectors
-
-# Planned
+- Immediate mode GUI for debugging
 
 - Audio
-- UI
+
+# Low
+
+- Renderer abstraction
+
+- Framebuffers and render targets and stuff
+
+
+# Planned
 
 - Set up public engine API
 - Examples
