@@ -40,14 +40,10 @@ pub fn Options(comptime T: type) type {
 
         asset_folder: []const u8,
 
-        /// Gets called when the application is initialized
-        on_init: *const fn(*App(T)) EngineError!void,
         /// Gets called once every frame
         on_update: *const fn(*App(T)) EngineError!void,
         /// Gets called when a window event is handled
         on_event: *const fn(*App(T), events.Event) EngineError!void,
-        /// Gets called before the application closes
-        on_deinit: *const fn(*App(T)) EngineError!void,
     };
 }
 
@@ -55,96 +51,106 @@ pub fn Options(comptime T: type) type {
 pub fn App(comptime T: type) type {
     return struct {
         state: *T,
-        asset_manager: *AssetManager,
+        window: Window,
+        assets: AssetManager,
         input: Input,
         time: Time,
+
+        /// Gets called once every frame
+        on_update: *const fn(*App(T)) EngineError!void,
+        /// Gets called when a window event is handled
+        on_event: *const fn(*App(T), events.Event) EngineError!void,
+
+        const Self = @This();
+
+        /// Call `deinit` at the end
+        pub fn init(your_context: *T, allocator: std.mem.Allocator, options: Options(T)) EngineError!Self {
+            var asset_manager = AssetManager.init(allocator, options.asset_folder);
+            errdefer asset_manager.deinit();
+
+            try asset_manager.registerAssetType(shaders.Vertex, shaders.Vertex.init, shaders.Vertex.deinit);
+            try asset_manager.registerAssetType(shaders.Fragment, shaders.Fragment.init, shaders.Fragment.deinit);
+            try asset_manager.registerAssetType(Texture, Texture.init, Texture.deinit);
+            try asset_manager.registerAssetType(Material, Material.init, Material.deinit);
+            try asset_manager.registerAssetType(Mesh, init_2, Mesh.deinit);
+
+            const window = Window.create(options.window_width, options.window_height, options.title) catch |e| {
+                log.err("Failed to create a window", .{});
+                return e;
+            };
+            errdefer window.destroy();
+
+            graphics.init() catch |err| {
+                log.err("Failed to load a graphics library", .{});
+                return err;
+            };
+            errdefer graphics.deinit();
+
+            return .{
+                .state = your_context,
+                .window = window,
+                .assets = asset_manager,
+                .input = .{ .pointer_position = .zero },
+                .time = try .init(),
+                .on_update = options.on_update,
+                .on_event = options.on_event,
+            };
+        }
+
+        pub fn deinit(self: *Self) void {
+            log.info("Shutting down...", .{});
+
+            self.assets.deinit();
+            self.window.destroy();
+            graphics.deinit();
+        }
+
+        /// Call this function when you are ready to start your application.
+        /// The `your_context` argument is for your own application data and will be passed to callbacks
+        /// as part of an `App` struct.
+        ///
+        /// WARNING: This places the thread into an infinite update loop until the window closes.
+        /// You should do all necessary setup before calling this function.
+        pub fn run(self: *Self) !void {
+            while (!self.window.should_close) {
+                // Process pending OS events
+                while (self.window.areEventsPending()) {
+                    if (self.window.consumeEvent(self.input)) |ev| {
+                        // Special handling for important events
+                        switch (ev) {
+                            .window_close => {
+                                self.window.should_close = true;
+                            },
+                            .window_resize => |r| {
+                                graphics.adjustViewport(@intCast(r.width), @intCast(r.height));
+                            },
+                            .pointer_motion => |m| {
+                                self.input.pointer_position = m.position;
+                            },
+                            else => {},
+                        }
+
+                        try self.on_event(self, ev);
+                    }
+                }
+
+                graphics.clear();
+
+                self.time.update();
+
+                // TODO: engine update loop
+                try self.on_update(self);
+
+                // NOTE: maybe introduce a `post_update`?
+
+                self.window.swapBuffers();
+            }
+        }
     };
 }
 
 fn init_2(_:[]const u8, _:*AssetManager) !Mesh {
     return undefined;
-}
-/// Call this function when you are ready to start your application.
-/// The `your_context` argument is for your own application data and will be passed to callbacks
-/// as part of an `App` struct.
-///
-/// WARNING: This places the thread into an infinite update loop until the window closes.
-/// You should do all necessary setup before calling this function.
-pub fn runApplication(comptime T: type, your_context: *T, options: Options(T)) EngineError!void {
-    // Initialization
-    var window = Window.createWindow(options.window_width, options.window_height, options.title) catch |e| {
-        log.err("Failed to create a window", .{});
-        return e;
-    };
-    defer window.destroy();
-
-    graphics.init() catch |err| {
-        log.err("Failed to load a graphics library", .{});
-        return err;
-    };
-    defer graphics.deinit();
-
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
-
-    var asset_manager = AssetManager.init(allocator, options.asset_folder);
-    defer asset_manager.deinit();
-
-    try asset_manager.registerAssetType(shaders.Vertex, shaders.Vertex.init, shaders.Vertex.deinit);
-    try asset_manager.registerAssetType(shaders.Fragment, shaders.Fragment.init, shaders.Fragment.deinit);
-    try asset_manager.registerAssetType(Texture, Texture.init, Texture.deinit);
-    try asset_manager.registerAssetType(Material, Material.init, Material.deinit);
-    try asset_manager.registerAssetType(Mesh, init_2, Mesh.deinit);
-
-    var app: App(T) = .{
-        .state = your_context,
-        .asset_manager = &asset_manager,
-        .time = try .init(),
-        .input = .{
-            .pointer_position = .zero,
-        },
-    };
-
-    try options.on_init(&app);
-
-    // Update loop
-    while (!window.should_close) {
-        // Process pending OS events
-        while (window.areEventsPending()) {
-            if (window.consumeEvent(app.input)) |ev| {
-                // Special handling for important events
-                switch (ev) {
-                    .window_close => {
-                        window.should_close = true;
-                    },
-                    .window_resize => |r| {
-                        graphics.adjustViewport(@intCast(r.width), @intCast(r.height));
-                    },
-                    .pointer_motion => |m| {
-                        app.input.pointer_position = m.position;
-                    },
-                    else => {},
-                }
-
-                try options.on_event(&app, ev);
-            }
-        }
-
-        graphics.clear();
-
-        app.time.update();
-
-        // TODO: engine update loop
-        try options.on_update(&app);
-
-        // NOTE: maybe introduce a `post_update`?
-
-        window.swapBuffers();
-    }
-
-    try options.on_deinit(&app);
-    log.info("Shutting down...", .{});
 }
 
 test {

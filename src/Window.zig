@@ -16,7 +16,7 @@ inner: native.Context,
 should_close: bool = false,
 
 /// Call `destroy()` when the window is no longer needed.
-pub fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Window {
+pub fn create(width: u32, height: u32, title: []const u8) EngineError!Window {
     // TODO: error handling
     return .{
         .inner = try native.createWindow(width, height, title),

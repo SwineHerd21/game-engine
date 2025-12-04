@@ -15,15 +15,22 @@ pub fn main() !void {
         .window_width = 800,
         .window_height = 600,
         .asset_folder = "examples/cube/assets/",
-        .on_init = on_init,
         .on_update = on_update,
         .on_event = on_event,
-        .on_deinit = on_deinit,
     };
     var state: State = undefined;
     state.rendermode = .Solid;
 
-    try engine.runApplication(State, &state, config);
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+
+    var app = try engine.App(State).init(&state, arena.allocator(), config);
+
+    defer app.deinit();
+
+    try init(&app);
+
+    try app.run();
 }
 
 const State = struct {
@@ -34,10 +41,8 @@ const State = struct {
 };
 const App = engine.App(State);
 
-fn on_init(app: *App) !void {
-    var assets = app.asset_manager;
-
-    app.state.material = try assets.getOrLoad(engine.Material, "cube.mat");
+fn init(app: *App) !void {
+    app.state.material = try app.assets.getOrLoad(engine.Material, "cube.mat");
 
     app.state.perspective = engine.math.Mat4.perspective(45, 800.0/600.0, 0.1, 100);
     app.state.material.setUniform("projection", app.state.perspective);
@@ -75,8 +80,8 @@ fn on_init(app: *App) !void {
         0, 4, 1,
         4, 5, 1,
     };
-    try assets.put("cube", engine.Mesh.init(&verts, &indices));
-    app.state.cube = assets.getNamed(engine.Mesh, "cube").?;
+    try app.assets.put("cube", engine.Mesh.init(&verts, &indices));
+    app.state.cube = app.assets.getNamed(engine.Mesh, "cube").?;
 
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});
     std.debug.print("Press F3 to toggle FPS counter\n", .{});
@@ -165,6 +170,3 @@ fn on_event(app: *App, event: engine.Event) !void {
     }
 }
 
-fn on_deinit(_: *App) !void {
-    std.debug.print("\n", .{});
-}
