@@ -30,7 +30,9 @@ By priority
 
 # Planned
 
+- Window icon
+
 - Set up public engine API
 - Examples
 
-- Windows suppport
+- Windows support
