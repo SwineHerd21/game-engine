@@ -3,6 +3,8 @@
 //! Getting an asset is somewhat expensive, especially if it has not been loaded yet,
 //! so it is recommended to get an asset once and store a reference to it.
 
+// NOTE: this is deprecated but some concept might be useful for someone later maybe
+
 // TODO: consider switching to UUIDs stored in meta files which map to file paths
 
 const std = @import("std");

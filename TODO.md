@@ -2,20 +2,17 @@ By priority
 
 # Extreme
 
-- Compile assets into a blob at build time
-- Introduce meta files for assets which assign a UUID and allow to set options
-- Load assets from the blob into memory when requested
-- Use a special importer interface for custom file types
-
-- Loading models from files
+- Text rendering
 
 # High
 
-- Use a custom allocator/some kind of reference counting to manage asset memory
-
-- Text rendering
+- Loading models from files
 
 # Medium
+
+- Build time asset processing
+
+- Make a new version of the asset cache which is basically just arrays
 
 - Immediate mode GUI for debugging
 
@@ -23,10 +20,11 @@ By priority
 
 # Low
 
+- Use a custom allocator/some kind of reference counting to manage asset memory
+
 - Renderer abstraction
 
 - Framebuffers and render targets and stuff
-
 
 # Planned
 

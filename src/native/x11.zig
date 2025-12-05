@@ -91,7 +91,7 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
     // should the result be checked for 0? idk
     _ = c.XSetWMProtocols(display, window, @constCast(&wm_delete_window), 1);
 
-    log.info("Running on Linux with X11 {}", .{c.XProtocolVersion(display)});
+    log.info("Running on Linux with X11", .{});
 
     // OpenGL context
     const glx = c.glXCreateContext(display, vi, null, c.GL_TRUE);

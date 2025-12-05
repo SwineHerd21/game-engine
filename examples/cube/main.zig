@@ -5,47 +5,42 @@
 
 const std = @import("std");
 
-const engine = @import("engine");
+const Engine = @import("engine");
+const math = Engine.math;
+const Mat4 = math.Mat4;
+
+const asset_folder = "examples/cube/assets/";
 
 pub fn main() !void {
     std.debug.print("gaming\n", .{});
 
-    const config: engine.Options(State) = .{
+    const config: Engine.Options = .{
         .title = "Gaming",
         .window_width = 800,
         .window_height = 600,
-        .asset_folder = "examples/cube/assets/",
-        .on_update = on_update,
-        .on_event = on_event,
     };
     var state: State = undefined;
     state.rendermode = .Solid;
 
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
+    const allocator = arena.allocator();
 
-    var app = try engine.App(State).init(&state, arena.allocator(), config);
-
+    var app = try Engine.init(config);
     defer app.deinit();
 
-    try init(&app);
+    // Initialization
+    const vs = try Engine.io.loadShader(allocator, asset_folder++"cube.vert", .vertex);
+    defer vs.deinit();
+    const fs = try Engine.io.loadShader(allocator, asset_folder++"cube.frag", .fragment);
+    defer fs.deinit();
+    const cat = try Engine.io.loadTexture(allocator, asset_folder++"cat.png");
+    defer cat.deinit();
+    state.material = try Engine.Material.init(vs, fs, cat);
+    defer state.material.deinit();
 
-    try app.run();
-}
-
-const State = struct {
-    cube: engine.Mesh,
-    material: engine.Material,
-    rendermode: engine.RenderMode,
-    perspective: engine.math.Mat4,
-};
-const App = engine.App(State);
-
-fn init(app: *App) !void {
-    app.state.material = try app.assets.getOrLoad(engine.Material, "cube.mat");
-
-    app.state.perspective = engine.math.Mat4.perspective(45, 800.0/600.0, 0.1, 100);
-    app.state.material.setUniform("projection", app.state.perspective);
+    state.perspective = Mat4.perspective(45, 800.0/600.0, 0.1, 100);
+    state.material.setUniform("projection", state.perspective);
 
     // TEMP
     const verts = [_]f32{
@@ -80,56 +75,66 @@ fn init(app: *App) !void {
         0, 4, 1,
         4, 5, 1,
     };
-    try app.assets.put("cube", engine.Mesh.init(&verts, &indices));
-    app.state.cube = app.assets.getNamed(engine.Mesh, "cube").?;
+    state.cube = Engine.Mesh.init(&verts, &indices);
+    defer state.cube.deinit();
 
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});
     std.debug.print("Press F3 to toggle FPS counter\n", .{});
+
+    try app.run(State, &state, on_update, on_event);
 }
+
+const State = struct {
+    cube: Engine.Mesh,
+    material: Engine.Material,
+    rendermode: Engine.RenderMode,
+    perspective: Mat4,
+
+    cube_pos: math.Vec3f = .zero,
+    cube_angle: f32 = 0,
+    jumping: bool = false,
+};
 
 var avrg_fps: f64 = 0;
 var frames: f64 = 0;
 var show_fps: bool = false;
 
-var cube_pos: engine.math.Vec3f = .zero;
-var cube_angle: f32 = 0;
-var jumping = false;
-fn on_update(app: *App) !void {
+fn on_update(app: *Engine, state: *State) !void {
     const time = app.time.totalRuntime();
     const timeSine = @sin(time);
-    app.state.material.setUniform("timeSine", timeSine);
+    state.material.setUniform("timeSine", timeSine);
 
     const radius = 5;
     const camX = timeSine * radius;
     const camZ = @cos(time) * radius;
-    const view = engine.math.Mat4.lookAt(.new(camX, 0, camZ), .zero, .up);
-    app.state.material.setUniform("view", view);
+    const view = Mat4.lookAt(.new(camX, 0, camZ), .zero, .up);
+    state.material.setUniform("view", view);
 
     const scale_factor = (@abs(timeSine)+1)/4;
-    const translate = engine.math.Mat4.translation(.new(0, 0, 1));
-    const rotate = engine.math.Mat4.rotation(.new(1, 1, 1), time);
-    const scale = engine.math.Mat4.scaling(.splat(scale_factor));
+    const translate = Mat4.translation(.new(0, 0, 1));
+    const rotate = Mat4.rotation(.new(1, 1, 1), time);
+    const scale = Mat4.scaling(.splat(scale_factor));
 
-    const transform = engine.math.transform(&.{translate,rotate,scale});
-    app.state.material.setUniform("transform", transform);
+    const transform = Mat4.mulBatch(&.{translate,rotate,scale});
+    state.material.setUniform("transform", transform);
 
-    app.state.cube.draw(app.state.material);
+    state.cube.draw(state.material);
 
-    if (jumping) {
-        cube_pos.y += 3 * app.time.deltaTime();
-        cube_angle += 2*std.math.pi * (3.0)*app.time.deltaTime();
-        if (cube_pos.y >= 0.5) jumping = false;
-    } else if (cube_pos.y > 0) {
-        cube_pos.y -= 3 * app.time.deltaTime();
-        cube_angle += 2*std.math.pi * (3.0)*app.time.deltaTime();
+    if (state.jumping) {
+        state.cube_pos.y += 3 * app.time.deltaTime();
+        state.cube_angle += 2*std.math.pi * (3.0)*app.time.deltaTime();
+        if (state.cube_pos.y >= 0.5) state.jumping = false;
+    } else if (state.cube_pos.y > 0) {
+        state.cube_pos.y -= 3 * app.time.deltaTime();
+        state.cube_angle += 2*std.math.pi * (3.0)*app.time.deltaTime();
     } else {
-        cube_pos.y = 0;
+        state.cube_pos.y = 0;
     }
-    const big_translate = engine.math.Mat4.translation(cube_pos);
-    const big_rotate = engine.math.Mat4.rotation(.forward, cube_angle);
-    const big_transform = engine.math.transform(&.{big_translate,big_rotate});
-    app.state.material.setUniform("transform", big_transform);
-    app.state.cube.draw(app.state.material);
+    const big_translate = Mat4.translation(state.cube_pos);
+    const big_rotate = Mat4.rotation(.forward, state.cube_angle);
+    const big_transform = Mat4.mulBatch(&.{big_translate,big_rotate});
+    state.material.setUniform("transform", big_transform);
+    state.cube.draw(state.material);
 
     const cur_fps = 1/app.time.deltaTime();
     avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);
@@ -139,19 +144,20 @@ fn on_update(app: *App) !void {
     }
 }
 
-fn on_event(app: *App, event: engine.Event) !void {
+fn on_event(app: *Engine, state: *State, event: Engine.Event) !void {
+    _=app;
     switch (event) {
         .key_press => |ev| {
             if (ev.key == .Space) {
-                if (jumping) return;
-                jumping = true;
+                if (state.jumping) return;
+                state.jumping = true;
             }
             if (ev.action == .Repeat) return;
             switch (ev.key) {
                 .F1 => {
                     // Switch between solid and wireframe rendering
-                    app.state.rendermode = @enumFromInt(@intFromEnum(app.state.rendermode) ^ 1);
-                    engine.setRenderMode(app.state.rendermode);
+                    state.rendermode = @enumFromInt(@intFromEnum(state.rendermode) ^ 1);
+                    Engine.setRenderMode(state.rendermode);
                 },
                 .F3 => {
                     std.debug.print("\n", .{});
@@ -163,8 +169,8 @@ fn on_event(app: *App, event: engine.Event) !void {
         .window_resize => |ev| {
             const w: f32 = @floatFromInt(ev.width);
             const h: f32 = @floatFromInt(ev.height);
-            app.state.perspective = engine.math.Mat4.perspective(45, w/h, 0.1, 100);
-            app.state.material.setUniform("projection", app.state.perspective);
+            state.perspective = Mat4.perspective(45, w/h, 0.1, 100);
+            state.material.setUniform("projection", state.perspective);
         },
         else => {},
     }

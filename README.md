@@ -6,7 +6,7 @@ Basic 3d game engine catered to my puzzle game.
 
 Currently runs on Linux through X11 and OpenGL.
 
-The engine will include only the most necessary generic things that are useful everywhere: rendering, audio handling, asset management, etc.
+The engine will include only the most necessary generic things that are useful everywhere: rendering, audio handling, loading assets, etc.
 Stuff like game objects/entities will not be included here as their use really depends on the specific game.
 
 # Build

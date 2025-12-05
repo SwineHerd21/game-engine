@@ -3,6 +3,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const AssetManager = @import("AssetManager.zig");
 
+// NOTE: this is deprecated but some concept might be useful for someone later maybe
+
 // Inspired by https://devlog.hexops.com/2022/lets-build-ecs-part-2-databases/
 
 /// Stores a whole type of assets, knows how to initialize and deinitialize them.

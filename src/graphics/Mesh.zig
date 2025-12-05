@@ -4,7 +4,6 @@ const std = @import("std");
 const gl = @import("gl");
 
 const Allocator = std.mem.Allocator;
-const AssetManager = @import("../assets/AssetManager.zig");
 const Material = @import("Material.zig");
 
 const Mesh = @This();
@@ -52,7 +51,7 @@ pub fn init(verticies: []const f32, indices: []const u32) Mesh {
     return mesh;
 }
 
-pub fn deinit(self: *Mesh, _: @import("std").mem.Allocator) void {
+pub fn deinit(self: *Mesh) void {
     gl.DeleteBuffers(1, @ptrCast(&self.buffer));
     gl.DeleteBuffers(1, @ptrCast(&self.ibo));
     gl.DeleteVertexArrays(1, @ptrCast(&self.vao));

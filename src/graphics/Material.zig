@@ -5,9 +5,8 @@ const gl = @import("gl");
 
 const math = @import("../math/math.zig");
 const EngineError = @import("../lib.zig").EngineError;
-const AssetManager = @import("../assets/AssetManager.zig");
 
-const shaders = @import("shaders.zig");
+const Shader = @import("Shader.zig");
 const Texture = @import("Texture.zig");
 
 const log_gl = std.log.scoped(.opengl);
@@ -15,18 +14,11 @@ const log_gl = std.log.scoped(.opengl);
 const Material = @This();
 
 program: gl.uint,
-vertex_shader: shaders.Vertex,
-fragment_shader: shaders.Fragment,
+vertex_shader: Shader,
+fragment_shader: Shader,
 texture: ?Texture,
 
-pub fn init(data: []const u8, assets: *AssetManager) EngineError!Material {
-    // TODO: figure out how to embed unifroms into material files
-    const Zon = struct {
-        vertex: []const u8,
-        fragment: []const u8,
-        texture: ?[]const u8,
-    };
-    const zon = try assets.parseZon(Zon, data);
+pub fn init(vertex_shader: Shader, fragment_shader: Shader, texture: ?Texture) EngineError!Material {
 
     const shader_program = gl.CreateProgram();
     if (shader_program == 0) {
@@ -34,9 +26,6 @@ pub fn init(data: []const u8, assets: *AssetManager) EngineError!Material {
         return EngineError.ShaderCompilationFailure;
     }
     errdefer gl.DeleteProgram(shader_program);
-
-    const vertex_shader = try assets.getOrLoad(shaders.Vertex, zon.vertex);
-    const fragment_shader = try assets.getOrLoad(shaders.Fragment, zon.fragment);
 
     gl.AttachShader(shader_program, vertex_shader.obj);
     gl.AttachShader(shader_program, fragment_shader.obj);
@@ -66,20 +55,18 @@ pub fn init(data: []const u8, assets: *AssetManager) EngineError!Material {
         .program = shader_program,
         .vertex_shader = vertex_shader,
         .fragment_shader = fragment_shader,
-        .texture = null,
+        .texture = texture,
     };
 
-    if (zon.texture) |texture_path| {
-        const texture = try assets.getOrLoad(Texture, texture_path);
+    if (texture != null) {
         material.setUniform("Texture", @as(i32, 0));
-        material.texture = texture;
     }
 
     return material;
 }
 
 
-pub fn deinit(self: *Material, _: std.mem.Allocator) void {
+pub fn deinit(self: Material) void {
     gl.DetachShader(self.program, self.vertex_shader.obj);
     gl.DetachShader(self.program, self.fragment_shader.obj);
     gl.DeleteProgram(self.program);
