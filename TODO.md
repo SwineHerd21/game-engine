@@ -26,6 +26,8 @@ By priority
 
 - Framebuffers and render targets and stuff
 
+- Borderless window mode
+
 # Planned
 
 - Set up public engine API

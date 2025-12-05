@@ -19,20 +19,27 @@ pub const c = @cImport({
 
 pub const Context = struct {
     display: *c.Display,
+    root: c.XID,
     window: c.Window,
     width: u32,
     height: u32,
     glx: c.GLXContext,
     event: c.XEvent,
     /// Handles closing the window with `x` button
-    wm_delete_window: c.Atom,
     /// Mapping of hardware keycodes to `Key`s
     keycodes: [256]Input.Key,
     /// If true supresses key release events
     repeated_keypress: bool,
+    atoms: struct {
+        wm_protocols: c.Atom,
+        wm_delete_window: c.Atom,
+        net_wm_ping: c.Atom,
+        net_wm_state: c.Atom,
+        net_wm_state_fullscreen: c.Atom,
+    },
 };
 
-// ========== WINDOWING ==========
+// ========== MAIN ==========
 
 pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Context {
     const display = if (c.XOpenDisplay(null)) |d| d else return EngineError.InitFailure;
@@ -91,23 +98,29 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
     // should the result be checked for 0? idk
     _ = c.XSetWMProtocols(display, window, @constCast(&wm_delete_window), 1);
 
-    log.info("Running on Linux with X11", .{});
-
     // OpenGL context
     const glx = c.glXCreateContext(display, vi, null, c.GL_TRUE);
     _ = c.glXMakeCurrent(display, window, glx);
 
+    log.info("Running on Linux with X11", .{});
+
     return .{
-        // TODO: check for null pointers
         .display = display,
+        .root = root,
         .window = window,
         .width = width,
         .height = height,
         .glx = glx,
         .event = undefined,
-        .wm_delete_window = wm_delete_window,
         .keycodes = setupKeycodes(display),
         .repeated_keypress = false,
+        .atoms = .{
+            .wm_protocols = c.XInternAtom(display, "WM_PROTOCOLS", c.False),
+            .wm_delete_window = wm_delete_window,
+            .net_wm_ping = c.XInternAtom(display, "_NET_WM_PING", c.False),
+            .net_wm_state = c.XInternAtom(display, "_NET_WM_STATE", c.False),
+            .net_wm_state_fullscreen = c.XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", c.False),
+        },
     };
 }
 
@@ -243,16 +256,60 @@ pub inline fn consumeEvent(ctx: *Context, input: Input) ?events.Event {
                 .window_redraw = {},
             };
         },
-        // Weird thing without which the app crashes when the window manager closes the window
-        c.ClientMessage => if (@as(c.Atom, @intCast(ctx.event.xclient.data.l[0])) == ctx.wm_delete_window) {
-            return events.Event{
-                .window_close = {},
-            };
+        c.ClientMessage => {
+            const msg_type: c.Atom = @intCast(ctx.event.xclient.message_type);
+            if (msg_type == ctx.atoms.wm_protocols) {
+                // Window manager protocols
+                const protocol: c.Atom = @intCast(ctx.event.xclient.data.l[0]);
+
+                if (protocol == ctx.atoms.wm_delete_window) {
+                    // Request to close the window
+                    return events.Event{
+                        .window_close = {},
+                    };
+                } else if (protocol == ctx.atoms.net_wm_ping) {
+                    // Window manager is checking how the window is doing :)
+                    ctx.event.xclient.window = ctx.root;
+                    _=c.XSendEvent(ctx.display, ctx.root, c.False, c.SubstructureNotifyMask | c.SubstructureRedirectMask, &ctx.event);
+                }
+            }
         },
         else => {},
     }
+    // nothing interesting happened
     return null;
 }
+
+// ========== WINDOW FUNCTIONS ==========
+
+pub inline fn setFullscreenMode(ctx: *Context, mode: Window.FullscreenMode) void {
+    const fullscreen: c_long = switch (mode) {
+        .Windowed => 0,
+        .Fullscreen => 1,
+        .Borderless => @panic("TODO: borderless window mode is not implemented"),
+    };
+
+    ctx.event = std.mem.zeroes(c.XEvent);
+    ctx.event.type = c.ClientMessage;
+    ctx.event.xclient.window = ctx.window;
+    ctx.event.xclient.display = ctx.display;
+    ctx.event.xclient.message_type = ctx.atoms.net_wm_state;
+    ctx.event.xclient.format = 32;
+    ctx.event.xclient.data.l[0] = fullscreen;
+    ctx.event.xclient.data.l[1] = @intCast(ctx.atoms.net_wm_state_fullscreen);
+    ctx.event.xclient.data.l[2] = 0;
+    ctx.event.xclient.data.l[3] = 1; // source indicator
+
+    _=c.XSendEvent(ctx.display, ctx.root, c.False, c.SubstructureNotifyMask | c.SubstructureRedirectMask, &ctx.event);
+}
+
+// ========== OTHER ==========
+
+pub inline fn swapBuffers(ctx: Context) void {
+    _ = c.glXSwapBuffers(ctx.display, ctx.window);
+}
+
+pub const getProcAddress = c.glXGetProcAddress;
 
 // Borrowed from https://github.com/glfw/glfw/blob/master/src/x11_init.c
 fn setupKeycodes(display: *c.Display) [256]Input.Key {
@@ -430,10 +487,4 @@ inline fn translateKeyModifiers(state: c_uint) Input.ModifierKeys {
     };
 }
 
-// ========== OTHER ==========
 
-pub inline fn swapBuffers(ctx: Context) void {
-    _ = c.glXSwapBuffers(ctx.display, ctx.window);
-}
-
-pub const getProcAddress = c.glXGetProcAddress;

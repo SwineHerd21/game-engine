@@ -15,6 +15,12 @@ inner: native.Context,
 /// Note: you can set this to false again if you want to prevent the user from closing the app.
 should_close: bool = false,
 
+pub const FullscreenMode = enum {
+    Windowed,
+    Fullscreen,
+    Borderless,
+};
+
 /// Call `destroy()` when the window is no longer needed.
 pub fn create(width: u32, height: u32, title: []const u8) EngineError!Window {
     // TODO: error handling
@@ -40,3 +46,6 @@ pub fn swapBuffers(w: Window) void {
     return native.swapBuffers(w.inner);
 }
 
+pub fn setFullscreenMode(w: *Window, mode: FullscreenMode) void {
+    return native.setFullscreenMode(&w.inner, mode);
+}

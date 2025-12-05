@@ -21,6 +21,7 @@ pub fn main() !void {
     };
     var state: State = undefined;
     state.rendermode = .Solid;
+    state.fullscreen = .Windowed;
 
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -80,14 +81,17 @@ pub fn main() !void {
 
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});
     std.debug.print("Press F3 to toggle FPS counter\n", .{});
+    std.debug.print("Press F11 to switch between fullscreen and windowed mode\n\n", .{});
 
     try app.run(State, &state, on_update, on_event);
 }
 
 const State = struct {
+    rendermode: Engine.RenderMode,
+    fullscreen: Engine.Window.FullscreenMode,
+
     cube: Engine.Mesh,
     material: Engine.Material,
-    rendermode: Engine.RenderMode,
     perspective: Mat4,
 
     cube_pos: math.Vec3f = .zero,
@@ -145,7 +149,6 @@ fn on_update(app: *Engine, state: *State) !void {
 }
 
 fn on_event(app: *Engine, state: *State, event: Engine.Event) !void {
-    _=app;
     switch (event) {
         .key_press => |ev| {
             if (ev.key == .Space) {
@@ -163,12 +166,17 @@ fn on_event(app: *Engine, state: *State, event: Engine.Event) !void {
                     std.debug.print("\n", .{});
                     show_fps = !show_fps;
                 },
+                .F11 => {
+                    state.fullscreen = @enumFromInt(@intFromEnum(state.fullscreen) ^ 1);
+                    app.window.setFullscreenMode(state.fullscreen);
+                },
                 else => return,
             }
         },
         .window_resize => |ev| {
             const w: f32 = @floatFromInt(ev.width);
             const h: f32 = @floatFromInt(ev.height);
+            // Need to adjust camera perspective
             state.perspective = Mat4.perspective(45, w/h, 0.1, 100);
             state.material.setUniform("projection", state.perspective);
         },
