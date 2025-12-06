@@ -14,8 +14,6 @@ const log_gl = std.log.scoped(.opengl);
 const Material = @This();
 
 program: gl.uint,
-vertex_shader: Shader,
-fragment_shader: Shader,
 texture: ?Texture,
 
 pub fn init(vertex_shader: Shader, fragment_shader: Shader, texture: ?Texture) EngineError!Material {
@@ -53,8 +51,6 @@ pub fn init(vertex_shader: Shader, fragment_shader: Shader, texture: ?Texture) E
 
     var material = Material{
         .program = shader_program,
-        .vertex_shader = vertex_shader,
-        .fragment_shader = fragment_shader,
         .texture = texture,
     };
 
@@ -62,13 +58,15 @@ pub fn init(vertex_shader: Shader, fragment_shader: Shader, texture: ?Texture) E
         material.setUniform("Texture", @as(i32, 0));
     }
 
+    // always detach shaders after link so they can be deleted later
+    gl.DetachShader(shader_program, vertex_shader.obj);
+    gl.DetachShader(shader_program, fragment_shader.obj);
+
     return material;
 }
 
 
 pub fn deinit(self: Material) void {
-    gl.DetachShader(self.program, self.vertex_shader.obj);
-    gl.DetachShader(self.program, self.fragment_shader.obj);
     gl.DeleteProgram(self.program);
 }
 

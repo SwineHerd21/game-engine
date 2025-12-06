@@ -12,28 +12,19 @@ const log = std.log.scoped(.engine);
 
 /// Spits out a slice of the file's entire contents. Caller owns the data.
 pub fn readFile(alloc: Allocator, path: []const u8) EngineError![]const u8 {
-    const file = std.fs.cwd().openFile(path, .{}) catch {
-        log.err("File '{s}' does not exist or is inaccessible", .{path});
-        return EngineError.IOError;
+    // 50 MiB should be enough for most things
+    const max_bytes = 50 * 1024*1024;
+    return std.fs.cwd().readFileAlloc(alloc, path, 1024*1024*50) catch |err| switch (err) {
+        error.OutOfMemory => outOfMemory(),
+        error.FileTooBig => {
+            log.err("File '{s}' is too big, can read maximum of {} bytes", .{path, max_bytes});
+            return EngineError.IOError;
+        },
+        else => {
+            log.err("Could not read file '{s}'", .{path});
+            return EngineError.IOError;
+        },
     };
-    defer file.close();
-    const file_stat = file.stat() catch {
-        log.err("File '{s}' is likely corrupted", .{path});
-        return EngineError.IOError;
-    };
-    const file_text = alloc.alloc(u8, file_stat.size) catch {
-        log.err("File '{s}' is too large, could not allocate memory", .{path});
-        return EngineError.OutOfMemory;
-    };
-    errdefer alloc.free(file_text);
-
-    var reader = file.reader(file_text);
-    _ = reader.interface.readSliceShort(file_text) catch {
-        log.err("Could not read file {s}", .{path});
-        return EngineError.IOError;
-    };
-
-    return file_text;
 }
 
 pub fn loadTexture(alloc: Allocator, path: []const u8) EngineError!Texture {
