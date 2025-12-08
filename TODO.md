@@ -2,6 +2,9 @@ By priority
 
 # Extreme
 
+- Multiple mesh .obj loading
+- .mtl file loading
+
 - Text rendering
 
 # High

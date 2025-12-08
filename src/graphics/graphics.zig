@@ -42,7 +42,7 @@ pub fn init() EngineError!void {
 
     gl.Enable(gl.DEPTH_TEST);
     // Default winding order is CCW
-    // gl.Enable(gl.CULL_FACE);
+    gl.Enable(gl.CULL_FACE);
 }
 
 pub fn deinit() void {
