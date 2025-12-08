@@ -33,20 +33,24 @@ pub fn init(verticies: []const f32, indices: []const u32) Mesh {
     gl.NamedBufferStorage(mesh.ibo, ind_size, indices.ptr, gl.DYNAMIC_STORAGE_BIT);
 
     gl.CreateVertexArrays(1, @ptrCast(&mesh.vao));
-    // 3 positions + 2 uvs
-    gl.VertexArrayVertexBuffer(mesh.vao, 0, mesh.buffer, 0, 5 * @sizeOf(f32));
+    // 3 positions + 3 normals + 2 uvs
+    gl.VertexArrayVertexBuffer(mesh.vao, 0, mesh.buffer, 0, (3+3+2) * @sizeOf(f32));
     gl.VertexArrayElementBuffer(mesh.vao, mesh.ibo);
 
     gl.EnableVertexArrayAttrib(mesh.vao, 0);
     gl.EnableVertexArrayAttrib(mesh.vao, 1);
+    gl.EnableVertexArrayAttrib(mesh.vao, 2);
 
     // position attribute
     gl.VertexArrayAttribFormat(mesh.vao, 0, 3, gl.FLOAT, gl.FALSE, 0);
+    // normal attribute
+    gl.VertexArrayAttribFormat(mesh.vao, 1, 3, gl.FLOAT, gl.FALSE, 3*@sizeOf(f32));
     // uv attribute
-    gl.VertexArrayAttribFormat(mesh.vao, 1, 2, gl.FLOAT, gl.FALSE, 3*@sizeOf(f32));
+    gl.VertexArrayAttribFormat(mesh.vao, 2, 2, gl.FLOAT, gl.FALSE, 6*@sizeOf(f32));
 
     gl.VertexArrayAttribBinding(mesh.vao, 0, 0);
     gl.VertexArrayAttribBinding(mesh.vao, 1, 0);
+    gl.VertexArrayAttribBinding(mesh.vao, 2, 0);
 
     return mesh;
 }
@@ -57,8 +61,7 @@ pub fn deinit(self: *Mesh) void {
     gl.DeleteVertexArrays(1, @ptrCast(&self.vao));
 }
 
-pub fn draw(self: Mesh, material: Material) void {
-    material.use();
+pub fn draw(self: Mesh) void {
     gl.BindVertexArray(self.vao);
     gl.DrawElements(gl.TRIANGLES, self.index_count, gl.UNSIGNED_INT, 0);
 }

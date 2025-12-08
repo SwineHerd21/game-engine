@@ -35,13 +35,14 @@ pub fn init() EngineError!void {
     if (builtin.mode != .Debug) {
         gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DEBUG_SEVERITY_NOTIFICATION, 0, null, gl.FALSE);
         gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DEBUG_SEVERITY_LOW, 0, null, gl.FALSE);
+        gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DEBUG_SEVERITY_MEDIUM, 0, null, gl.FALSE);
         gl.DebugMessageControl(gl.DONT_CARE, gl.DEBUG_TYPE_DEPRECATED_BEHAVIOR, gl.DONT_CARE, 0, null, gl.FALSE);
         gl.DebugMessageControl(gl.DONT_CARE, gl.DEBUG_TYPE_PORTABILITY, gl.DONT_CARE, 0, null, gl.FALSE);
     }
 
     gl.Enable(gl.DEPTH_TEST);
     // Default winding order is CCW
-    gl.Enable(gl.CULL_FACE);
+    // gl.Enable(gl.CULL_FACE);
 }
 
 pub fn deinit() void {

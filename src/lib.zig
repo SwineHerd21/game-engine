@@ -2,6 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 pub const io = @import("assets/io.zig");
+const obj_import = @import("assets/obj_import.zig");
 
 const graphics = @import("graphics/graphics.zig");
 pub const RenderMode = graphics.RenderMode;
@@ -15,6 +16,8 @@ pub const Window = @import("Window.zig");
 pub const Input = @import("Input.zig");
 pub const Time = @import("Time.zig");
 
+pub const Model = obj_import.Model;
+pub const MeshData = obj_import.MeshData;
 pub const Mesh = @import("graphics/Mesh.zig");
 pub const Material = @import("graphics/Material.zig");
 pub const Texture = @import("graphics/Texture.zig");

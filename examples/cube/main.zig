@@ -32,56 +32,28 @@ pub fn main() !void {
 
     // Initialization
     const vs = try Engine.io.loadShader(allocator, asset_folder++"cube.vert", .vertex);
-    defer vs.deinit();
     const fs = try Engine.io.loadShader(allocator, asset_folder++"cube.frag", .fragment);
-    defer fs.deinit();
     const cat = try Engine.io.loadTexture(allocator, asset_folder++"cat.png");
     defer cat.deinit();
     state.material = try Engine.Material.init(vs, fs, cat);
     defer state.material.deinit();
+    // shaders can be safely deleted after material creation
+    vs.deinit();
+    fs.deinit();
 
+    state.material.use();
     state.perspective = Mat4.perspective(45, 800.0/600.0, 0.1, 100);
     state.material.setUniform("projection", state.perspective);
 
-    // TEMP
-    const verts = [_]f32{
-        // front face
-        -0.5, -0.5,  0.5,    0.0, 0.0,  // bottom left
-         0.5, -0.5,  0.5,    1.0, 0.0,  // bottom right
-         0.5,  0.5,  0.5,    1.0, 1.0,  // top right
-        -0.5,  0.5,  0.5,    0.0, 1.0,  // top left
-        // back face
-        -0.5, -0.5, -0.5,    0.0, 0.0,  // bottom left
-         0.5, -0.5, -0.5,    1.0, 0.0,  // bottom right
-         0.5,  0.5, -0.5,    1.0, 1.0,  // top right
-        -0.5,  0.5, -0.5,    0.0, 1.0,  // top left
-    };
-    const indices = [_]c_uint{
-        // front face
-        0, 1, 3,
-        1, 2, 3,
-        // back face
-        4, 7, 5,
-        5, 7, 6,
-        // right face
-        1, 5, 2,
-        5, 6, 2,
-        // left face
-        0, 3, 4,
-        3, 7, 4,
-        // top face
-        3, 2, 7,
-        2, 6, 7,
-        // bottom face,
-        0, 4, 1,
-        4, 5, 1,
-    };
-    state.cube = Engine.Mesh.init(&verts, &indices);
+    const model = try Engine.io.loadModel(allocator, asset_folder++"cube.obj");
+    state.cube = Engine.Mesh.init(model.meshes[0].verticies, model.meshes[0].indicies);
+    model.deinit(allocator);
     defer state.cube.deinit();
 
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});
     std.debug.print("Press F3 to toggle FPS counter\n", .{});
     std.debug.print("Press F11 to switch between fullscreen and windowed mode\n\n", .{});
+
 
     try app.run(State, &state, on_update, on_event);
 }
@@ -114,7 +86,7 @@ fn on_update(app: *Engine, state: *State) !void {
     const view = Mat4.lookAt(.new(camX, 0, camZ), .zero, .up);
     state.material.setUniform("view", view);
 
-    const scale_factor = (@abs(timeSine)+1)/4;
+    const scale_factor = (@abs(timeSine)+1)/8;
     const translate = Mat4.translation(.new(0, 0, 1));
     const rotate = Mat4.rotation(.new(1, 1, 1), time);
     const scale = Mat4.scaling(.splat(scale_factor));
@@ -122,7 +94,7 @@ fn on_update(app: *Engine, state: *State) !void {
     const transform = Mat4.mulBatch(&.{translate,rotate,scale});
     state.material.setUniform("transform", transform);
 
-    state.cube.draw(state.material);
+    state.cube.draw();
 
     if (state.jumping) {
         state.cube_pos.y += 3 * app.time.deltaTime();
@@ -135,10 +107,11 @@ fn on_update(app: *Engine, state: *State) !void {
         state.cube_pos.y = 0;
     }
     const big_translate = Mat4.translation(state.cube_pos);
+    const big_scale = Mat4.scaling(.splat(0.5));
     const big_rotate = Mat4.rotation(.forward, state.cube_angle);
-    const big_transform = Mat4.mulBatch(&.{big_translate,big_rotate});
+    const big_transform = Mat4.mulBatch(&.{big_translate,big_rotate,big_scale});
     state.material.setUniform("transform", big_transform);
-    state.cube.draw(state.material);
+    state.cube.draw();
 
     const cur_fps = 1/app.time.deltaTime();
     avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);
