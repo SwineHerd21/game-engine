@@ -2,6 +2,11 @@ const std = @import("std");
 const mem = std.mem;
 const Allocator = mem.Allocator;
 
+// TODO: load multiple meshes
+// TODO: spit out mesh attributes in separate arrays, make graphics pipeline convert them to GPU meshes
+// based on what user wants (no normals or index being u16 instead of u32 for example)
+// TODO: load materials
+
 /// Loads a 3D model from a .obj file. The model may contain multiple meshes and materials
 /// in order of appearance in the file.
 /// TODO: load materials
@@ -40,19 +45,21 @@ pub fn loadModel(gpa: mem.Allocator, path: []const u8) !Model {
             parse_mode = .Normals;
         } else if (mem.eql(u8, first, "f")) {
             parse_mode = .Faces;
-            var v_count: usize = 0;
-            while (words.next()) |_| v_count += 1;
+
+            var vert_count: usize = 0;
+            while (words.next()) |_| vert_count += 1;
             words.reset();
             _ = words.next();
+
             face = .{
-                .v_count = v_count,
-                .verticies = try gpa.alloc([3]usize, v_count),
+                .vert_count = vert_count,
+                .verticies = try gpa.alloc([3]usize, vert_count),
             };
         } else {
             continue;
         }
 
-        var i: usize = 0;
+        var vert_count: usize = 0;
         while (words.next()) |word| {
             switch (parse_mode) {
                 .Verticies => try positions.append(gpa, try std.fmt.parseFloat(f32, word)),
@@ -65,8 +72,8 @@ pub fn loadModel(gpa: mem.Allocator, path: []const u8) !Model {
                         try std.fmt.parseInt(usize, indicies.next() orelse return error.InvalidData, 10),
                         try std.fmt.parseInt(usize, indicies.next() orelse return error.InvalidData, 10),
                     };
-                    face.verticies[i] = vertex;
-                    i += 1;
+                    face.verticies[vert_count] = vertex;
+                    vert_count += 1;
                 },
             }
         }
@@ -84,6 +91,8 @@ pub fn loadModel(gpa: mem.Allocator, path: []const u8) !Model {
     //     std.debug.print("{any}, ", .{f});
     // }
     // std.debug.print("\n", .{});
+
+    // Translate into GPU compatable format
 
     var verticies: std.ArrayList(f32) = try .initCapacity(gpa, faces.capacity*(3+3+2)*3);
     errdefer verticies.deinit(gpa);
@@ -134,7 +143,7 @@ pub fn loadModel(gpa: mem.Allocator, path: []const u8) !Model {
 
 pub const Model = struct {
     meshes: []const MeshData,
-    // paths to files
+    /// Unused for now
     materials: []const []const u8,
 
     pub fn deinit(self: Model, gpa: Allocator) void {
@@ -149,6 +158,7 @@ pub const Model = struct {
     }
 };
 
+/// GPU-friendly mesh data, verticies is format (position, normal, texture coordinate)
 pub const MeshData = struct {
     verticies: []const f32,
     indicies: []const u32,
@@ -167,7 +177,7 @@ const ParseMode = enum {
 };
 
 const Face = struct {
-    v_count: usize,
+    vert_count: usize,
     verticies: [][3]usize,
 
     pub fn deinit(self: *Face, gpa: Allocator) void {

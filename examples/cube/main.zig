@@ -45,10 +45,15 @@ pub fn main() !void {
     state.perspective = Mat4.perspective(45, 800.0/600.0, 0.1, 100);
     state.material.setUniform("projection", state.perspective);
 
-    const model = try Engine.io.loadModel(allocator, asset_folder++"cube.obj");
-    state.cube = Engine.Mesh.init(model.meshes[0].verticies, model.meshes[0].indicies);
-    model.deinit(allocator);
+    const cube_model = try Engine.io.loadModel(allocator, asset_folder++"cube.obj");
+    state.cube = Engine.Mesh.init(cube_model.meshes[0].verticies, cube_model.meshes[0].indicies);
     defer state.cube.deinit();
+    cube_model.deinit(allocator);
+
+    const monkey_model = try Engine.io.loadModel(allocator, asset_folder++"suzanne.obj");
+    state.monkey = Engine.Mesh.init(monkey_model.meshes[0].verticies, monkey_model.meshes[0].indicies);
+    defer state.monkey.deinit();
+    monkey_model.deinit(allocator);
 
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});
     std.debug.print("Press F3 to toggle FPS counter\n", .{});
@@ -66,6 +71,8 @@ const State = struct {
     material: Engine.Material,
     perspective: Mat4,
 
+    monkey: Engine.Mesh,
+
     cube_pos: math.Vec3f = .zero,
     cube_angle: f32 = 0,
     jumping: bool = false,
@@ -80,22 +87,24 @@ fn on_update(app: *Engine, state: *State) !void {
     const timeSine = @sin(time);
     state.material.setUniform("timeSine", timeSine);
 
+    // camera
     const radius = 5;
     const camX = timeSine * radius;
     const camZ = @cos(time) * radius;
     const view = Mat4.lookAt(.new(camX, 0, camZ), .zero, .up);
     state.material.setUniform("view", view);
 
+    // monkey
     const scale_factor = (@abs(timeSine)+1)/8;
-    const translate = Mat4.translation(.new(0, 0, 1));
-    const rotate = Mat4.rotation(.new(1, 1, 1), time);
-    const scale = Mat4.scaling(.splat(scale_factor));
+    const monkey_translate = Mat4.translation(.new(0, 0, 1));
+    const monkey_rotate = Mat4.rotation(.new(1, 1, 1), time);
+    const monkey_scale = Mat4.scaling(.splat(scale_factor));
 
-    const transform = Mat4.mulBatch(&.{translate,rotate,scale});
-    state.material.setUniform("transform", transform);
+    const monkey_transform = Mat4.mulBatch(&.{monkey_translate,monkey_rotate,monkey_scale});
+    state.material.setUniform("transform", monkey_transform);
+    state.monkey.draw();
 
-    state.cube.draw();
-
+    // cube
     if (state.jumping) {
         state.cube_pos.y += 3 * app.time.deltaTime();
         state.cube_angle += 2*std.math.pi * (3.0)*app.time.deltaTime();
@@ -106,13 +115,14 @@ fn on_update(app: *Engine, state: *State) !void {
     } else {
         state.cube_pos.y = 0;
     }
-    const big_translate = Mat4.translation(state.cube_pos);
-    const big_scale = Mat4.scaling(.splat(0.5));
-    const big_rotate = Mat4.rotation(.forward, state.cube_angle);
-    const big_transform = Mat4.mulBatch(&.{big_translate,big_rotate,big_scale});
-    state.material.setUniform("transform", big_transform);
+    const cube_translate = Mat4.translation(state.cube_pos);
+    const cube_scale = Mat4.scaling(.splat(0.5));
+    const cube_rotate = Mat4.rotation(.forward, state.cube_angle);
+    const cube_transform = Mat4.mulBatch(&.{cube_translate,cube_rotate,cube_scale});
+    state.material.setUniform("transform", cube_transform);
     state.cube.draw();
 
+    // fps counter
     const cur_fps = 1/app.time.deltaTime();
     avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);
     frames += 1;

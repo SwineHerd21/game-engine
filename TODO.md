@@ -2,6 +2,9 @@ By priority
 
 # Extreme
 
+- Separate raw image and mesh data from respective GPU objects. IO functions will return the former for possible editing
+and graphics pipeline will provide functions to transform them GPU instances
+
 - Multiple mesh .obj loading
 - .mtl file loading
 
@@ -21,13 +24,15 @@ By priority
 
 - Audio
 
+- Renderer abstraction
+
+- Framebuffers and render targets and stuff for effects and Multiple cameras
+
 # Low
 
 - Use a custom allocator/some kind of reference counting to manage asset memory
 
-- Renderer abstraction
-
-- Framebuffers and render targets and stuff
+- Better platform abstraction
 
 - Borderless window mode
 
