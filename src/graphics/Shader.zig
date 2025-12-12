@@ -44,7 +44,7 @@ fn compileShader(source: []const u8, shader_type: Type) EngineError!gl.uint {
     const shader_obj = gl.CreateShader(s_type);
     if (shader_obj == 0) {
         log.err("Failed to create a shader object", .{});
-        return EngineError.ShaderCompilationFailure;
+        return error.ShaderCompilationFailure;
     }
     errdefer gl.DeleteShader(shader_obj);
 
@@ -61,7 +61,7 @@ fn compileShader(source: []const u8, shader_type: Type) EngineError!gl.uint {
         var info_log: [1024]u8 = undefined;
         gl.GetShaderInfoLog(shader_obj, 1024, null, @ptrCast(&info_log));
         log.err("Failed to compile {t} shader: {s}", .{ shader_type, info_log });
-        return EngineError.ShaderCompilationFailure;
+        return error.ShaderCompilationFailure;
     }
 
     return shader_obj;

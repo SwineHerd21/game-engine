@@ -21,7 +21,7 @@ pub fn init(vertex_shader: Shader, fragment_shader: Shader, texture: ?Texture) E
     const shader_program = gl.CreateProgram();
     if (shader_program == 0) {
         log_gl.err("Failed to create a shader program", .{});
-        return EngineError.ShaderCompilationFailure;
+        return error.ShaderCompilationFailure;
     }
     errdefer gl.DeleteProgram(shader_program);
 
@@ -39,14 +39,14 @@ pub fn init(vertex_shader: Shader, fragment_shader: Shader, texture: ?Texture) E
     if (success == 0) {
         gl.GetProgramInfoLog(shader_program, 1024, null, @ptrCast(&info_log));
         log_gl.err("Failed to link shader program: {s}", .{info_log});
-        return EngineError.ShaderCompilationFailure;
+        return error.ShaderCompilationFailure;
     }
     gl.ValidateProgram(shader_program);
     gl.GetProgramiv(shader_program, gl.VALIDATE_STATUS, @ptrCast(&success));
     if (success == 0) {
         gl.GetProgramInfoLog(shader_program, 1024, null, @ptrCast(&info_log));
         log_gl.err("Invalid shader program: {s}", .{info_log});
-        return EngineError.ShaderCompilationFailure;
+        return error.ShaderCompilationFailure;
     }
 
     var material = Material{

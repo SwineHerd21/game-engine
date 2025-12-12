@@ -22,7 +22,7 @@ var procs: gl.ProcTable = undefined;
 /// Call `deinit()` at the end
 pub fn init() EngineError!void {
     // Load OpenGL functions
-    if (!procs.init(native.getProcAddress)) return EngineError.InitFailure;
+    if (!procs.init(native.getProcAddress)) return error.InitFailure;
     gl.makeProcTableCurrent(&procs);
 
     const gl_version: [*:0]const u8 = gl.GetString(gl.VERSION).?;

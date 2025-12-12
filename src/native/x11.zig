@@ -25,14 +25,16 @@ pub const Context = struct {
     height: u32,
     glx: c.GLXContext,
     event: c.XEvent,
-    /// Handles closing the window with `x` button
     /// Mapping of hardware keycodes to `Key`s
     keycodes: [256]Input.Key,
     /// If true supresses key release events
     repeated_keypress: bool,
     atoms: struct {
+        /// Used to check for window manager messages
         wm_protocols: c.Atom,
+        /// Handles closing the window with `x` button
         wm_delete_window: c.Atom,
+        /// Window manager checks if app is still working
         net_wm_ping: c.Atom,
         net_wm_state: c.Atom,
         net_wm_state_fullscreen: c.Atom,
@@ -42,12 +44,12 @@ pub const Context = struct {
 // ========== MAIN ==========
 
 pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Context {
-    const display = if (c.XOpenDisplay(null)) |d| d else return EngineError.InitFailure;
+    const display = if (c.XOpenDisplay(null)) |d| d else return error.InitFailure;
 
     // XKB check
     if (c.XkbQueryExtension(display, null, null, null, null, null) == 0) {
         log.err("Could not detect XKB", .{});
-        return EngineError.InitFailure;
+        return error.InitFailure;
     }
     // GLX check
     {
@@ -55,11 +57,11 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
         var glx_minor: c_int = undefined;
         if (c.glXQueryVersion(display, &glx_major, &glx_minor) == 0) {
             log.err("Could not get GLX version", .{});
-            return EngineError.InitFailure;
+            return error.InitFailure;
         }
         if (glx_major < 1 or (glx_major == 1 and glx_minor < 3)) {
             log.err("Invalid GLX version {}.{}, require 1.3", .{glx_major, glx_minor});
-            return EngineError.InitFailure;
+            return error.InitFailure;
         }
     }
 
@@ -77,7 +79,7 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
         c.GLX_DOUBLEBUFFER,
         c.None
     };
-    const vi: *c.XVisualInfo = if (c.glXChooseVisual(display, 0, @ptrCast(&gl_atts))) |v| v else return EngineError.InitFailure;
+    const vi: *c.XVisualInfo = if (c.glXChooseVisual(display, 0, @ptrCast(&gl_atts))) |v| v else return error.InitFailure;
     const cmap = c.XCreateColormap(display, root, vi.visual, c.AllocNone);
 
     var window_atts: c.XSetWindowAttributes = undefined;
@@ -163,7 +165,7 @@ pub inline fn consumeEvent(ctx: *Context, input: Input) ?events.Event {
             var next: c.XEvent = undefined;
             if (c.XPending(ctx.display) != 0) {
                 _=c.XPeekEvent(ctx.display, &next);
-                // For repeated key presses X11 will send a KeyPress and KeyRelease simultaneously
+                // For repeated key presses (when holding key) X11 will send a KeyPress and KeyRelease simultaneously
                 if (next.type == c.KeyPress and next.xkey.time == ev.time and next.xkey.keycode == ev.keycode) {
                     ctx.repeated_keypress = true;
                     return null;

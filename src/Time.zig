@@ -24,7 +24,7 @@ pub fn init() EngineError!Time {
         .runtime_nano = 0,
         .timer = Timer.start() catch {
             log.err("Failed to initialize timer", .{});
-            return EngineError.InitFailure;
+            return error.InitFailure;
         },
     };
 }

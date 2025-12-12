@@ -23,9 +23,9 @@ pub fn main() !void {
     state.rendermode = .Solid;
     state.fullscreen = .Windowed;
 
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
+    var dba: std.heap.DebugAllocator(.{}) = .init;
+    defer _=dba.deinit();
+    const allocator = dba.allocator();
 
     var app = try Engine.init(config);
     defer app.deinit();

@@ -21,11 +21,11 @@ pub fn readFile(gpa: Allocator, path: []const u8) EngineError![]const u8 {
         error.OutOfMemory => outOfMemory(),
         error.FileTooBig => {
             log.err("File '{s}' is too big, can read maximum of {} bytes", .{path, max_bytes});
-            return EngineError.IOError;
+            return error.IOError;
         },
         else => {
             log.err("Could not read file '{s}'", .{path});
-            return EngineError.IOError;
+            return error.IOError;
         },
     };
 }
@@ -36,20 +36,20 @@ pub fn loadTexture(gpa: Allocator, path: []const u8) EngineError!Texture {
         error.OutOfMemory => return outOfMemory(),
         error.Unsupported, error.InvalidData => {
             log.err("Image file '{s}' contains an invalid format", .{path});
-            return EngineError.AssetLoadError;
+            return error.AssetLoadError;
         },
         else => {
             log.err("File '{s}' is inaccessible or invalid", .{path});
-            return EngineError.IOError;
+            return error.IOError;
         },
     };
     defer image.deinit(gpa);
 
-    image.flipVertically(gpa) catch return EngineError.OutOfMemory;
+    image.flipVertically(gpa) catch return error.OutOfMemory;
     if (image.pixelFormat() != .rgba32) {
         image.convert(gpa, .rgba32) catch {
             log.err("Could not convert image to rgba32", .{});
-            return EngineError.AssetLoadError;
+            return error.AssetLoadError;
         };
     }
 
@@ -82,8 +82,8 @@ pub fn parseZon(gpa: Allocator, comptime T: type, file: []const u8) error{OutOfM
     return value;
 }
 
-inline fn outOfMemory() EngineError {
+inline fn outOfMemory() error{OutOfMemory} {
     @branchHint(.cold);
     log.err("Out of memory", .{});
-    return EngineError.OutOfMemory;
+    return error.OutOfMemory;
 }
