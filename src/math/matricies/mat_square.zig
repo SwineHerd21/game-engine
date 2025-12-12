@@ -170,7 +170,8 @@ pub fn Mat4x4(T: type) type {
             _ = arr;
 
             // TODO
-            @compileError("not implemented");
+            @panic("aboab");
+            // @compileError("not implemented");
 
             // return @bitCast(arr);
         }
@@ -187,7 +188,8 @@ pub fn Mat4x4(T: type) type {
             _ = arr;
 
             // TODO
-            @compileError("not implemented");
+            @panic("aboab");
+            // @compileError("not implemented");
 
             // return @as(Self, @bitCast(inv)).mulScalar(1.0 / det);
         }

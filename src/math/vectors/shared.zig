@@ -24,7 +24,7 @@ pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
         /// Get component number `i`: 0 gives `x`, 1 gives `y` etc.
         /// `i` must be less than the vectors dimensions
         pub fn at(v: Vec, i: comptime_int) Vec {
-            if (i < 0 or i >= dimensions) @compileError("Vec field of bounds access");
+            if (i < 0 or i >= dimensions) @compileError("Vec field out of bounds access");
             const arr: [dimensions]T = @bitCast(v);
             return arr[i];
         }
@@ -109,7 +109,7 @@ pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
         pub fn dot(a: Vec, b: Vec) T {
             var result: T = 0;
             inline for (fields(Vec)) |f| {
-                result = @mulAdd(T, @field(a, f.name), @field(b, f.name), result);
+                result += @field(a, f.name) * @field(b, f.name);
             }
             return result;
         }
@@ -117,7 +117,7 @@ pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
         pub fn length(v: Vec) T {
             var result: T = 0;
             inline for (fields(Vec)) |f| {
-                result = @mulAdd(T, @field(v, f.name), @field(v, f.name), result);
+                result += @field(v, f.name) * @field(v, f.name);
             }
             return @sqrt(result);
         }
@@ -125,7 +125,7 @@ pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
         pub fn lengthSqr(v: Vec) T {
             var result: T = 0;
             inline for (fields(Vec)) |f| {
-                result = @mulAdd(T, @field(v, f.name), @field(v, f.name), result);
+                result += @field(v, f.name) * @field(v, f.name);
             }
             return result;
         }

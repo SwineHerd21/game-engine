@@ -35,7 +35,6 @@ pub fn MatRectangle(T: type, _rows: comptime_int, _columns: comptime_int) type {
         pub const mulScalar = funcs.mulScalar;
         pub const divScalar = funcs.divScalar;
         pub const mul = funcs.mul;
-        pub const mulBatch = funcs.mulBatch;
         pub const transposed = funcs.transposed;
         pub const eql = funcs.eql;
         pub const approxEqlRel = funcs.approxEqlRel;

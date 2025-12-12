@@ -7,8 +7,6 @@ const MatNxM = @import("../math.zig").MatNxM;
 pub fn Shared(Mat: type, T: type, rows: comptime_int, columns: comptime_int) type {
     assert(@typeInfo(T) == .float);
     return extern struct {
-        const Self = @This();
-
         /// A matrix with all elements equal to zero
         pub const zero: Mat = splat(0);
         /// A diagonal matrix with elements equal to 1.
@@ -132,9 +130,10 @@ pub fn Shared(Mat: type, T: type, rows: comptime_int, columns: comptime_int) typ
 
         /// Multiple many matricies in order
         pub fn mulBatch(matricies: []const Mat) Mat {
+            // Only usable for square matricies
             var tr: Mat = matricies[0];
             for (1..matricies.len) |i| {
-                tr = tr.mulMatrix(matricies[i]);
+                tr = if (@hasDecl(Mat, "mulMatrix")) tr.mulMatrix(matricies[i]) else tr.mul(matricies[i]);
             }
             return tr;
         }

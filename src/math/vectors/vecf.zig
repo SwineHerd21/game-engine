@@ -26,6 +26,13 @@ pub fn Vec2float(comptime T: type) type {
             return .{ .x = x, .y = y };
         }
 
+        pub inline fn simd(v: Self) @Vector(2, T) {
+            return @bitCast(v);
+        }
+        pub inline fn fromSimd(v: @Vector(2, T)) Self {
+            return @bitCast(v);
+        }
+
         /// The length of the cross product gives the signed area of a parallelogram
         /// constructed with two vectors. This function returns that length.
         pub inline fn cross(a: Self, b: Self) T {
@@ -103,6 +110,13 @@ pub fn Vec3float(comptime T: type) type {
             return .{ .x = v.x, .y = v.y, .z = z };
         }
 
+        pub inline fn simd(v: Self) @Vector(3, T) {
+            return @bitCast(v);
+        }
+        pub inline fn fromSimd(v: @Vector(3, T)) Self {
+            return @bitCast(v);
+        }
+
         /// Cross (vector) product of two vectors
         ///
         /// Gives a vector perpendicular to both inputs in the direction determined by the left-hand rule.
@@ -169,6 +183,13 @@ pub fn Vec4float(comptime T: type) type {
             return .{ .x = v.x, .y = v.y, .z = v.z, .w = w };
         }
 
+        pub inline fn simd(v: Self) @Vector(4, T) {
+            return @bitCast(v);
+        }
+        pub inline fn fromSimd(v: @Vector(4, T)) Self {
+            return @bitCast(v);
+        }
+
         const funcs = Shared(Self, T, dimensions);
         pub const splat = funcs.splat;
         pub const neg = funcs.neg;
@@ -222,6 +243,24 @@ test "Vector layout" {
     try testing.expectEqualSlices(f32, slice2[0..2], &.{3.3, -5.0});
     try testing.expectEqualSlices(f32, slice3[0..3], &.{3.3, -5.0, 0.23});
     try testing.expectEqualSlices(f32, slice4[0..4], &.{3.3, -5.0, 0.23, 14.0});
+}
+
+test "Vector SIMD" {
+    const vec2 = Vec2f.new(3.3, -5.0);
+    const vec3 = Vec3f.new(3.3, -5.0, 0.23);
+    const vec4 = Vec4f.new(3.3, -5.0, 0.23, 14.0);
+
+    const vector2 = @Vector(2, f32){3.3, -5.0};
+    const vector3 = @Vector(3, f32){3.3, -5.0, 0.23};
+    const vector4 = @Vector(4, f32){3.3, -5.0, 0.23, 14.0};
+
+    try testing.expectEqual(vector2, vec2.simd());
+    try testing.expectEqual(vector3, vec3.simd());
+    try testing.expectEqual(vector4, vec4.simd());
+
+    try testing.expectEqual(vec2, Vec2f.fromSimd(vector2));
+    try testing.expectEqual(vec3, Vec3f.fromSimd(vector3));
+    try testing.expectEqual(vec4, Vec4f.fromSimd(vector4));
 }
 
 test "Vector from lower" {
