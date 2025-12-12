@@ -50,25 +50,25 @@ pub fn Vec(T: type, dimension: comptime_int) type {
 }
 
 /// Has f32 elements
-pub const Vec2f = Vec(f32, 2);
+pub const Vec2f = Vec2float(f32);
 /// Has f32 elements
-pub const Vec3f = Vec(f32, 3);
+pub const Vec3f = Vec3float(f32);
 /// Has f32 elements
-pub const Vec4f = Vec(f32, 4);
+pub const Vec4f = Vec4float(f32);
 
 /// Has f64 elements
-pub const Vec2d = Vec(f64, 2);
+pub const Vec2d = Vec2float(f64);
 /// Has f64 elements
-pub const Vec3d = Vec(f64, 3);
+pub const Vec3d = Vec3float(f64);
 /// Has f64 elements
-pub const Vec4d = Vec(f64, 4);
+pub const Vec4d = Vec4float(f64);
 
 /// Has i32 elements
-pub const Vec2i = Vec(i32, 2);
+pub const Vec2i = Vec2int(i32);
 /// Has i32 elements
-pub const Vec3i = Vec(i32, 3);
+pub const Vec3i = Vec3int(i32);
 /// Has i32 elements
-pub const Vec4i = Vec(i32, 4);
+pub const Vec4i = Vec4int(i32);
 
 // ========== Matricies ==========
 

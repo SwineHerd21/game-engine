@@ -5,14 +5,9 @@ By priority
 - Separate raw image and mesh data from respective GPU objects. IO functions will return the former for possible editing
 and graphics pipeline will provide functions to transform them GPU instances
 
-- Multiple mesh .obj loading
-- .mtl file loading
-
-- Text rendering
-
 # High
 
-- Loading models from files
+- Text rendering
 
 # Medium
 
@@ -27,6 +22,9 @@ and graphics pipeline will provide functions to transform them GPU instances
 - Renderer abstraction
 
 - Framebuffers and render targets and stuff for effects and Multiple cameras
+
+- Multiple mesh .obj loading
+- .mtl file loading
 
 # Low
 
