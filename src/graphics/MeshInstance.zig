@@ -6,15 +6,15 @@ const gl = @import("gl");
 const Allocator = std.mem.Allocator;
 const Material = @import("Material.zig");
 
-const Mesh = @This();
+const MeshInstance = @This();
 
 vao: gl.uint,
 buffer: gl.uint,
 ibo: gl.uint,
 index_count: gl.int,
 
-pub fn init(verticies: []const f32, indices: []const u32) Mesh {
-    var mesh: Mesh = .{
+pub fn init(verticies: []const f32, indices: []const u32) MeshInstance {
+    var mesh: MeshInstance = .{
         .vao = undefined,
         .buffer = undefined,
         .ibo = undefined,
@@ -55,13 +55,13 @@ pub fn init(verticies: []const f32, indices: []const u32) Mesh {
     return mesh;
 }
 
-pub fn deinit(self: *Mesh) void {
+pub fn deinit(self: *MeshInstance) void {
     gl.DeleteBuffers(1, @ptrCast(&self.buffer));
     gl.DeleteBuffers(1, @ptrCast(&self.ibo));
     gl.DeleteVertexArrays(1, @ptrCast(&self.vao));
 }
 
-pub fn draw(self: Mesh) void {
+pub fn draw(self: MeshInstance) void {
     gl.BindVertexArray(self.vao);
     gl.DrawElements(gl.TRIANGLES, self.index_count, gl.UNSIGNED_INT, 0);
 }

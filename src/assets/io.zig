@@ -7,7 +7,6 @@ const EngineError = @import("../lib.zig").EngineError;
 const Texture = @import("../graphics/Texture.zig");
 const Shader = @import("../graphics/Shader.zig");
 const Material = @import("../graphics/Material.zig");
-const Mesh = @import("../graphics/Mesh.zig");
 
 const log = std.log.scoped(.engine);
 

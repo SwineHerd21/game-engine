@@ -7,6 +7,34 @@ const Allocator = mem.Allocator;
 // based on what user wants (no normals or index being u16 instead of u32 for example)
 // TODO: load materials
 
+pub const Model = struct {
+    meshes: []const MeshData,
+    /// Unused for now
+    materials: []const []const u8,
+
+    pub fn deinit(self: Model, gpa: Allocator) void {
+        for (self.meshes) |m| {
+            m.deinit(gpa);
+        }
+        gpa.free(self.meshes);
+        for (self.materials) |m| {
+            gpa.free(m);
+        }
+        gpa.free(self.materials);
+    }
+};
+
+/// GPU-friendly mesh data, verticies is in the format (position, normal, texture coordinate)
+pub const MeshData = struct {
+    verticies: []const f32,
+    indicies: []const u32,
+
+    pub fn deinit(self: MeshData, gpa: Allocator) void {
+        gpa.free(self.verticies);
+        gpa.free(self.indicies);
+    }
+};
+
 /// Loads a 3D model from a .obj file. The model may contain multiple meshes and materials
 /// in order of appearance in the file.
 /// TODO: load materials
@@ -140,34 +168,6 @@ pub fn loadModel(gpa: mem.Allocator, path: []const u8) !Model {
         .materials = materials,
     };
 }
-
-pub const Model = struct {
-    meshes: []const MeshData,
-    /// Unused for now
-    materials: []const []const u8,
-
-    pub fn deinit(self: Model, gpa: Allocator) void {
-        for (self.meshes) |m| {
-            m.deinit(gpa);
-        }
-        gpa.free(self.meshes);
-        for (self.materials) |m| {
-            gpa.free(m);
-        }
-        gpa.free(self.materials);
-    }
-};
-
-/// GPU-friendly mesh data, verticies is format (position, normal, texture coordinate)
-pub const MeshData = struct {
-    verticies: []const f32,
-    indicies: []const u32,
-
-    pub fn deinit(self: MeshData, gpa: Allocator) void {
-        gpa.free(self.verticies);
-        gpa.free(self.indicies);
-    }
-};
 
 const ParseMode = enum {
     Verticies,

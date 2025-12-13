@@ -18,7 +18,7 @@ pub const Time = @import("Time.zig");
 
 pub const Model = obj_import.Model;
 pub const MeshData = obj_import.MeshData;
-pub const Mesh = @import("graphics/Mesh.zig");
+pub const MeshInstance = @import("graphics/MeshInstance.zig");
 pub const Material = @import("graphics/Material.zig");
 pub const Image = @import("zigimg").Image;
 pub const Texture = @import("graphics/Texture.zig");

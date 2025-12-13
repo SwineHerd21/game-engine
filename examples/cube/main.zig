@@ -50,12 +50,12 @@ pub fn main() !void {
     state.material.setUniform("projection", state.perspective);
 
     const cube_model = try Engine.io.loadModel(allocator, asset_folder++"cube.obj");
-    state.cube = Engine.Mesh.init(cube_model.meshes[0].verticies, cube_model.meshes[0].indicies);
+    state.cube = Engine.MeshInstance.init(cube_model.meshes[0].verticies, cube_model.meshes[0].indicies);
     defer state.cube.deinit();
     cube_model.deinit(allocator);
 
     const monkey_model = try Engine.io.loadModel(allocator, asset_folder++"suzanne.obj");
-    state.monkey = Engine.Mesh.init(monkey_model.meshes[0].verticies, monkey_model.meshes[0].indicies);
+    state.monkey = Engine.MeshInstance.init(monkey_model.meshes[0].verticies, monkey_model.meshes[0].indicies);
     defer state.monkey.deinit();
     monkey_model.deinit(allocator);
 
@@ -71,11 +71,11 @@ const State = struct {
     rendermode: Engine.RenderMode,
     fullscreen: Engine.Window.FullscreenMode,
 
-    cube: Engine.Mesh,
+    cube: Engine.MeshInstance,
     material: Engine.Material,
     perspective: Mat4,
 
-    monkey: Engine.Mesh,
+    monkey: Engine.MeshInstance,
 
     cube_pos: math.Vec3f = .zero,
     cube_angle: f32 = 0,
