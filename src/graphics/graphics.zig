@@ -40,6 +40,7 @@ pub fn init() EngineError!void {
         gl.DebugMessageControl(gl.DONT_CARE, gl.DEBUG_TYPE_PORTABILITY, gl.DONT_CARE, 0, null, gl.FALSE);
     }
 
+    gl.Enable(gl.FRAMEBUFFER_SRGB);
     gl.Enable(gl.DEPTH_TEST);
     // Default winding order is CCW
     gl.Enable(gl.CULL_FACE);
@@ -94,7 +95,7 @@ fn messageCallback(source: gl.@"enum", msg_type: gl.@"enum", id: gl.uint, severi
     const fmt = "{s}|{s} {}: {s}";
     const args = .{src, t, id, message[0..@as(usize, @intCast(length))]};
     switch (severity) {
-        gl.DEBUG_SEVERITY_HIGH => {log.err(fmt, args);std.process.exit(1);},
+        gl.DEBUG_SEVERITY_HIGH => log.err(fmt, args),
         gl.DEBUG_SEVERITY_MEDIUM => log.warn(fmt, args),
         gl.DEBUG_SEVERITY_LOW => log.debug(fmt, args),
         gl.DEBUG_SEVERITY_NOTIFICATION => log.info(fmt, args),

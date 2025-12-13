@@ -8,5 +8,5 @@ uniform sampler2D Texture;
 uniform float timeSine;
 
 void main() {
-	FragColor = texture(Texture, UV) * timeSine / 2.0 + 0.5;
+	FragColor = texture(Texture, UV) * (timeSine * 0.5 + 0.5);
 }

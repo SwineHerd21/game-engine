@@ -23,7 +23,6 @@ pub const FullscreenMode = enum {
 
 /// Call `destroy()` when the window is no longer needed.
 pub fn create(width: u32, height: u32, title: []const u8) EngineError!Window {
-    // TODO: error handling
     return .{
         .inner = try native.createWindow(width, height, title),
     };

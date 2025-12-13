@@ -33,13 +33,15 @@ pub fn main() !void {
     // Initialization
     const vs = try Engine.io.loadShader(allocator, asset_folder++"cube.vert", .vertex);
     const fs = try Engine.io.loadShader(allocator, asset_folder++"cube.frag", .fragment);
-    const cat = try Engine.io.loadTexture(allocator, asset_folder++"cat.png");
-    defer cat.deinit();
-    state.material = try Engine.Material.init(vs, fs, cat);
+    var cat = try Engine.io.loadImage(allocator, asset_folder++"cat.png", true);
+    const cat_text = try Engine.Texture.init(cat.rawBytes(), cat.width, cat.height, .rgba8, .{});
+    defer cat_text.deinit();
+    state.material = try Engine.Material.init(vs, fs, cat_text);
     defer state.material.deinit();
-    // shaders can be safely deleted after material creation
+    // shaders and images can be safely deleted after material creation
     vs.deinit();
     fs.deinit();
+    cat.deinit(allocator);
 
     state.material.use();
     state.perspective = Mat4.perspective(45, 800.0/600.0, 0.1, 100);

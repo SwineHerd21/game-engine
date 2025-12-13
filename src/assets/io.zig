@@ -30,7 +30,11 @@ pub fn readFile(gpa: Allocator, path: []const u8) EngineError![]const u8 {
     };
 }
 
-pub fn loadTexture(gpa: Allocator, path: []const u8) EngineError!Texture {
+// TODO: make custom image type that plays nicely with Texture pixel formats?
+//       or just make a function to translate them
+
+/// Set `flip_vertically` if you will pass the image to OpenGL or call `image.flipVertically()`
+pub fn loadImage(gpa: Allocator, path: []const u8, flip_vertically: bool) EngineError!zigimg.Image {
     var buf: [zigimg.io.DEFAULT_BUFFER_SIZE]u8 = undefined;
     var image = zigimg.Image.fromFilePath(gpa, path, buf[0..]) catch |err| switch (err) {
         error.OutOfMemory => return outOfMemory(),
@@ -43,17 +47,18 @@ pub fn loadTexture(gpa: Allocator, path: []const u8) EngineError!Texture {
             return error.IOError;
         },
     };
-    defer image.deinit(gpa);
 
-    image.flipVertically(gpa) catch return error.OutOfMemory;
-    if (image.pixelFormat() != .rgba32) {
-        image.convert(gpa, .rgba32) catch {
-            log.err("Could not convert image to rgba32", .{});
-            return error.AssetLoadError;
-        };
-    }
+    if (flip_vertically) image.flipVertically(gpa) catch return error.OutOfMemory;
 
-    return Texture.init(image.rawBytes(), image.width, image.height);
+    // if (image.pixelFormat() != .rgba32) {
+    //     image.convert(gpa, .rgba32) catch {
+    //         // Zigimg calls the 4-channel-of-8-bits format rgba32 instead of rgba8
+    //         log.err("Could not convert image to rgba8", .{});
+    //         return error.AssetLoadError;
+    //     };
+    // }
+
+    return image;
 }
 
 pub fn loadShader(gpa: Allocator, path: []const u8, shader_type: Shader.Type) EngineError!Shader {

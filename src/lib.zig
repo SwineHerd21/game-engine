@@ -20,6 +20,7 @@ pub const Model = obj_import.Model;
 pub const MeshData = obj_import.MeshData;
 pub const Mesh = @import("graphics/Mesh.zig");
 pub const Material = @import("graphics/Material.zig");
+pub const Image = @import("zigimg").Image;
 pub const Texture = @import("graphics/Texture.zig");
 pub const Shader = @import("graphics/Shader.zig");
 
@@ -65,7 +66,7 @@ pub fn deinit(self: *Self) void {
 ///
 /// WARNING: This places the thread into an infinite update loop until the window closes.
 /// You should do all necessary setup before calling this function.
-pub fn run(self: *Self, comptime T: type, user_data: *T, on_update: *const fn(*Self, *T) EngineError!void, on_event: *const fn (*Self, *T, Event) EngineError!void) !void {
+pub fn run(self: *Self, comptime T: type, user_data: *T, on_update: fn(*Self, *T) EngineError!void, on_event: fn (*Self, *T, Event) EngineError!void) !void {
     while (!self.window.should_close) {
         // Process pending OS events
         while (self.window.areEventsPending()) {
