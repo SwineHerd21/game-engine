@@ -40,6 +40,8 @@ pub fn init() EngineError!void {
         gl.DebugMessageControl(gl.DONT_CARE, gl.DEBUG_TYPE_PORTABILITY, gl.DONT_CARE, 0, null, gl.FALSE);
     }
 
+    // Flags and stuff
+    gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1);
     gl.Enable(gl.FRAMEBUFFER_SRGB);
     gl.Enable(gl.DEPTH_TEST);
     // Default winding order is CCW

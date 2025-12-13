@@ -34,7 +34,8 @@ pub fn main() !void {
     const vs = try Engine.io.loadShader(allocator, asset_folder++"cube.vert", .vertex);
     const fs = try Engine.io.loadShader(allocator, asset_folder++"cube.frag", .fragment);
     var cat = try Engine.io.loadImage(allocator, asset_folder++"cat.png", true);
-    const cat_text = try Engine.Texture.init(cat.rawBytes(), cat.width, cat.height, .rgba8, .{});
+    try cat.convert(allocator, .rgb24);
+    const cat_text = try Engine.Texture.init(cat.rawBytes(), cat.width, cat.height, .rgb8, .{});
     defer cat_text.deinit();
     state.material = try Engine.Material.init(vs, fs, cat_text);
     defer state.material.deinit();

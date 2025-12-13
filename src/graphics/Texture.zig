@@ -18,6 +18,32 @@ pub const Parameters = struct {
     generate_mipmaps: bool = true,
 };
 
+/// `data` can be freed immediately after texture creation
+pub fn init(data: []const u8, width: usize, height: usize, format: PixelFormat, parameters: Parameters) EngineError!Texture {
+    var texture: gl.uint = undefined;
+    gl.CreateTextures(gl.TEXTURE_2D, 1, @ptrCast(&texture));
+
+    gl.TextureParameteri(texture, gl.TEXTURE_WRAP_S, wrapToGl(parameters.wrap_x));
+    gl.TextureParameteri(texture, gl.TEXTURE_WRAP_T, wrapToGl(parameters.wrap_y));
+    gl.TextureParameteri(texture, gl.TEXTURE_MIN_FILTER, minFilterToGl(parameters.min_filter));
+    gl.TextureParameteri(texture, gl.TEXTURE_MAG_FILTER, magFilterToGl(parameters.mag_filter));
+
+    const w: gl.sizei = @intCast(width);
+    const h: gl.sizei = @intCast(height);
+    const gl_format = pixelFormatToGl(format);
+    gl.TextureStorage2D(texture, 1, gl_format.internal, w, h);
+    gl.TextureSubImage2D(texture, 0, 0, 0, w, h, gl_format.base, gl_format.data_type, data.ptr);
+    if (parameters.generate_mipmaps) gl.GenerateTextureMipmap(texture);
+
+    return .{
+        .handle = texture,
+    };
+}
+
+pub fn deinit(self: Texture) void {
+    gl.DeleteTextures(1, @ptrCast(&self.handle));
+}
+
 /// Determines how texture coordinates outside [0, 1] will be handled when using this texture in shaders
 pub const WrapMode = enum {
     /// Texture coordinates outside [0, 1] will be clamped
@@ -90,30 +116,6 @@ pub const PixelFormat = enum {
     stencil8,
 };
 
-pub fn init(data: []const u8, width: usize, height: usize, format: PixelFormat, parameters: Parameters) EngineError!Texture {
-    var texture: gl.uint = undefined;
-    gl.CreateTextures(gl.TEXTURE_2D, 1, @ptrCast(&texture));
-
-    gl.TextureParameteri(texture, gl.TEXTURE_WRAP_S, wrapToGl(parameters.wrap_x));
-    gl.TextureParameteri(texture, gl.TEXTURE_WRAP_T, wrapToGl(parameters.wrap_y));
-    gl.TextureParameteri(texture, gl.TEXTURE_MIN_FILTER, minFilterToGl(parameters.min_filter));
-    gl.TextureParameteri(texture, gl.TEXTURE_MAG_FILTER, magFilterToGl(parameters.mag_filter));
-
-    const w: gl.sizei = @intCast(width);
-    const h: gl.sizei = @intCast(height);
-    const gl_format = pixelFormatToGl(format);
-    gl.TextureStorage2D(texture, 1, gl_format.internal, w, h);
-    gl.TextureSubImage2D(texture, 0, 0, 0, w, h, gl_format.base, gl_format.data_type, data.ptr);
-    if (parameters.generate_mipmaps) gl.GenerateTextureMipmap(texture);
-
-    return .{
-        .handle = texture,
-    };
-}
-
-pub fn deinit(self: Texture) void {
-    gl.DeleteTextures(1, @ptrCast(&self.handle));
-}
 
 // TODO: eventually make the renderer abstraction have these functions
 fn wrapToGl(mode: WrapMode) gl.int {
