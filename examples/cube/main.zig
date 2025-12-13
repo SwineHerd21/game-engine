@@ -50,12 +50,12 @@ pub fn main() !void {
     state.material.setUniform("projection", state.perspective);
 
     const cube_model = try Engine.io.loadModel(allocator, asset_folder++"cube.obj");
-    state.cube = Engine.MeshInstance.init(cube_model.meshes[0].verticies, cube_model.meshes[0].indicies);
+    state.cube = Engine.MeshInstance.fromMeshData(cube_model.meshes[0]);
     defer state.cube.deinit();
     cube_model.deinit(allocator);
 
     const monkey_model = try Engine.io.loadModel(allocator, asset_folder++"suzanne.obj");
-    state.monkey = Engine.MeshInstance.init(monkey_model.meshes[0].verticies, monkey_model.meshes[0].indicies);
+    state.monkey = Engine.MeshInstance.fromMeshData(monkey_model.meshes[0]);
     defer state.monkey.deinit();
     monkey_model.deinit(allocator);
 
@@ -82,7 +82,7 @@ const State = struct {
     jumping: bool = false,
 };
 
-var avrg_fps: f64 = 0;
+var avrg_frametime: f64 = 0;
 var frames: f64 = 0;
 var show_fps: bool = false;
 
@@ -127,11 +127,10 @@ fn on_update(app: *Engine, state: *State) !void {
     state.cube.draw();
 
     // fps counter
-    const cur_fps = 1/app.time.deltaTime();
-    avrg_fps = (frames*avrg_fps + cur_fps) / (frames + 1);
+    avrg_frametime = (frames*avrg_frametime + app.time.deltaTime()) / (frames + 1);
     frames += 1;
     if (show_fps) {
-        std.debug.print("\rAverage FPS: {}; Current FPS: {}", .{avrg_fps, cur_fps});
+        std.debug.print("\rAverage frametime: {}ms; Average FPS: {}", .{avrg_frametime*std.time.ms_per_s, 1/avrg_frametime});
     }
 }
 

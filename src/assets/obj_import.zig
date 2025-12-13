@@ -2,6 +2,15 @@ const std = @import("std");
 const mem = std.mem;
 const Allocator = mem.Allocator;
 
+const EngineError = @import("../lib.zig").EngineError;
+const io = @import("io.zig");
+
+const math = @import("../math/math.zig");
+const Vec3f = math.Vec3f;
+const Vec2f = math.Vec2f;
+
+const log = std.log.scoped(.engine);
+
 // TODO: load multiple meshes
 // TODO: spit out mesh attributes in separate arrays, make graphics pipeline convert them to GPU meshes
 // based on what user wants (no normals or index being u16 instead of u32 for example)
@@ -17,16 +26,16 @@ pub const Model = struct {
             m.deinit(gpa);
         }
         gpa.free(self.meshes);
-        for (self.materials) |m| {
-            gpa.free(m);
-        }
+        // for (self.materials) |m| {
+        //     gpa.free(m);
+        // }
         gpa.free(self.materials);
     }
 };
 
 /// GPU-friendly mesh data, verticies is in the format (position, normal, texture coordinate)
 pub const MeshData = struct {
-    verticies: []const f32,
+    verticies: []const Vertex,
     indicies: []const u32,
 
     pub fn deinit(self: MeshData, gpa: Allocator) void {
@@ -35,23 +44,34 @@ pub const MeshData = struct {
     }
 };
 
+pub const Vertex = extern struct {
+    position: Vec3f,
+    texture_coordinates: Vec2f,
+    normal: Vec3f,
+};
+
 /// Loads a 3D model from a .obj file. The model may contain multiple meshes and materials
 /// in order of appearance in the file.
 /// TODO: load materials
-pub fn loadModel(gpa: mem.Allocator, path: []const u8) !Model {
-    const text = try std.fs.cwd().readFileAlloc(gpa, path, std.math.maxInt(usize));
+pub fn loadModel(gpa: mem.Allocator, path: []const u8) EngineError!Model {
+    const text = try io.readFile(gpa, path);
     defer gpa.free(text);
+
+    // there's a lot of array list operations here
+    errdefer |err| if (err == error.OutOfMemory) log.err("Out of memory", .{});
 
     var parse_mode: ParseMode = .Verticies;
     var meshes: std.ArrayList(MeshData) = try .initCapacity(gpa, 1);
     errdefer meshes.deinit(gpa);
+    var materials: std.ArrayList([]const u8) = try .initCapacity(gpa, 1);
+    errdefer materials.deinit(gpa);
 
     var positions: std.ArrayList(f32) = try .initCapacity(gpa, 128*3);
     defer positions.deinit(gpa);
-    var normals: std.ArrayList(f32) = try .initCapacity(gpa, 128*3);
-    defer normals.deinit(gpa);
     var texture_coords: std.ArrayList(f32) = try .initCapacity(gpa, 128*2);
     defer texture_coords.deinit(gpa);
+    var normals: std.ArrayList(f32) = try .initCapacity(gpa, 128*3);
+    defer normals.deinit(gpa);
 
     var faces: std.ArrayList(Face) = try .initCapacity(gpa, 128);
     defer faces.deinit(gpa);
@@ -67,22 +87,29 @@ pub fn loadModel(gpa: mem.Allocator, path: []const u8) !Model {
             continue;
         } else if (mem.eql(u8, first, "v")) {
             parse_mode = .Verticies;
+            if (iterCountRemaining(&words) != 3) return error.InvalidData;
+            _=words.next();
         } else if (mem.eql(u8, first, "vt")) {
             parse_mode = .TextCoords;
+            if (iterCountRemaining(&words) != 2) return error.InvalidData;
+            _=words.next();
         } else if (mem.eql(u8, first, "vn")) {
             parse_mode = .Normals;
+            if (iterCountRemaining(&words) != 3) return error.InvalidData;
+            _=words.next();
         } else if (mem.eql(u8, first, "f")) {
             parse_mode = .Faces;
 
-            var vert_count: usize = 0;
-            while (words.next()) |_| vert_count += 1;
-            words.reset();
+            const vert_count = iterCountRemaining(&words);
+            if (vert_count < 3) return error.InvalidData;
             _ = words.next();
 
             face = .{
                 .vert_count = vert_count,
                 .verticies = try gpa.alloc([3]usize, vert_count),
             };
+        } else if (mem.eql(u8, first, "mtllib")) {
+            try materials.append(gpa, words.next() orelse return error.InvalidData);
         } else {
             continue;
         }
@@ -90,15 +117,15 @@ pub fn loadModel(gpa: mem.Allocator, path: []const u8) !Model {
         var vert_count: usize = 0;
         while (words.next()) |word| {
             switch (parse_mode) {
-                .Verticies => try positions.append(gpa, try std.fmt.parseFloat(f32, word)),
-                .Normals => try normals.append(gpa, try std.fmt.parseFloat(f32, word)),
-                .TextCoords => try texture_coords.append(gpa, try std.fmt.parseFloat(f32, word)),
+                .Verticies => try positions.append(gpa, std.fmt.parseFloat(f32, word) catch return error.InvalidData),
+                .TextCoords => try texture_coords.append(gpa, std.fmt.parseFloat(f32, word) catch return error.InvalidData),
+                .Normals => try normals.append(gpa, std.fmt.parseFloat(f32, word) catch return error.InvalidData),
                 .Faces => {
                     var indicies = mem.splitScalar(u8, word, '/');
                     const vertex: [3]usize = .{
-                        try std.fmt.parseInt(usize, indicies.next() orelse return error.InvalidData, 10),
-                        try std.fmt.parseInt(usize, indicies.next() orelse return error.InvalidData, 10),
-                        try std.fmt.parseInt(usize, indicies.next() orelse return error.InvalidData, 10),
+                        std.fmt.parseInt(usize, indicies.next() orelse return error.InvalidData, 10) catch return error.InvalidData,
+                        std.fmt.parseInt(usize, indicies.next() orelse return error.InvalidData, 10) catch return error.InvalidData,
+                        std.fmt.parseInt(usize, indicies.next() orelse return error.InvalidData, 10) catch return error.InvalidData,
                     };
                     face.verticies[vert_count] = vertex;
                     vert_count += 1;
@@ -144,28 +171,27 @@ pub fn loadModel(gpa: mem.Allocator, path: []const u8) !Model {
                 try indicies.append(gpa, @intCast(j));
             } else {
                 try existing.append(gpa, v);
+
                 const pos_offset = (v[0]-1)*3;
-                const normal_offset = (v[2]-1)*3;
                 const texture_offset = (v[1]-1)*2;
+                const normal_offset = (v[2]-1)*3;
+
                 try verticies.appendSlice(gpa, positions.items[pos_offset..(pos_offset+3)]);
-                try verticies.appendSlice(gpa, normals.items[normal_offset..(normal_offset+3)]);
                 try verticies.appendSlice(gpa, texture_coords.items[texture_offset..(texture_offset+2)]);
+                try verticies.appendSlice(gpa, normals.items[normal_offset..(normal_offset+3)]);
                 try indicies.append(gpa, @intCast(existing.items.len - 1));
             }
         }
     }
 
     try meshes.append(gpa, .{
-        .verticies = try verticies.toOwnedSlice(gpa),
+        .verticies = @ptrCast(try verticies.toOwnedSlice(gpa)),
         .indicies = try indicies.toOwnedSlice(gpa),
     });
 
-    // so allocator does not panic
-    var materials = try gpa.alloc([]const u8, 1);
-    materials[0] = try gpa.alloc(u8, 1);
     return .{
         .meshes = try meshes.toOwnedSlice(gpa),
-        .materials = materials,
+        .materials = try materials.toOwnedSlice(gpa),
     };
 }
 
@@ -195,4 +221,11 @@ fn indexOfScalar(comptime T: type, haystack: []const T, needle: T) ?usize {
         }
     }
     return null;
+}
+
+fn iterCountRemaining(iter: *mem.SplitIterator(u8, .scalar)) usize {
+    var i: usize = 0;
+    while (iter.next()) |_| i += 1;
+    iter.reset();
+    return i;
 }

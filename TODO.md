@@ -2,8 +2,6 @@ By priority
 
 # Extreme
 
-- Separate raw image and mesh data from respective GPU objects. IO functions will return the former for possible editing
-and graphics pipeline will provide functions to transform them GPU instances
 
 # High
 

@@ -4,7 +4,7 @@ const std = @import("std");
 const gl = @import("gl");
 
 const Allocator = std.mem.Allocator;
-const Material = @import("Material.zig");
+const MeshData = @import("../lib.zig").MeshData;
 
 const MeshInstance = @This();
 
@@ -13,6 +13,18 @@ buffer: gl.uint,
 ibo: gl.uint,
 index_count: gl.int,
 
+// TODO: use normalized shorts for UVs and INT_2_10_10_10_REV for normals,
+//       allow using shorts for indices
+
+pub fn fromMeshData(mesh: MeshData) MeshInstance {
+    // the Vertex type has the necessary layout so it is fine to just do a @ptrCast
+    return init(@ptrCast(mesh.verticies), mesh.indicies);
+}
+
+/// `verticies` must be of the format:
+/// position: 3 floats
+/// uv coordinates: 2 floats
+/// normal: 3 floats
 pub fn init(verticies: []const f32, indices: []const u32) MeshInstance {
     var mesh: MeshInstance = .{
         .vao = undefined,
@@ -34,7 +46,7 @@ pub fn init(verticies: []const f32, indices: []const u32) MeshInstance {
 
     gl.CreateVertexArrays(1, @ptrCast(&mesh.vao));
     // 3 positions + 3 normals + 2 uvs
-    gl.VertexArrayVertexBuffer(mesh.vao, 0, mesh.buffer, 0, (3+3+2) * @sizeOf(f32));
+    gl.VertexArrayVertexBuffer(mesh.vao, 0, mesh.buffer, 0, (3+2+3) * @sizeOf(f32));
     gl.VertexArrayElementBuffer(mesh.vao, mesh.ibo);
 
     gl.EnableVertexArrayAttrib(mesh.vao, 0);
@@ -43,10 +55,10 @@ pub fn init(verticies: []const f32, indices: []const u32) MeshInstance {
 
     // position attribute
     gl.VertexArrayAttribFormat(mesh.vao, 0, 3, gl.FLOAT, gl.FALSE, 0);
-    // normal attribute
-    gl.VertexArrayAttribFormat(mesh.vao, 1, 3, gl.FLOAT, gl.FALSE, 3*@sizeOf(f32));
     // uv attribute
-    gl.VertexArrayAttribFormat(mesh.vao, 2, 2, gl.FLOAT, gl.FALSE, 6*@sizeOf(f32));
+    gl.VertexArrayAttribFormat(mesh.vao, 1, 2, gl.FLOAT, gl.FALSE, 3*@sizeOf(f32));
+    // normal attribute
+    gl.VertexArrayAttribFormat(mesh.vao, 2, 3, gl.FLOAT, gl.FALSE, 5*@sizeOf(f32));
 
     gl.VertexArrayAttribBinding(mesh.vao, 0, 0);
     gl.VertexArrayAttribBinding(mesh.vao, 1, 0);

@@ -18,6 +18,7 @@ pub fn build(b: *std.Build) void {
         .linux => mod.linkSystemLibrary("X11", .{ .needed = true }),
         else => |os| {
             std.debug.print("The {t} operating system is not supported.", .{os});
+            return;
         },
     }
     // OpenGL
