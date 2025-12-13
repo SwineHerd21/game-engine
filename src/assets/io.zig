@@ -40,7 +40,7 @@ pub fn loadImage(gpa: Allocator, path: []const u8, flip_vertically: bool) Engine
         error.OutOfMemory => return outOfMemory(),
         error.Unsupported, error.InvalidData => {
             log.err("Image file '{s}' contains an invalid format", .{path});
-            return error.AssetLoadError;
+            return error.IOError;
         },
         else => {
             log.err("File '{s}' is inaccessible or invalid", .{path});

@@ -18,8 +18,9 @@ pub const Parameters = struct {
     generate_mipmaps: bool = true,
 };
 
-/// `data` can be freed immediately after texture creation
-pub fn init(data: []const u8, width: usize, height: usize, format: PixelFormat, parameters: Parameters) EngineError!Texture {
+/// `data` can be freed immediately after texture creation.
+/// If the pixel data does not the width, heigth and pixel format the program will likely crash without a message.
+pub fn init(data: []const u8, width: usize, height: usize, format: PixelFormat, parameters: Parameters) Texture {
     var texture: gl.uint = undefined;
     gl.CreateTextures(gl.TEXTURE_2D, 1, @ptrCast(&texture));
 
@@ -38,6 +39,24 @@ pub fn init(data: []const u8, width: usize, height: usize, format: PixelFormat, 
     return .{
         .handle = texture,
     };
+}
+
+pub fn fromImage(image: zigimg.Image, parameters: Parameters) EngineError!Texture {
+    const format: PixelFormat = switch (image.pixelFormat()) {
+        .grayscale8 => .r8,
+        .grayscale16 => .r16,
+        .rgb24 => .rgb8,
+        .rgb48 => .rgb16,
+        .rgb332 => .rgb332,
+        .rgb565 => .rgb565,
+        .rgba32 => .rgba8,
+        .rgba64 => .rgba16,
+        .float32 => .rgba32f,
+        .bgr24 => .bgr8,
+        .bgra32 => .bgra8,
+        else => return error.InvalidData,
+    };
+    return init(image.rawBytes(), image.width, image.height, format, parameters);
 }
 
 pub fn deinit(self: Texture) void {
@@ -102,6 +121,10 @@ pub const PixelFormat = enum {
     rgb5a1,
     /// 10 bits for each RGB and 2 bits for alpha
     rgb10a2,
+    /// Channel inverted RGB
+    bgr8,
+    /// Channel inverted RGB, A is the same
+    bgra8,
     /// 16 bit integers mapped to [0, 1] depth values
     depth16,
     /// 32 bit integers mapped to [0, 1] depth values
@@ -156,6 +179,8 @@ fn pixelFormatToGl(format: PixelFormat) GlPixelFormatData {
         .r8, .r16, .r32f => gl.RED,
         .rg8, .rg16, .rg32f => gl.RG,
         .rgb8, .rgb16, .rgb32f, .rgb332, .rgb565 => gl.RGB,
+        .bgr8 => gl.BGR,
+        .bgra8 => gl.BGRA,
         .rgba4, .rgba8, .rgba16, .rgba32f, .rgb5a1, .rgb10a2 => gl.RGBA,
         .depth16, .depth24, .depth32f => gl.DEPTH_COMPONENT,
         .depth24_stencil8, .depth32f_stencil8 => gl.DEPTH_STENCIL,
@@ -168,13 +193,13 @@ fn pixelFormatToGl(format: PixelFormat) GlPixelFormatData {
         .rg8 => gl.RG8,
         .rg16 => gl.RG16,
         .rg32f => gl.RG32F,
-        .rgb8 => gl.RGB8,
+        .rgb8, .bgr8 => gl.RGB8,
         .rgb16 => gl.RGB16,
         .rgb32f => gl.RGB32F,
         .rgb332 => gl.R3_G3_B2,
         .rgb565 => gl.RGB565,
         .rgba4 => gl.RGBA4,
-        .rgba8 => gl.RGBA8,
+        .rgba8, .bgra8 => gl.RGBA8,
         .rgba16 => gl.RGBA16,
         .rgba32f => gl.RGBA32F,
         .rgb5a1 => gl.RGB5_A1,
@@ -188,7 +213,7 @@ fn pixelFormatToGl(format: PixelFormat) GlPixelFormatData {
     };
 
     const data_type: gl.@"enum" = switch (format) {
-        .r8, .rg8, .rgb8, .rgba8, .stencil8 => gl.UNSIGNED_BYTE,
+        .r8, .rg8, .rgb8, .rgba8, .bgr8, .bgra8, .stencil8 => gl.UNSIGNED_BYTE,
         .r16, .rg16, .rgb16, .rgba16, .depth16 => gl.UNSIGNED_SHORT,
         .r32f, .rg32f, .rgb32f, .rgba32f, .depth32f => gl.FLOAT,
         .depth24 => gl.UNSIGNED_INT,

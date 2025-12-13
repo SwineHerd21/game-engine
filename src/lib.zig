@@ -114,7 +114,7 @@ pub const EngineError = error {
     IOError,
     OutOfMemory,
     ShaderCompilationFailure,
-    AssetLoadError,
+    InvalidData,
 };
 
 test {
