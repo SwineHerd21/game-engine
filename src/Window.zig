@@ -16,9 +16,9 @@ inner: native.Context,
 should_close: bool = false,
 
 pub const FullscreenMode = enum {
-    Windowed,
-    Fullscreen,
-    Borderless,
+    windowed,
+    fullscreen,
+    borderless,
 };
 
 /// Call `destroy()` when the window is no longer needed.
@@ -47,4 +47,8 @@ pub fn swapBuffers(w: Window) void {
 
 pub fn setFullscreenMode(w: *Window, mode: FullscreenMode) void {
     return native.setFullscreenMode(&w.inner, mode);
+}
+
+pub fn setMaximized(w: *Window, maximize: bool) void {
+    return native.setMaximized(&w.inner, maximize);
 }

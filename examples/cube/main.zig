@@ -21,7 +21,7 @@ pub fn main() !void {
     };
     var state: State = undefined;
     state.rendermode = .Solid;
-    state.fullscreen = .Windowed;
+    state.fullscreen = .windowed;
 
     var dba: std.heap.DebugAllocator(.{}) = .init;
     defer _=dba.deinit();
@@ -61,6 +61,7 @@ pub fn main() !void {
 
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});
     std.debug.print("Press F3 to toggle FPS counter\n", .{});
+    std.debug.print("Press F10 to maximize window\n", .{});
     std.debug.print("Press F11 to switch between fullscreen and windowed mode\n\n", .{});
 
 
@@ -70,6 +71,7 @@ pub fn main() !void {
 const State = struct {
     rendermode: Engine.RenderMode,
     fullscreen: Engine.Window.FullscreenMode,
+    maximized: bool,
 
     cube: Engine.MeshInstance,
     material: Engine.Material,
@@ -151,6 +153,11 @@ fn on_event(app: *Engine, state: *State, event: Engine.Event) !void {
                 .F3 => {
                     std.debug.print("\n", .{});
                     show_fps = !show_fps;
+                },
+                .F10 => {
+                    if (state.fullscreen == .fullscreen) return;
+                    state.maximized = !state.maximized;
+                    app.window.setMaximized(state.maximized);
                 },
                 .F11 => {
                     state.fullscreen = @enumFromInt(@intFromEnum(state.fullscreen) ^ 1);

@@ -12,6 +12,7 @@ const log = std.log.scoped(.engine);
 pub const c = @cImport({
     @cInclude("X11/X.h");
     @cInclude("X11/Xlib.h");
+    @cInclude("X11/Xatom.h");
     @cInclude("X11/XKBlib.h");
 
     @cInclude("GL/glx.h");
@@ -38,6 +39,11 @@ pub const Context = struct {
         net_wm_ping: c.Atom,
         net_wm_state: c.Atom,
         net_wm_state_fullscreen: c.Atom,
+        net_wm_state_maximized_horz: c.Atom,
+        net_wm_state_maximized_vert: c.Atom,
+        net_wm_bypass_compositor: c.Atom,
+        /// Used for controlling window decoration
+        motif_wm_hints: c.Atom,
     },
 };
 
@@ -122,6 +128,10 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
             .net_wm_ping = c.XInternAtom(display, "_NET_WM_PING", c.False),
             .net_wm_state = c.XInternAtom(display, "_NET_WM_STATE", c.False),
             .net_wm_state_fullscreen = c.XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", c.False),
+            .net_wm_state_maximized_horz = c.XInternAtom(display, "_NET_WM_STATE_MAXIMIZED_HORZ", c.False),
+            .net_wm_state_maximized_vert = c.XInternAtom(display, "_NET_WM_STATE_MAXIMIZED_VERT", c.False),
+            .net_wm_bypass_compositor = c.XInternAtom(display, "_NET_WM_BYPASS_COMPOSITOR", c.False),
+            .motif_wm_hints = c.XInternAtom(display, "_MOTIF_WM_HINTS", c.False),
         },
     };
 }
@@ -285,11 +295,24 @@ pub inline fn consumeEvent(ctx: *Context, input: Input) ?events.Event {
 // ========== WINDOW FUNCTIONS ==========
 
 pub inline fn setFullscreenMode(ctx: *Context, mode: Window.FullscreenMode) void {
-    const fullscreen: c_long = switch (mode) {
-        .Windowed => 0,
-        .Fullscreen => 1,
-        .Borderless => @panic("TODO: borderless window mode is not implemented"),
+    const fullscreen: c_long, const compositing_bypass: c_char = switch (mode) {
+        .windowed => blk: {
+            // TODO: make resize_enabled customizable
+            setMotifHints(ctx.*, false, true);
+            setMaximized(ctx, false);
+            break :blk .{0, 0};
+        },
+        .fullscreen => blk: {
+            break :blk .{1, 1};
+        },
+        .borderless => blk: {
+            setMotifHints(ctx.*, true, false);
+            setMaximized(ctx, true);
+            break :blk .{0, 2};
+        },
     };
+
+    _=c.XChangeProperty(ctx.display, ctx.window, ctx.atoms.net_wm_bypass_compositor, c.XA_CARDINAL, 32, c.PropModeReplace, @ptrCast(&compositing_bypass), 1);
 
     ctx.event = std.mem.zeroes(c.XEvent);
     ctx.event.type = c.ClientMessage;
@@ -303,6 +326,64 @@ pub inline fn setFullscreenMode(ctx: *Context, mode: Window.FullscreenMode) void
     ctx.event.xclient.data.l[3] = 1; // source indicator
 
     _=c.XSendEvent(ctx.display, ctx.root, c.False, c.SubstructureNotifyMask | c.SubstructureRedirectMask, &ctx.event);
+}
+
+fn setMotifHints(ctx: Context, borderless: bool, resize_enabled: bool) void {
+    const MotifHints = extern struct {
+        flags: c_ulong,
+        functions: c_ulong,
+        decorations: c_ulong,
+        input_mode: c_long,
+        status: c_ulong,
+    };
+    const FLAG_FUNCTIONS = 1 << 0;
+    const FLAG_DECORATIONS = 1 << 1;
+
+    const FUNC_RESIZE = 1 << 1;
+    const FUNC_MOVE = 1 << 2;
+    const FUNC_MINIMIZE = 1 << 3;
+    const FUNC_MAXIMIZE = 1 << 4;
+    const FUNC_CLOSE = 1 << 5;
+    const FUNC_ALL = FUNC_RESIZE | FUNC_MOVE | FUNC_MINIMIZE | FUNC_MAXIMIZE | FUNC_CLOSE;
+
+    const DECOR_BORDER = 1 << 1;
+    const DECOR_RESIZEH = 1 << 2;
+    const DECOR_TITLE = 1 << 3;
+    const DECOR_MENU = 1 << 4;
+    const DECOR_MINIMIZE = 1 << 5;
+    const DECOR_MAXIMIZE = 1 << 6;
+    const DECOR_ALL = DECOR_BORDER | DECOR_RESIZEH | DECOR_TITLE | DECOR_MENU | DECOR_MINIMIZE | DECOR_MAXIMIZE;
+
+    var hints = std.mem.zeroes(MotifHints);
+    hints.flags = FLAG_DECORATIONS;
+
+    if (!borderless) {
+        hints.flags |= FLAG_FUNCTIONS;
+
+        hints.decorations = DECOR_ALL;
+        hints.functions = FUNC_ALL;
+
+        if (!resize_enabled) {
+            hints.decorations &= ~@as(c_ulong, DECOR_RESIZEH);
+            hints.functions &= ~@as(c_ulong, FUNC_RESIZE);
+        }
+    }
+
+    _=c.XChangeProperty(ctx.display, ctx.window, ctx.atoms.motif_wm_hints, ctx.atoms.motif_wm_hints, 32, c.PropModeReplace, @ptrCast(&hints), 5);
+}
+
+pub inline fn setMaximized(ctx: *Context, enable: bool) void {
+    ctx.event = std.mem.zeroes(c.XEvent);
+    ctx.event.type = c.ClientMessage;
+    ctx.event.xclient.window = ctx.window;
+    ctx.event.xclient.message_type = ctx.atoms.net_wm_state;
+    ctx.event.xclient.format = 32;
+    ctx.event.xclient.data.l[0] = @intFromBool(enable);
+    ctx.event.xclient.data.l[1] = @intCast(ctx.atoms.net_wm_state_maximized_horz);
+    ctx.event.xclient.data.l[2] = @intCast(ctx.atoms.net_wm_state_maximized_vert);
+    ctx.event.xclient.data.l[3] = 1; // source indicator
+
+    _=c.XSendEvent(ctx.display, ctx.root, c.False, c.SubstructureRedirectMask | c.SubstructureNotifyMask, &ctx.event);
 }
 
 // ========== OTHER ==========
