@@ -34,11 +34,15 @@ const Engine = @This();
 
 /// Call `deinit` at the end
 pub fn init(options: Options) EngineError!Engine {
-    const window = Window.create(options.window_width, options.window_height, options.title) catch |e| {
+    var window = Window.create(options.window_width, options.window_height, options.title) catch |e| {
         log.err("Failed to create a window", .{});
         return e;
     };
     errdefer window.destroy();
+    switch (options.fullscreen_mode) {
+        .windowed => if (options.maximized) window.setMaximized(true),
+        else => window.setFullscreenMode(options.fullscreen_mode),
+    }
 
     graphics.init() catch |err| {
         log.err("Failed to load a graphics library", .{});
@@ -93,19 +97,19 @@ pub fn run(self: *Engine, comptime T: type, user_data: *T, on_update: fn(*Engine
 
         self.time.update();
 
-        // TODO: engine update loop
         try on_update(self, user_data);
-
-        // NOTE: maybe introduce a `post_update`?
 
         self.window.swapBuffers();
     }
 }
 
+/// Set initial options for the engine. Many of these can be changed later.
 pub const Options = struct {
     title: []const u8,
     window_width: u32,
     window_height: u32,
+    fullscreen_mode: Window.FullscreenMode = .windowed,
+    maximized: bool = false,
 };
 
 
