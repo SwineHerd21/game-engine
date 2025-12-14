@@ -30,10 +30,10 @@ window: Window,
 input: Input,
 time: Time,
 
-const Self = @This();
+const Engine = @This();
 
 /// Call `deinit` at the end
-pub fn init(options: Options) EngineError!Self {
+pub fn init(options: Options) EngineError!Engine {
     const window = Window.create(options.window_width, options.window_height, options.title) catch |e| {
         log.err("Failed to create a window", .{});
         return e;
@@ -53,7 +53,7 @@ pub fn init(options: Options) EngineError!Self {
     };
 }
 
-pub fn deinit(self: *Self) void {
+pub fn deinit(self: *Engine) void {
     log.info("Shutting down...", .{});
 
     self.window.destroy();
@@ -66,7 +66,7 @@ pub fn deinit(self: *Self) void {
 ///
 /// WARNING: This places the thread into an infinite update loop until the window closes.
 /// You should do all necessary setup before calling this function.
-pub fn run(self: *Self, comptime T: type, user_data: *T, on_update: fn(*Self, *T) EngineError!void, on_event: fn (*Self, *T, Event) EngineError!void) !void {
+pub fn run(self: *Engine, comptime T: type, user_data: *T, on_update: fn(*Engine, *T) EngineError!void, on_event: fn (*Engine, *T, Event) EngineError!void) !void {
     while (!self.window.should_close) {
         // Process pending OS events
         while (self.window.areEventsPending()) {

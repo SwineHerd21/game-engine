@@ -26,6 +26,8 @@ By priority
 
 # Low
 
+- Complete the TODOs in the code
+
 - Use a custom allocator/some kind of reference counting to manage asset memory
 
 - Better platform abstraction
