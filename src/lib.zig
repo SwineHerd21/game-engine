@@ -4,12 +4,17 @@ const builtin = @import("builtin");
 pub const io = @import("assets/io.zig");
 const obj_import = @import("assets/obj_import.zig");
 
-const graphics = @import("graphics/graphics.zig");
-pub const RenderMode = graphics.RenderMode;
-pub const setRenderMode = graphics.setRenderMode;
+const _graphics = @import("graphics/graphics.zig");
+// Public API
+pub const graphics = struct {
+    pub const RenderMode = _graphics.RenderMode;
+    pub const setRenderMode = _graphics.setRenderMode;
+    pub const setClearColor = _graphics.setClearColor;
+};
 
 pub const math = @import("math/math.zig");
 pub const events = @import("events.zig");
+pub const color = @import("graphics/color.zig");
 
 pub const Event = events.Event;
 pub const Window = @import("Window.zig");
@@ -44,11 +49,11 @@ pub fn init(options: Options) EngineError!Engine {
         else => window.setFullscreenMode(options.fullscreen_mode),
     }
 
-    graphics.init() catch |err| {
+    _graphics.init() catch |err| {
         log.err("Failed to load a graphics library", .{});
         return err;
     };
-    errdefer graphics.deinit();
+    errdefer _graphics.deinit();
 
     return .{
         .window = window,
@@ -61,7 +66,7 @@ pub fn deinit(self: *Engine) void {
     log.info("Shutting down...", .{});
 
     self.window.destroy();
-    graphics.deinit();
+    _graphics.deinit();
 }
 
 /// Call this function when you are ready to start your application.
@@ -81,7 +86,7 @@ pub fn run(self: *Engine, comptime T: type, user_data: *T, on_update: fn(*Engine
                         self.window.should_close = true;
                     },
                     .window_resize => |r| {
-                        graphics.adjustViewport(@intCast(r.width), @intCast(r.height));
+                        _graphics.adjustViewport(@intCast(r.width), @intCast(r.height));
                     },
                     .pointer_motion => |m| {
                         self.input.pointer_position = m.position;
@@ -93,7 +98,7 @@ pub fn run(self: *Engine, comptime T: type, user_data: *T, on_update: fn(*Engine
             }
         }
 
-        graphics.clear();
+        _graphics.clear();
 
         self.time.update();
 

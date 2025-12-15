@@ -56,6 +56,8 @@ pub fn main() !void {
     defer state.monkey.deinit();
     monkey_model.deinit(allocator);
 
+    Engine.graphics.setClearColor(.newOpaque(20, 20, 20));
+
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});
     std.debug.print("Press F3 to print current frametime\n", .{});
     std.debug.print("Press F10 to maximize window\n", .{});
@@ -66,7 +68,7 @@ pub fn main() !void {
 }
 
 const State = struct {
-    rendermode: Engine.RenderMode,
+    rendermode: Engine.graphics.RenderMode,
     fullscreen: Engine.Window.FullscreenMode,
     maximized: bool,
 
@@ -134,7 +136,7 @@ fn on_event(app: *Engine, state: *State, event: Engine.Event) !void {
                 .F1 => {
                     // Switch between solid and wireframe rendering
                     state.rendermode = @enumFromInt(@intFromEnum(state.rendermode) ^ 1);
-                    Engine.setRenderMode(state.rendermode);
+                    Engine.graphics.setRenderMode(state.rendermode);
                 },
                 .F3 => {
                     const dt = app.time.deltaTime();

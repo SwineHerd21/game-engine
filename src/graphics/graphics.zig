@@ -5,6 +5,7 @@ const std = @import("std");
 const gl = @import("gl");
 
 const native = @import("../platform.zig").native;
+const color = @import("color.zig");
 
 const Window = @import("../Window.zig");
 const EngineError = @import("../lib.zig").EngineError;
@@ -46,6 +47,8 @@ pub fn init() EngineError!void {
     gl.Enable(gl.DEPTH_TEST);
     // Default winding order is CCW
     gl.Enable(gl.CULL_FACE);
+
+    gl.ClearColor(0.0, 0.0, 0.0, 1.0);
 }
 
 pub fn deinit() void {
@@ -56,6 +59,11 @@ pub fn deinit() void {
 
 pub fn adjustViewport(width: i32, height: i32) void {
     gl.Viewport(0, 0, width, height);
+}
+
+pub fn setClearColor(c: color.Rgba) void {
+    const v = c.toVec4f();
+    gl.ClearColor(v.x, v.y, v.z, v.w);
 }
 
 pub fn setRenderMode(mode: RenderMode) void {
@@ -108,7 +116,6 @@ fn messageCallback(source: gl.@"enum", msg_type: gl.@"enum", id: gl.uint, severi
 // ========== Render ==========
 
 pub fn clear() void {
-    gl.ClearColor(0.0, 0.0, 0.0, 1.0);
     gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
 
