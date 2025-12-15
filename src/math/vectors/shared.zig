@@ -12,13 +12,20 @@ const VecN = @import("../math.zig").Vec;
 pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
     assert(@typeInfo(T) == .int or @typeInfo(T) == .float);
     return extern struct {
+        const V = @Vector(dimensions, T);
+
+        /// Cast into a SIMD compatable `@Vector(dim, T)`
+        pub inline fn simd(v: Vec) @Vector(dimensions, T) {
+            return @bitCast(v);
+        }
+        /// Cast from a SIMD compatable `@Vector(dim, T)`
+        pub inline fn fromSimd(v: @Vector(dimensions, T)) Vec {
+            return @bitCast(v);
+        }
+
         /// Returns a vector with all elements set to `value`
         pub fn splat(value: T) Vec {
-            var new: Vec = undefined;
-            inline for (fields(Vec)) |f| {
-                @field(new, f.name) = value;
-            }
-            return new;
+            return fromSimd(@splat(value));
         }
 
         /// Get component number `i`: 0 gives `x`, 1 gives `y` etc.
@@ -32,102 +39,58 @@ pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
         // TODO: add safe op versions for integer vecs? (wrapped, saturating, etc.)
 
         /// Element-wise negation
-        pub fn neg(v: Vec) Vec {
-            var new: Vec = undefined;
-            inline for (fields(Vec)) |f| {
-                @field(new, f.name) = -@field(v, f.name);
-            }
-            return new;
+        pub inline fn neg(v: Vec) Vec {
+            return fromSimd(-simd(v));
         }
 
         /// Element-wise absolute value taking
-        pub fn abs(v: Vec) Vec {
-            var new: Vec = undefined;
-            inline for (fields(Vec)) |f| {
-                @field(new, f.name) = if (@typeInfo(T) == .int) @intCast(@abs(@field(v, f.name))) else @abs(@field(v, f.name));
-            }
-            return new;
+        pub inline fn abs(v: Vec) Vec {
+            return fromSimd(@abs(simd(v)));
         }
 
         /// Element-wise addition
-        pub fn add(a: Vec, b: Vec) Vec {
-            var new: Vec = undefined;
-            inline for (fields(Vec)) |f| {
-                @field(new, f.name) = @field(a, f.name) + @field(b, f.name);
-            }
-            return new;
+        pub inline fn add(a: Vec, b: Vec) Vec {
+            return fromSimd(simd(a) + simd(b));
         }
 
         /// Element-wise subtraction
-        pub fn sub(a: Vec, b: Vec) Vec {
-            var new: Vec = undefined;
-            inline for (fields(Vec)) |f| {
-                @field(new, f.name) = @field(a, f.name) - @field(b, f.name);
-            }
-            return new;
+        pub inline fn sub(a: Vec, b: Vec) Vec {
+            return fromSimd(simd(a) - simd(b));
         }
 
         /// Element-wise multiplication
-        pub fn scale(a: Vec, b: Vec) Vec {
-            var new: Vec = undefined;
-            inline for (fields(Vec)) |f| {
-                @field(new, f.name) = @field(a, f.name) * @field(b, f.name);
-            }
-            return new;
+        pub inline fn scale(a: Vec, b: Vec) Vec {
+            return fromSimd(simd(a) * simd(b));
         }
 
         /// Element-wise multiplication by a scalar
-        pub fn mul(a: Vec, scalar: T) Vec {
-            var new: Vec = undefined;
-            inline for (fields(Vec)) |f| {
-                @field(new, f.name) = @field(a, f.name) * scalar;
-            }
-            return new;
+        pub inline fn mul(a: Vec, scalar: T) Vec {
+            return fromSimd(simd(a) * @as(V, @splat(scalar)));
         }
 
         /// Element-wise division by a scalar
-        pub fn div(a: Vec, scalar: T) Vec {
-            var new: Vec = undefined;
-            inline for (fields(Vec)) |f| {
-                @field(new, f.name) = @field(a, f.name) / scalar;
-            }
-            return new;
+        pub inline fn div(a: Vec, scalar: T) Vec {
+            return fromSimd(simd(a) / @as(V, @splat(scalar)));
         }
 
         /// Element-wise division by a scalar, rounded towards zero
         ///
         /// See `@divTrunc` builtin function for caller guarantees
-        pub fn divTrunc(a: Vec, scalar: T) Vec {
-            var new: Vec = undefined;
-            inline for (fields(Vec)) |f| {
-                @field(new, f.name) = @divTrunc(@field(a, f.name), scalar);
-            }
-            return new;
+        pub inline fn divTrunc(a: Vec, scalar: T) Vec {
+            return fromSimd(@divTrunc(simd(a), @as(V, @splat(scalar))));
         }
 
         /// Dot (scalar) product of two vectors
-        pub fn dot(a: Vec, b: Vec) T {
-            var result: T = 0;
-            inline for (fields(Vec)) |f| {
-                result += @field(a, f.name) * @field(b, f.name);
-            }
-            return result;
+        pub inline fn dot(a: Vec, b: Vec) T {
+            return @reduce(.Add, simd(a) * simd(b));
         }
 
-        pub fn length(v: Vec) T {
-            var result: T = 0;
-            inline for (fields(Vec)) |f| {
-                result += @field(v, f.name) * @field(v, f.name);
-            }
-            return @sqrt(result);
+        pub inline fn length(v: Vec) T {
+            return @sqrt(@reduce(.Add, simd(v) * simd(v)));
         }
         /// Faster than `length()`
-        pub fn lengthSqr(v: Vec) T {
-            var result: T = 0;
-            inline for (fields(Vec)) |f| {
-                result += @field(v, f.name) * @field(v, f.name);
-            }
-            return result;
+        pub inline fn lengthSqr(v: Vec) T {
+            return @reduce(.Add, simd(v) * simd(v));
         }
 
         pub inline fn distance(a: Vec, b: Vec) T {
@@ -178,9 +141,8 @@ pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
 
         /// Checks if two vectors are exactly equal
         pub fn eql(a: Vec, b: Vec) bool {
-            const a_arr: [dimensions]T = @bitCast(a);
-            const b_arr: [dimensions]T = @bitCast(b);
-            return std.mem.eql(T, &a_arr, &b_arr);
+            // comparing vectors return a bool vector with a value for each element pair
+            return @reduce(.And, simd(a) == simd(b));
         }
 
         /// Checks if two vectors are approximately equal

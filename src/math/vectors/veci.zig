@@ -54,6 +54,8 @@ pub fn Vec2int(comptime T: type) type {
         }
 
         const funcs = Shared(Self, T, dimensions);
+        pub const simd = funcs.simd;
+        pub const fromSimd = funcs.fromSimd;
         pub const splat = funcs.splat;
         pub const neg = funcs.neg;
         pub const abs = funcs.abs;
@@ -121,6 +123,8 @@ pub fn Vec3int(comptime T: type) type {
         }
 
         const funcs = Shared(Self, T, dimensions);
+        pub const simd = funcs.simd;
+        pub const fromSimd = funcs.fromSimd;
         pub const splat = funcs.splat;
         pub const neg = funcs.neg;
         pub const abs = funcs.abs;
@@ -171,6 +175,8 @@ pub fn Vec4int(comptime T: type) type {
         }
 
         const funcs = Shared(Self, T, dimensions);
+        pub const simd = funcs.simd;
+        pub const fromSimd = funcs.fromSimd;
         pub const splat = funcs.splat;
         pub const neg = funcs.neg;
         pub const abs = funcs.abs;

@@ -1,7 +1,4 @@
 //! Demonstrates basic mesh/shader loading, matrix math and rendering
-//!
-//! Press F1 to switch between solid and line rendering
-//! Press F3 to enable FPS counter
 
 const std = @import("std");
 
@@ -60,7 +57,7 @@ pub fn main() !void {
     monkey_model.deinit(allocator);
 
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});
-    std.debug.print("Press F3 to toggle FPS counter\n", .{});
+    std.debug.print("Press F3 to print current frametime\n", .{});
     std.debug.print("Press F10 to maximize window\n", .{});
     std.debug.print("Press F11 to switch between fullscreen and windowed mode\n\n", .{});
 
@@ -83,10 +80,6 @@ const State = struct {
     cube_angle: f32 = 0,
     jumping: bool = false,
 };
-
-var avrg_frametime: f64 = 0;
-var frames: f64 = 0;
-var show_fps: bool = false;
 
 fn on_update(app: *Engine, state: *State) !void {
     const time = app.time.totalRuntime();
@@ -127,13 +120,6 @@ fn on_update(app: *Engine, state: *State) !void {
     const cube_transform = Mat4.mulBatch(&.{cube_translate,cube_rotate,cube_scale});
     state.material.setUniform("transform", cube_transform);
     state.cube.draw();
-
-    // fps counter
-    avrg_frametime = (frames*avrg_frametime + app.time.deltaTime()) / (frames + 1);
-    frames += 1;
-    if (show_fps) {
-        std.debug.print("\rAverage frametime: {}ms; Average FPS: {}", .{avrg_frametime*std.time.ms_per_s, 1/avrg_frametime});
-    }
 }
 
 fn on_event(app: *Engine, state: *State, event: Engine.Event) !void {
@@ -151,8 +137,8 @@ fn on_event(app: *Engine, state: *State, event: Engine.Event) !void {
                     Engine.setRenderMode(state.rendermode);
                 },
                 .F3 => {
-                    std.debug.print("\n", .{});
-                    show_fps = !show_fps;
+                    const dt = app.time.deltaTime();
+                    std.debug.print("\nFrametime: {}ms; FPS: {}", .{dt*std.time.ms_per_s, 1/dt});
                 },
                 .F10 => {
                     if (state.fullscreen == .fullscreen) return;
