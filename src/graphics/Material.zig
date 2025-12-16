@@ -102,12 +102,12 @@ pub fn setUniform(self: Material, name: []const u8, value: anytype) void {
         .float => gl.ProgramUniform1f(self.program, location, value),
         .@"struct" => {
             switch (T) {
-                math.Vec2f => gl.ProgramUniform2f(self.program, location, value.x(), value.y()),
-                math.Vec3f => gl.ProgramUniform3f(self.program, location, value.x(), value.y(), value.z()),
-                math.Vec4f => gl.ProgramUniform4f(self.program, location, value.x(), value.y(), value.z(), value.w()),
-                math.Vec2i => gl.ProgramUniform2i(self.program, location, value.x(), value.y()),
-                math.Vec3i => gl.ProgramUniform3i(self.program, location, value.x(), value.y(), value.z()),
-                math.Vec4i => gl.ProgramUniform4i(self.program, location, value.x(), value.y(), value.z(), value.w()),
+                math.Vec2f => gl.ProgramUniform2f(self.program, location, value.x, value.y),
+                math.Vec3f => gl.ProgramUniform3f(self.program, location, value.x, value.y, value.z),
+                math.Vec4f => gl.ProgramUniform4f(self.program, location, value.x, value.y, value.z, value.w),
+                math.Vec2i => gl.ProgramUniform2i(self.program, location, value.x, value.y),
+                math.Vec3i => gl.ProgramUniform3i(self.program, location, value.x, value.y, value.z),
+                math.Vec4i => gl.ProgramUniform4i(self.program, location, value.x, value.y, value.z, value.w),
                 math.Mat2, math.Mat3, math.Mat4,
                 math.Mat2x3, math.Mat2x4,
                 math.Mat3x2, math.Mat3x4,

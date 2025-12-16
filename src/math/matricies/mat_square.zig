@@ -284,13 +284,11 @@ pub fn Mat4x4(T: type) type {
         pub fn perspective(fov: T, aspectRatio: T, clip_near: T, clip_far: T) Self {
             // https://songho.ca/opengl/gl_projectionmatrix.html
             const tan = @tan(std.math.degreesToRadians(fov/2));
-            const right = clip_near * tan;
-            const top = right / aspectRatio;
 
             return Self.fromArrays(.{
-                .{clip_near/right, 0, 0, 0},
-                .{0, clip_near/top, 0, 0},
-                .{0, 0, -(clip_far+clip_near)/(clip_far-clip_near), -1},
+                .{1.0/tan, 0, 0, 0},
+                .{0, aspectRatio/tan, 0, 0},
+                .{0, 0, (-clip_far-clip_near)/(clip_far-clip_near), -1},
                 .{0, 0, -2*clip_far*clip_near/(clip_far-clip_near), 0},
             });
         }
