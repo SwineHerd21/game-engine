@@ -47,6 +47,9 @@ pub const Context = struct {
     },
 };
 
+const substructure_mask: c_long = c.SubstructureNotifyMask | c.SubstructureRedirectMask;
+const event_mask: c_long = c.KeyPressMask | c.KeyReleaseMask | c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask | c.FocusChangeMask | c.StructureNotifyMask | c.ExposureMask;
+
 // ========== MAIN ==========
 
 pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Context {
@@ -90,7 +93,7 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
 
     var window_atts: c.XSetWindowAttributes = undefined;
     window_atts.colormap = cmap;
-    window_atts.event_mask = c.KeyPressMask | c.KeyReleaseMask | c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask | c.FocusChangeMask | c.StructureNotifyMask | c.ExposureMask;
+    window_atts.event_mask = event_mask;
 
     const window = c.XCreateWindow(display, root, 0, 0, width, height, 0, vi.depth, c.InputOutput, vi.visual, c.CWColormap | c.CWEventMask, &window_atts);
 
@@ -282,7 +285,7 @@ pub inline fn consumeEvent(ctx: *Context, input: Input) ?events.Event {
                 } else if (protocol == ctx.atoms.net_wm_ping) {
                     // Window manager is checking how the window is doing :)
                     ctx.event.xclient.window = ctx.root;
-                    _=c.XSendEvent(ctx.display, ctx.root, c.False, c.SubstructureNotifyMask | c.SubstructureRedirectMask, &ctx.event);
+                    _=c.XSendEvent(ctx.display, ctx.root, c.False, substructure_mask, &ctx.event);
                 }
             }
         },
@@ -325,7 +328,7 @@ pub inline fn setFullscreenMode(ctx: *Context, mode: Window.FullscreenMode) void
     ctx.event.xclient.data.l[2] = 0;
     ctx.event.xclient.data.l[3] = 1; // source indicator
 
-    _=c.XSendEvent(ctx.display, ctx.root, c.False, c.SubstructureNotifyMask | c.SubstructureRedirectMask, &ctx.event);
+    _=c.XSendEvent(ctx.display, ctx.root, c.False, substructure_mask, &ctx.event);
 }
 
 fn setMotifHints(ctx: Context, borderless: bool, resize_enabled: bool) void {
@@ -383,7 +386,16 @@ pub inline fn setMaximized(ctx: *Context, enable: bool) void {
     ctx.event.xclient.data.l[2] = @intCast(ctx.atoms.net_wm_state_maximized_vert);
     ctx.event.xclient.data.l[3] = 1; // source indicator
 
-    _=c.XSendEvent(ctx.display, ctx.root, c.False, c.SubstructureRedirectMask | c.SubstructureNotifyMask, &ctx.event);
+    _=c.XSendEvent(ctx.display, ctx.root, c.False, substructure_mask, &ctx.event);
+}
+
+pub inline fn setPointerLock(ctx: Context, lock: bool) void {
+    const pointer_events = c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask;
+    if (lock) {
+        if (c.XGrabPointer(ctx.display, ctx.window, c.True, pointer_events, c.GrabModeAsync, c.GrabModeAsync, ctx.window, c.None, c.CurrentTime) != c.GrabSuccess) log.err("Could not grab pointer", .{});
+    } else {
+        _=c.XUngrabPointer(ctx.display, c.CurrentTime);
+    }
 }
 
 // ========== OTHER ==========

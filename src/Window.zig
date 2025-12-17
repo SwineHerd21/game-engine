@@ -52,3 +52,7 @@ pub fn setFullscreenMode(w: *Window, mode: FullscreenMode) void {
 pub fn setMaximized(w: *Window, maximize: bool) void {
     return native.setMaximized(&w.inner, maximize);
 }
+
+pub fn setPointerLock(w: Window, lock: bool) void {
+    return native.setPointerLock(w.inner, lock);
+}

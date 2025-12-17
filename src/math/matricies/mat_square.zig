@@ -196,7 +196,7 @@ pub fn Mat4x4(T: type) type {
 
         /// Matrix by vector multiplication
         pub fn mulVec(a: Self, b: Vec(T, 4)) @TypeOf(b) {
-            var new: ColumnVec = undefined;
+            var new: ColumnVec = .zero;
             inline for (@typeInfo(ColumnVec).@"struct".fields, 0..) |f, i| {
                 new = new.add(a.data[i].mul(@field(b, f.name)));
             }
@@ -229,13 +229,13 @@ pub fn Mat4x4(T: type) type {
             const sin = @sin(angle);
             const cos = @cos(angle);
             const n = axis.normalized();
-            const t = n.mul(1-cos);
+            const t = n.mul(1.0-cos);
 
             return Self.fromArrays(.{
-                .{cos + n.x*t.x, n.y*t.x + n.z*sin, n.z*t.x - n.y*sin, 0},
-                .{n.x*t.y - n.z*sin, cos + n.y*t.y, n.z*t.y + n.x*sin, 0},
-                .{n.x*t.z + n.y*sin, n.y*t.z - n.x*sin, cos + n.z*t.z, 0},
-                .{0, 0, 0, 1},
+                .{cos + n.x*t.x, n.y*t.x + n.z*sin, n.z*t.x - n.y*sin, 0.0},
+                .{n.x*t.y - n.z*sin, cos + n.y*t.y, n.z*t.y + n.x*sin, 0.0},
+                .{n.x*t.z + n.y*sin, n.y*t.z - n.x*sin, cos + n.z*t.z, 0.0},
+                .{0.0, 0.0, 0.0, 1.0},
             });
         }
 

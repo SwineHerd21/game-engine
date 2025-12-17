@@ -1,5 +1,3 @@
-//! Contains the state of the input devices during this frame and offers various utilities.
-
 const math = @import("math/math.zig");
 
 const Input = @This();
@@ -184,8 +182,8 @@ pub const Key = enum(u8) {
     }
 };
 
-pub const MouseButton = enum {
-    Unknown,
+pub const MouseButton = enum(u8) {
+    Unknown = 0,
     Left,
     Middle,
     Right,
