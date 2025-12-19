@@ -140,7 +140,7 @@ fn on_event(app: *Engine, state: *State, event: Engine.Event) !void {
                 },
                 .F3 => {
                     const dt = app.time.deltaTime();
-                    std.debug.print("\nFrametime: {}ms; FPS: {}", .{dt*std.time.ms_per_s, 1/dt});
+                    std.debug.print("Frametime: {}ms; FPS: {}\n", .{dt*std.time.ms_per_s, 1/dt});
                 },
                 .F10 => {
                     if (state.fullscreen == .fullscreen) return;

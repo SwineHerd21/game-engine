@@ -45,7 +45,7 @@ pub fn Shared(Vec: type, T: type, dimensions: comptime_int) type {
 
         /// Element-wise absolute value taking
         pub inline fn abs(v: Vec) Vec {
-            return fromSimd(@abs(simd(v)));
+            return fromSimd(@intCast(@abs(simd(v))));
         }
 
         /// Element-wise addition
