@@ -34,8 +34,6 @@ pub const MouseButtonEvent = struct {
 pub const PointerMotion = struct {
     /// In pixels, (0, 0) is the top left corner of the window
     position: math.Vec2i,
-    /// How much the pointer moved since the last event in pixels
-    delta: math.Vec2i,
 };
 
 pub const WindowResize = struct {

@@ -151,7 +151,7 @@ pub inline fn areEventsPending(ctx: Context) bool {
     return c.XPending(ctx.display) != 0;
 }
 
-pub inline fn consumeEvent(ctx: *Context, input: Input) ?events.Event {
+pub inline fn consumeEvent(ctx: *Context) ?events.Event {
     _ = c.XNextEvent(ctx.display, &ctx.event);
     switch (ctx.event.type) {
         c.KeyPress => {
@@ -222,7 +222,6 @@ pub inline fn consumeEvent(ctx: *Context, input: Input) ?events.Event {
             return events.Event{
                 .pointer_motion = .{
                     .position = position,
-                    .delta = position.sub(input.pointer_position),
                 },
             };
         },
@@ -396,6 +395,10 @@ pub inline fn setPointerLock(ctx: Context, lock: bool) void {
     } else {
         _=c.XUngrabPointer(ctx.display, c.CurrentTime);
     }
+}
+
+pub inline fn warpPointer(ctx: Context, pos: math.Vec2i) void {
+    _=c.XWarpPointer(ctx.display, ctx.root, ctx.window, 0, 0, 0, 0, @intCast(pos.x), @intCast(pos.y));
 }
 
 // ========== OTHER ==========

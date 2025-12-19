@@ -2,11 +2,6 @@ const math = @import("math/math.zig");
 
 const Input = @This();
 
-// TODO: implement the below
-
-/// Current cursor position in window coordinates
-pointer_position: math.Vec2i,
-
 pub const ModifierKeys = packed struct {
     shift: bool,
     control: bool,
@@ -198,3 +193,4 @@ pub const MouseButton = enum(u8) {
     /// Usually placed on the side of the mouse and is sometimes called mouse button 5
     Front,
 };
+

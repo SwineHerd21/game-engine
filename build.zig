@@ -15,14 +15,14 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     switch (target.result.os.tag) {
-        .linux => mod.linkSystemLibrary("X11", .{ .needed = true }),
+        .linux => mod.linkSystemLibrary("X11", .{}),
         else => |os| {
             std.debug.print("The {t} operating system is not supported.", .{os});
             return;
         },
     }
     // OpenGL
-    mod.linkSystemLibrary("GL", .{ .needed = true });
+    mod.linkSystemLibrary("GL", .{});
     const gl_bindings = @import("zigglgen").generateBindingsModule(b, .{
         .api = .gl,
         .version = .@"4.6",

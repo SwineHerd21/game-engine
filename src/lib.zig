@@ -32,7 +32,6 @@ pub const Shader = @import("graphics/Shader.zig");
 const log = std.log.scoped(.engine);
 
 window: Window,
-input: Input,
 time: Time,
 
 const Engine = @This();
@@ -57,7 +56,6 @@ pub fn init(options: Options) EngineError!Engine {
 
     return .{
         .window = window,
-        .input = .{ .pointer_position = .zero },
         .time = try .init(),
     };
 }
@@ -79,7 +77,7 @@ pub fn run(self: *Engine, comptime T: type, user_data: *T, on_update: fn(*Engine
     while (!self.window.should_close) {
         // Process pending OS events
         while (self.window.areEventsPending()) {
-            if (self.window.consumeEvent(self.input)) |ev| {
+            if (self.window.consumeEvent()) |ev| {
                 // Special handling for important events
                 switch (ev) {
                     .window_close => {
@@ -87,9 +85,6 @@ pub fn run(self: *Engine, comptime T: type, user_data: *T, on_update: fn(*Engine
                     },
                     .window_resize => |r| {
                         _graphics.adjustViewport(@intCast(r.width), @intCast(r.height));
-                    },
-                    .pointer_motion => |m| {
-                        self.input.pointer_position = m.position;
                     },
                     else => {},
                 }

@@ -3,6 +3,7 @@ const std = @import("std");
 
 const events = @import("events.zig");
 const native = @import("platform.zig").native;
+const math = @import("math/math.zig");
 
 const Input = @import("Input.zig");
 const EngineError = @import("lib.zig").EngineError;
@@ -37,8 +38,8 @@ pub fn areEventsPending(w: Window) bool {
 }
 
 /// Consume the next OS event
-pub fn consumeEvent(w: *Window, input: Input) ?events.Event {
-    return native.consumeEvent(&w.inner, input);
+pub fn consumeEvent(w: *Window) ?events.Event {
+    return native.consumeEvent(&w.inner);
 }
 
 pub fn swapBuffers(w: Window) void {
@@ -55,4 +56,8 @@ pub fn setMaximized(w: *Window, maximize: bool) void {
 
 pub fn setPointerLock(w: Window, lock: bool) void {
     return native.setPointerLock(w.inner, lock);
+}
+
+pub fn warpPointer(w: Window, pos: math.Vec2i) void {
+    return native.warpPointer(w.inner, pos);
 }
