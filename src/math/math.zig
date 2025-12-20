@@ -107,3 +107,6 @@ pub const Mat3x4 = MatNxM(f32, 3, 4);
 pub const Mat4x2 = MatNxM(f32, 4, 2);
 pub const Mat4x3 = MatNxM(f32, 4, 3);
 
+// ========== Other ==========
+
+pub const Rect = @import("Rect.zig");

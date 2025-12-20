@@ -56,9 +56,12 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
     const display = if (c.XOpenDisplay(null)) |d| d else return error.InitFailure;
 
     // XKB check
-    if (c.XkbQueryExtension(display, null, null, null, null, null) == 0) {
-        log.err("Could not detect XKB", .{});
-        return error.InitFailure;
+    {
+        var dummy: c_int = undefined;
+        if (c.XkbQueryExtension(display, &dummy, &dummy, &dummy, &dummy, &dummy) == 0) {
+            log.err("Could not detect XKB", .{});
+            return error.InitFailure;
+        }
     }
     // GLX check
     {
@@ -388,8 +391,8 @@ pub inline fn setMaximized(ctx: *Context, enable: bool) void {
     _=c.XSendEvent(ctx.display, ctx.root, c.False, substructure_mask, &ctx.event);
 }
 
-pub inline fn setPointerLock(ctx: Context, lock: bool) void {
     const pointer_events = c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask;
+pub inline fn setPointerLock(ctx: Context, lock: bool) void {
     if (lock) {
         if (c.XGrabPointer(ctx.display, ctx.window, c.True, pointer_events, c.GrabModeAsync, c.GrabModeAsync, ctx.window, c.None, c.CurrentTime) != c.GrabSuccess) log.err("Could not grab pointer", .{});
     } else {
@@ -399,6 +402,15 @@ pub inline fn setPointerLock(ctx: Context, lock: bool) void {
 
 pub inline fn warpPointer(ctx: Context, pos: math.Vec2i) void {
     _=c.XWarpPointer(ctx.display, ctx.root, ctx.window, 0, 0, 0, 0, @intCast(pos.x), @intCast(pos.y));
+}
+
+pub inline fn getPointerPosition(ctx: Context) math.Vec2i {
+    var dummy: c_int = undefined;
+    var dummy_window: c.Window = undefined;
+    var x: c_int = undefined;
+    var y: c_int = undefined;
+    _=c.XQueryPointer(ctx.display, ctx.window, &dummy_window, &dummy_window, &dummy, &dummy, &x, &y, @ptrCast(&dummy));
+    return .new(@intCast(x), @intCast(y));
 }
 
 // ========== OTHER ==========

@@ -61,3 +61,9 @@ pub fn setPointerLock(w: Window, lock: bool) void {
 pub fn warpPointer(w: Window, pos: math.Vec2i) void {
     return native.warpPointer(w.inner, pos);
 }
+
+/// Returns the pointer position relative to the window. If the pointer is not on the same screen
+/// as the window, returns (0, 0)
+pub fn getPointerPosition(w: Window) math.Vec2i {
+    return native.getPointerPosition(w.inner);
+}
