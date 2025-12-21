@@ -1,4 +1,5 @@
 const std = @import("std");
+const gl = @import("gl");
 
 const math = @import("../math/math.zig");
 const Window = @import("../Window.zig");
@@ -44,6 +45,11 @@ pub const Context = struct {
         net_wm_bypass_compositor: c.Atom,
         /// Used for controlling window decoration
         motif_wm_hints: c.Atom,
+    },
+    gl_ext: struct {
+        extSwapControl: c.PFNGLXSWAPINTERVALEXTPROC,
+        mesaSwapControl: c.PFNGLXSWAPINTERVALMESAPROC,
+        sgiSwapControl: c.PFNGLXSWAPINTERVALSGIPROC,
     },
 };
 
@@ -138,6 +144,11 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
             .net_wm_state_maximized_vert = c.XInternAtom(display, "_NET_WM_STATE_MAXIMIZED_VERT", c.False),
             .net_wm_bypass_compositor = c.XInternAtom(display, "_NET_WM_BYPASS_COMPOSITOR", c.False),
             .motif_wm_hints = c.XInternAtom(display, "_MOTIF_WM_HINTS", c.False),
+        },
+        .gl_ext = .{
+            .extSwapControl = @ptrCast(getProcAddress("glXSwapIntervalEXT")),
+            .mesaSwapControl = @ptrCast(getProcAddress("glXSwapIntervalMESA")),
+            .sgiSwapControl = @ptrCast(getProcAddress("glXSwapIntervalSGI")),
         },
     };
 }
@@ -417,6 +428,17 @@ pub inline fn getPointerPosition(ctx: Context) math.Vec2i {
 
 pub inline fn swapBuffers(ctx: Context) void {
     _ = c.glXSwapBuffers(ctx.display, ctx.window);
+}
+
+pub inline fn setSwapInterval(ctx: Context, value: i32) void {
+    if (ctx.gl_ext.extSwapControl) |func| {
+        const drawable = c.glXGetCurrentDrawable();
+        func(ctx.display, drawable, value);
+    } else if (ctx.gl_ext.mesaSwapControl) |func| {
+        _=func(@intCast(value));
+    } else if (ctx.gl_ext.sgiSwapControl) |func| {
+        if (value > 0) _=func(value);
+    }
 }
 
 pub const getProcAddress = c.glXGetProcAddress;

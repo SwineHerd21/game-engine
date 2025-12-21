@@ -27,7 +27,7 @@ pub fn build(b: *std.Build) void {
         .api = .gl,
         .version = .@"4.6",
         .profile = .core,
-        .extensions = &.{ },
+        .extensions = &.{},
     });
     mod.addImport("gl", gl_bindings);
 

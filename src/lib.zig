@@ -10,6 +10,7 @@ pub const graphics = struct {
     pub const RenderMode = _graphics.RenderMode;
     pub const setRenderMode = _graphics.setRenderMode;
     pub const setClearColor = _graphics.setClearColor;
+    pub const setSwapInterval = _graphics.setSwapInterval;
 };
 
 pub const math = @import("math/math.zig");

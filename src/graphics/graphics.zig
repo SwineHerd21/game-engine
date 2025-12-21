@@ -57,6 +57,12 @@ pub fn deinit() void {
 
 // ========== Utilities ==========
 
+/// Sets the swap interval on platform where it is supported.
+/// Platform that support adaptive V-Sync will enable it if `value` is negative.
+pub fn setSwapInterval(w: Window, value: i32) void {
+    native.setSwapInterval(w.inner, value);
+}
+
 pub fn adjustViewport(width: i32, height: i32) void {
     gl.Viewport(0, 0, width, height);
 }
