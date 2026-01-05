@@ -1,5 +1,4 @@
 const std = @import("std");
-const gl = @import("gl");
 
 const math = @import("../math/math.zig");
 const Window = @import("../Window.zig");
@@ -16,16 +15,16 @@ pub const c = @cImport({
     @cInclude("X11/Xatom.h");
     @cInclude("X11/XKBlib.h");
 
-    @cInclude("GL/glx.h");
+    @cInclude("EGL/egl.h");
+    @cInclude("EGL/eglext.h");
 });
 
 pub const Context = struct {
     display: *c.Display,
-    root: c.XID,
+    root_window: c.XID,
     window: c.Window,
     width: u32,
     height: u32,
-    glx: c.GLXContext,
     event: c.XEvent,
     /// Mapping of hardware keycodes to `Key`s
     keycodes: [256]Input.Key,
@@ -46,10 +45,10 @@ pub const Context = struct {
         /// Used for controlling window decoration
         motif_wm_hints: c.Atom,
     },
-    gl_ext: struct {
-        extSwapControl: c.PFNGLXSWAPINTERVALEXTPROC,
-        mesaSwapControl: c.PFNGLXSWAPINTERVALMESAPROC,
-        sgiSwapControl: c.PFNGLXSWAPINTERVALSGIPROC,
+    egl: struct {
+        display: c.EGLDisplay,
+        context: c.EGLContext,
+        surface: c.EGLSurface,
     },
 };
 
@@ -59,7 +58,11 @@ const event_mask: c_long = c.KeyPressMask | c.KeyReleaseMask | c.ButtonPressMask
 // ========== MAIN ==========
 
 pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineError!Context {
-    const display = if (c.XOpenDisplay(null)) |d| d else return error.InitFailure;
+    const display = c.XOpenDisplay(null) orelse {
+        log.err("Could not open X11 display", .{});
+        return error.InitFailure;
+    };
+    errdefer _ = c.XCloseDisplay(display);
 
     // XKB check
     {
@@ -69,48 +72,105 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
             return error.InitFailure;
         }
     }
-    // GLX check
-    {
-        var glx_major: c_int = undefined;
-        var glx_minor: c_int = undefined;
-        if (c.glXQueryVersion(display, &glx_major, &glx_minor) == 0) {
-            log.err("Could not get GLX version", .{});
-            return error.InitFailure;
-        }
-        if (glx_major < 1 or (glx_major == 1 and glx_minor < 3)) {
-            log.err("Invalid GLX version {}.{}, require 1.3", .{glx_major, glx_minor});
-            return error.InitFailure;
-        }
+
+    // EGL init
+    const egl_display = c.eglGetPlatformDisplay(c.EGL_PLATFORM_X11_KHR, display, null);
+    if (egl_display == c.EGL_NO_DISPLAY) {
+        log.err("Could not get EGL display", .{});
+        return error.InitFailure;
+    }
+    if (c.eglInitialize(egl_display, null, null) == c.EGL_FALSE) {
+        log.err("Could not initialize EGL", .{});
+        return error.InitFailure;
+    }
+    errdefer {
+        _ = c.eglTerminate(egl_display);
+        _ = c.eglReleaseThread();
+    }
+    if (c.eglBindAPI(c.EGL_OPENGL_API) == c.EGL_FALSE) {
+        log.err("Client EGL implementation does not support the OpenGL API", .{});
+        return error.InitFailure;
     }
 
-    const root = c.DefaultRootWindow(display);
+    const egl_config = blk: {
+        const config_attributes = [_]c.EGLint{
+            c.EGL_COLOR_BUFFER_TYPE, c.EGL_RGB_BUFFER,
+            c.EGL_RED_SIZE, 8,
+            c.EGL_GREEN_SIZE, 8,
+            c.EGL_BLUE_SIZE, 8,
+            c.EGL_DEPTH_SIZE, 24,
+            c.EGL_STENCIL_SIZE, 8,
 
-    // OpenGL attributes
-    var gl_atts = [_]c_int{
-        c.GLX_RGBA,
-        c.GLX_RED_SIZE, 8,
-        c.GLX_GREEN_SIZE, 8,
-        c.GLX_BLUE_SIZE, 8,
-        c.GLX_ALPHA_SIZE, 8,
-        c.GLX_DEPTH_SIZE, 24,
-        c.GLX_STENCIL_SIZE, 8,
-        c.GLX_DOUBLEBUFFER,
-        c.None
+            c.EGL_SURFACE_TYPE, c.EGL_WINDOW_BIT,
+            c.EGL_RENDERABLE_TYPE, c.EGL_OPENGL_BIT,
+            c.EGL_CONFORMANT, c.EGL_OPENGL_BIT,
+
+            c.EGL_NONE,
+        };
+        var config: c.EGLConfig = undefined;
+        var config_count: c.EGLint = undefined;
+        if (c.eglChooseConfig(egl_display, &config_attributes, &config, 1, &config_count) == c.EGL_FALSE or
+            config_count < 1) {
+            log.err("Could not get any EGL configs", .{});
+            return error.InitFailure;
+        }
+        break :blk config;
     };
-    const vi: *c.XVisualInfo = if (c.glXChooseVisual(display, 0, @ptrCast(&gl_atts))) |v| v else return error.InitFailure;
-    const cmap = c.XCreateColormap(display, root, vi.visual, c.AllocNone);
 
-    var window_atts: c.XSetWindowAttributes = undefined;
-    window_atts.colormap = cmap;
-    window_atts.event_mask = event_mask;
+    const egl_context = blk: {
+        const context_attributes = [_]c.EGLint{
+            c.EGL_CONTEXT_MAJOR_VERSION, 4,
+            c.EGL_CONTEXT_MINOR_VERSION, 6,
+            c.EGL_CONTEXT_OPENGL_DEBUG, if (@import("builtin").mode == .Debug) c.EGL_TRUE else c.EGL_FALSE,
+            c.EGL_NONE,
+        };
+        const context = c.eglCreateContext(egl_display, egl_config, c.EGL_NO_CONTEXT, &context_attributes);
+        if (context == c.EGL_NO_CONTEXT) {
+            log.err("Could not create EGL context", .{});
+            return error.InitFailure;
+        }
+        break :blk context;
+    };
+    errdefer _ = c.eglDestroyContext(egl_display, egl_context);
 
-    const window = c.XCreateWindow(display, root, 0, 0, width, height, 0, vi.depth, c.InputOutput, vi.visual, c.CWColormap | c.CWEventMask, &window_atts);
+    // Finally create the window
+    const root = c.DefaultRootWindow(display);
+    const window = c.XCreateWindow(display, root, 0, 0, width, height, 0, c.CopyFromParent, c.InputOutput, c.CopyFromParent, 0, null);
+    errdefer {
+        _ = c.XUnmapWindow(display, window);
+        _ = c.XDestroyWindow(display, window);
+    }
 
-    // The later functions return values don't mean anything
+    const egl_surface = blk: {
+        const surface_attributes = [_]c.EGLAttrib{
+            c.EGL_GL_COLORSPACE, c.EGL_GL_COLORSPACE_SRGB,
+            c.EGL_RENDER_BUFFER, c.EGL_BACK_BUFFER,
+            c.EGL_NONE,
+        };
+        const surface = c.eglCreatePlatformWindowSurface(egl_display, egl_config, @constCast(@ptrCast(&window)), &surface_attributes);
+        if (surface == c.EGL_NO_SURFACE) {
+            log.err("Could not create EGL window surface", .{});
+            return error.InitFailure;
+        }
+        break :blk surface;
+    };
+    errdefer _ = c.eglDestroySurface(egl_display, egl_surface);
+    if (c.eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context) == c.EGL_FALSE) {
+        log.err("Could not attach an EGL context to the window", .{});
+        return error.InitFailure;
+    }
+    errdefer _ = c.eglMakeCurrent(egl_display, c.EGL_NO_SURFACE, c.EGL_NO_SURFACE, c.EGL_NO_CONTEXT);
+
+    // Window config (the return values don't mean anything)
+
+    // Select events we want to receive
+    _ = c.XSelectInput(display, window, event_mask);
+
     // Set window name
     _ = c.XStoreName(display, window, @ptrCast(title));
 
     _ = c.XClearWindow(display, window);
+    // Make window visible
     _ = c.XMapRaised(display, window);
 
     // window closing detection
@@ -118,19 +178,15 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
     // should the result be checked for 0? idk
     _ = c.XSetWMProtocols(display, window, @constCast(&wm_delete_window), 1);
 
-    // OpenGL context
-    const glx = c.glXCreateContext(display, vi, null, c.GL_TRUE);
-    _ = c.glXMakeCurrent(display, window, glx);
-
     log.info("Running on Linux with X11", .{});
+    log.info("Using EGL {s}", .{c.eglQueryString(egl_display, c.EGL_VERSION) orelse @as([*c]const u8, @ptrCast("{unknown}"))});
 
     return .{
         .display = display,
-        .root = root,
+        .root_window = root,
         .window = window,
         .width = width,
         .height = height,
-        .glx = glx,
         .event = undefined,
         .keycodes = setupKeycodes(display),
         .repeated_keypress = false,
@@ -145,17 +201,20 @@ pub inline fn createWindow(width: u32, height: u32, title: []const u8) EngineErr
             .net_wm_bypass_compositor = c.XInternAtom(display, "_NET_WM_BYPASS_COMPOSITOR", c.False),
             .motif_wm_hints = c.XInternAtom(display, "_MOTIF_WM_HINTS", c.False),
         },
-        .gl_ext = .{
-            .extSwapControl = @ptrCast(getProcAddress("glXSwapIntervalEXT")),
-            .mesaSwapControl = @ptrCast(getProcAddress("glXSwapIntervalMESA")),
-            .sgiSwapControl = @ptrCast(getProcAddress("glXSwapIntervalSGI")),
+        .egl = .{
+            .display = egl_display,
+            .context = egl_context,
+            .surface = egl_surface,
         },
     };
 }
 
 pub inline fn closeWindow(ctx: Context) void {
-    _ = c.glXMakeCurrent(ctx.display, c.None, null);
-    _ = c.glXDestroyContext(ctx.display, ctx.glx);
+    _ = c.eglMakeCurrent(ctx.egl.display, c.EGL_NO_SURFACE, c.EGL_NO_SURFACE, c.EGL_NO_CONTEXT);
+    _ = c.eglDestroySurface(ctx.egl.display, ctx.egl.surface);
+    _ = c.eglDestroyContext(ctx.egl.display, ctx.egl.context);
+    _ = c.eglTerminate(ctx.egl.display);
+    _ = c.eglReleaseThread();
     _ = c.XUnmapWindow(ctx.display, ctx.window);
     _ = c.XDestroyWindow(ctx.display, ctx.window);
     _ = c.XCloseDisplay(ctx.display);
@@ -191,7 +250,7 @@ pub inline fn consumeEvent(ctx: *Context) ?events.Event {
             // Check if this keystroke is repeated
             var next: c.XEvent = undefined;
             if (c.XPending(ctx.display) != 0) {
-                _=c.XPeekEvent(ctx.display, &next);
+                _ = c.XPeekEvent(ctx.display, &next);
                 // For repeated key presses (when holding key) X11 will send a KeyPress and KeyRelease simultaneously
                 if (next.type == c.KeyPress and next.xkey.time == ev.time and next.xkey.keycode == ev.keycode) {
                     ctx.repeated_keypress = true;
@@ -297,8 +356,8 @@ pub inline fn consumeEvent(ctx: *Context) ?events.Event {
                     };
                 } else if (protocol == ctx.atoms.net_wm_ping) {
                     // Window manager is checking how the window is doing :)
-                    ctx.event.xclient.window = ctx.root;
-                    _=c.XSendEvent(ctx.display, ctx.root, c.False, substructure_mask, &ctx.event);
+                    ctx.event.xclient.window = ctx.root_window;
+                    _ = c.XSendEvent(ctx.display, ctx.root_window, c.False, substructure_mask, &ctx.event);
                 }
             }
         },
@@ -328,7 +387,7 @@ pub inline fn setFullscreenMode(ctx: *Context, mode: Window.FullscreenMode) void
         },
     };
 
-    _=c.XChangeProperty(ctx.display, ctx.window, ctx.atoms.net_wm_bypass_compositor, c.XA_CARDINAL, 32, c.PropModeReplace, @ptrCast(&compositing_bypass), 1);
+    _ = c.XChangeProperty(ctx.display, ctx.window, ctx.atoms.net_wm_bypass_compositor, c.XA_CARDINAL, 32, c.PropModeReplace, @ptrCast(&compositing_bypass), 1);
 
     ctx.event = std.mem.zeroes(c.XEvent);
     ctx.event.type = c.ClientMessage;
@@ -341,7 +400,7 @@ pub inline fn setFullscreenMode(ctx: *Context, mode: Window.FullscreenMode) void
     ctx.event.xclient.data.l[2] = 0;
     ctx.event.xclient.data.l[3] = 1; // source indicator
 
-    _=c.XSendEvent(ctx.display, ctx.root, c.False, substructure_mask, &ctx.event);
+    _ = c.XSendEvent(ctx.display, ctx.root_window, c.False, substructure_mask, &ctx.event);
 }
 
 fn setMotifHints(ctx: Context, borderless: bool, resize_enabled: bool) void {
@@ -385,7 +444,7 @@ fn setMotifHints(ctx: Context, borderless: bool, resize_enabled: bool) void {
         }
     }
 
-    _=c.XChangeProperty(ctx.display, ctx.window, ctx.atoms.motif_wm_hints, ctx.atoms.motif_wm_hints, 32, c.PropModeReplace, @ptrCast(&hints), 5);
+    _ = c.XChangeProperty(ctx.display, ctx.window, ctx.atoms.motif_wm_hints, ctx.atoms.motif_wm_hints, 32, c.PropModeReplace, @ptrCast(&hints), 5);
 }
 
 pub inline fn setMaximized(ctx: *Context, enable: bool) void {
@@ -399,7 +458,7 @@ pub inline fn setMaximized(ctx: *Context, enable: bool) void {
     ctx.event.xclient.data.l[2] = @intCast(ctx.atoms.net_wm_state_maximized_vert);
     ctx.event.xclient.data.l[3] = 1; // source indicator
 
-    _=c.XSendEvent(ctx.display, ctx.root, c.False, substructure_mask, &ctx.event);
+    _ = c.XSendEvent(ctx.display, ctx.root_window, c.False, substructure_mask, &ctx.event);
 }
 
 const pointer_events = c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask;
@@ -407,13 +466,13 @@ pub inline fn confinePointer(ctx: Context, confine: bool) void {
     if (confine) {
         if (c.XGrabPointer(ctx.display, ctx.window, c.True, pointer_events, c.GrabModeAsync, c.GrabModeAsync, ctx.window, c.None, c.CurrentTime) != c.GrabSuccess) log.err("Could not grab pointer", .{});
     } else {
-        _=c.XUngrabPointer(ctx.display, c.CurrentTime);
+        _ = c.XUngrabPointer(ctx.display, c.CurrentTime);
     }
 }
 
 pub inline fn warpPointer(ctx: Context, pos: math.Vec2i) void {
-    _=c.XWarpPointer(ctx.display, ctx.root, ctx.window, 0, 0, 0, 0, @intCast(pos.x), @intCast(pos.y));
-    _=c.XFlush(ctx.display);
+    _ = c.XWarpPointer(ctx.display, ctx.root_window, ctx.window, 0, 0, 0, 0, @intCast(pos.x), @intCast(pos.y));
+    _ = c.XFlush(ctx.display);
 }
 
 pub inline fn getPointerPosition(ctx: Context) math.Vec2i {
@@ -421,28 +480,21 @@ pub inline fn getPointerPosition(ctx: Context) math.Vec2i {
     var dummy_window: c.Window = undefined;
     var x: c_int = undefined;
     var y: c_int = undefined;
-    _=c.XQueryPointer(ctx.display, ctx.window, &dummy_window, &dummy_window, &dummy, &dummy, &x, &y, @ptrCast(&dummy));
+    _ = c.XQueryPointer(ctx.display, ctx.window, &dummy_window, &dummy_window, &dummy, &dummy, &x, &y, @ptrCast(&dummy));
     return .new(@intCast(x), @intCast(y));
 }
 
 // ========== OTHER ==========
 
 pub inline fn swapBuffers(ctx: Context) void {
-    _ = c.glXSwapBuffers(ctx.display, ctx.window);
+    _ = c.eglSwapBuffers(ctx.egl.display, ctx.egl.surface);
 }
 
 pub inline fn setSwapInterval(ctx: Context, value: i32) void {
-    if (ctx.gl_ext.extSwapControl) |func| {
-        const drawable = c.glXGetCurrentDrawable();
-        func(ctx.display, drawable, value);
-    } else if (ctx.gl_ext.mesaSwapControl) |func| {
-        _=func(@intCast(value));
-    } else if (ctx.gl_ext.sgiSwapControl) |func| {
-        if (value > 0) _=func(value);
-    }
+    _ = c.eglSwapInterval(ctx.egl.display, value);
 }
 
-pub const getProcAddress = c.glXGetProcAddress;
+pub const getProcAddress = c.eglGetProcAddress;
 
 // Borrowed from https://github.com/glfw/glfw/blob/master/src/x11_init.c
 fn setupKeycodes(display: *c.Display) [256]Input.Key {
@@ -575,7 +627,7 @@ fn setupKeycodes(display: *c.Display) [256]Input.Key {
 
     const desc: *c.struct__XkbDesc = @ptrCast(c.XkbGetMap(display, 0, c.XkbUseCoreKbd));
     defer c.XkbFreeKeyboard(desc, 0, c.True);
-    _=c.XkbGetNames(display, c.XkbKeyNamesMask | c.XkbKeyAliasesMask, desc);
+    _ = c.XkbGetNames(display, c.XkbKeyNamesMask | c.XkbKeyAliasesMask, desc);
     defer c.XkbFreeNames(desc, c.XkbKeyNamesMask | c.XkbKeyAliasesMask, c.True);
 
     for (@intCast(desc.min_key_code)..@intCast(desc.max_key_code)) |scancode| {

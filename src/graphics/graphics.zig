@@ -29,16 +29,22 @@ pub fn init() EngineError!void {
     const gl_version: [*:0]const u8 = gl.GetString(gl.VERSION).?;
     log.info("Rendering with OpenGL {s}", .{ gl_version });
 
-    gl.Enable(gl.DEBUG_OUTPUT);
-    gl.Enable(gl.DEBUG_OUTPUT_SYNCHRONOUS);
-    gl.DebugMessageCallback(messageCallback, null);
-
-    if (builtin.mode != .Debug) {
-        gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DEBUG_SEVERITY_NOTIFICATION, 0, null, gl.FALSE);
-        gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DEBUG_SEVERITY_LOW, 0, null, gl.FALSE);
-        gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DEBUG_SEVERITY_MEDIUM, 0, null, gl.FALSE);
-        gl.DebugMessageControl(gl.DONT_CARE, gl.DEBUG_TYPE_DEPRECATED_BEHAVIOR, gl.DONT_CARE, 0, null, gl.FALSE);
-        gl.DebugMessageControl(gl.DONT_CARE, gl.DEBUG_TYPE_PORTABILITY, gl.DONT_CARE, 0, null, gl.FALSE);
+    switch (builtin.mode) {
+        .Debug => {
+            gl.Enable(gl.DEBUG_OUTPUT);
+            gl.Enable(gl.DEBUG_OUTPUT_SYNCHRONOUS);
+            gl.DebugMessageCallback(messageCallback, null);
+        },
+        .ReleaseSafe => {
+            gl.Enable(gl.DEBUG_OUTPUT);
+            gl.DebugMessageCallback(messageCallback, null);
+            gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DEBUG_SEVERITY_NOTIFICATION, 0, null, gl.FALSE);
+            gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DEBUG_SEVERITY_LOW, 0, null, gl.FALSE);
+            gl.DebugMessageControl(gl.DONT_CARE, gl.DONT_CARE, gl.DEBUG_SEVERITY_MEDIUM, 0, null, gl.FALSE);
+            gl.DebugMessageControl(gl.DONT_CARE, gl.DEBUG_TYPE_DEPRECATED_BEHAVIOR, gl.DONT_CARE, 0, null, gl.FALSE);
+            gl.DebugMessageControl(gl.DONT_CARE, gl.DEBUG_TYPE_PORTABILITY, gl.DONT_CARE, 0, null, gl.FALSE);
+        },
+        else => {},
     }
 
     // Flags and stuff

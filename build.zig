@@ -15,7 +15,10 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     switch (target.result.os.tag) {
-        .linux => mod.linkSystemLibrary("X11", .{}),
+        .linux => {
+            mod.linkSystemLibrary("X11", .{});
+            mod.linkSystemLibrary("EGL", .{});
+        },
         else => |os| {
             std.debug.print("The {t} operating system is not supported.", .{os});
             return;
