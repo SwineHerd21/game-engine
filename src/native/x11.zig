@@ -402,9 +402,9 @@ pub inline fn setMaximized(ctx: *Context, enable: bool) void {
     _=c.XSendEvent(ctx.display, ctx.root, c.False, substructure_mask, &ctx.event);
 }
 
-    const pointer_events = c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask;
-pub inline fn setPointerLock(ctx: Context, lock: bool) void {
-    if (lock) {
+const pointer_events = c.ButtonPressMask | c.ButtonReleaseMask | c.PointerMotionMask | c.EnterWindowMask | c.LeaveWindowMask;
+pub inline fn confinePointer(ctx: Context, confine: bool) void {
+    if (confine) {
         if (c.XGrabPointer(ctx.display, ctx.window, c.True, pointer_events, c.GrabModeAsync, c.GrabModeAsync, ctx.window, c.None, c.CurrentTime) != c.GrabSuccess) log.err("Could not grab pointer", .{});
     } else {
         _=c.XUngrabPointer(ctx.display, c.CurrentTime);
@@ -413,6 +413,7 @@ pub inline fn setPointerLock(ctx: Context, lock: bool) void {
 
 pub inline fn warpPointer(ctx: Context, pos: math.Vec2i) void {
     _=c.XWarpPointer(ctx.display, ctx.root, ctx.window, 0, 0, 0, 0, @intCast(pos.x), @intCast(pos.y));
+    _=c.XFlush(ctx.display);
 }
 
 pub inline fn getPointerPosition(ctx: Context) math.Vec2i {

@@ -54,8 +54,8 @@ pub fn setMaximized(w: *Window, maximize: bool) void {
     return native.setMaximized(&w.inner, maximize);
 }
 
-pub fn setPointerLock(w: Window, lock: bool) void {
-    return native.setPointerLock(w.inner, lock);
+pub fn confinePointer(w: Window, confine: bool) void {
+    return native.confinePointer(w.inner, confine);
 }
 
 pub fn warpPointer(w: Window, pos: math.Vec2i) void {
