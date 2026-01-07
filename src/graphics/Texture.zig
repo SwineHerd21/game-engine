@@ -41,15 +41,17 @@ pub fn init(data: []const u8, width: usize, height: usize, format: PixelFormat, 
     };
 }
 
+// TODO: allow selecting whether to use sRGB or linear RGB
 pub fn fromImage(image: zigimg.Image, parameters: Parameters) EngineError!Texture {
+    std.debug.print("{t}\n", .{image.pixelFormat()});
     const format: PixelFormat = switch (image.pixelFormat()) {
         .grayscale8 => .r8,
         .grayscale16 => .r16,
-        .rgb24 => .rgb8,
+        .rgb24 => .srgb8,
         .rgb48 => .rgb16,
         .rgb332 => .rgb332,
         .rgb565 => .rgb565,
-        .rgba32 => .rgba8,
+        .rgba32 => .srgba8,
         .rgba64 => .rgba16,
         .float32 => .rgba32f,
         .bgr24 => .bgr8,
@@ -107,6 +109,8 @@ pub const PixelFormat = enum {
     rg16,
     rg32f,
     rgb8,
+    /// Non-linear color data
+    srgb8,
     rgb16,
     rgb32f,
     /// 3 bits each RG and 2 bits for B
@@ -115,6 +119,8 @@ pub const PixelFormat = enum {
     rgb565,
     rgba4,
     rgba8,
+    /// Non-linear color data
+    srgba8,
     rgba16,
     rgba32f,
     /// 5 bits for each RGB and 1 bit for alpha
@@ -178,10 +184,10 @@ fn pixelFormatToGl(format: PixelFormat) GlPixelFormatData {
     const base: gl.@"enum" = switch (format) {
         .r8, .r16, .r32f => gl.RED,
         .rg8, .rg16, .rg32f => gl.RG,
-        .rgb8, .rgb16, .rgb32f, .rgb332, .rgb565 => gl.RGB,
+        .rgb8, .rgb16, .rgb32f, .rgb332, .rgb565, .srgb8 => gl.RGB,
         .bgr8 => gl.BGR,
         .bgra8 => gl.BGRA,
-        .rgba4, .rgba8, .rgba16, .rgba32f, .rgb5a1, .rgb10a2 => gl.RGBA,
+        .rgba4, .rgba8, .rgba16, .rgba32f, .rgb5a1, .rgb10a2, .srgba8 => gl.RGBA,
         .depth16, .depth24, .depth32f => gl.DEPTH_COMPONENT,
         .depth24_stencil8, .depth32f_stencil8 => gl.DEPTH_STENCIL,
         .stencil8 => gl.STENCIL_INDEX,
@@ -194,12 +200,14 @@ fn pixelFormatToGl(format: PixelFormat) GlPixelFormatData {
         .rg16 => gl.RG16,
         .rg32f => gl.RG32F,
         .rgb8, .bgr8 => gl.RGB8,
+        .srgb8 => gl.SRGB8,
         .rgb16 => gl.RGB16,
         .rgb32f => gl.RGB32F,
         .rgb332 => gl.R3_G3_B2,
         .rgb565 => gl.RGB565,
         .rgba4 => gl.RGBA4,
         .rgba8, .bgra8 => gl.RGBA8,
+        .srgba8 => gl.SRGB8_ALPHA8,
         .rgba16 => gl.RGBA16,
         .rgba32f => gl.RGBA32F,
         .rgb5a1 => gl.RGB5_A1,
@@ -213,7 +221,7 @@ fn pixelFormatToGl(format: PixelFormat) GlPixelFormatData {
     };
 
     const data_type: gl.@"enum" = switch (format) {
-        .r8, .rg8, .rgb8, .rgba8, .bgr8, .bgra8, .stencil8 => gl.UNSIGNED_BYTE,
+        .r8, .rg8, .rgb8, .rgba8, .srgb8, .srgba8, .bgr8, .bgra8, .stencil8 => gl.UNSIGNED_BYTE,
         .r16, .rg16, .rgb16, .rgba16, .depth16 => gl.UNSIGNED_SHORT,
         .r32f, .rg32f, .rgb32f, .rgba32f, .depth32f => gl.FLOAT,
         .depth24 => gl.UNSIGNED_INT,

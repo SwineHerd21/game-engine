@@ -128,6 +128,6 @@ fn messageCallback(source: gl.@"enum", msg_type: gl.@"enum", id: gl.uint, severi
 // ========== Render ==========
 
 pub fn clear() void {
-    gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 }
 

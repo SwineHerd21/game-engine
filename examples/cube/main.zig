@@ -32,7 +32,7 @@ pub fn main() !void {
     const fs = try Engine.io.loadShader(allocator, asset_folder++"cube.frag", .fragment);
     var cat = try Engine.io.loadImage(allocator, asset_folder++"cat.png", true);
     // RGB565 format works and actually doesn't look much different!
-    try cat.convert(allocator, .rgb565);
+    // try cat.convert(allocator, .rgb565);
     const cat_text = try Engine.Texture.fromImage(cat, .{});
     defer cat_text.deinit();
     state.material = try Engine.Material.init(vs, fs, cat_text);
@@ -56,7 +56,7 @@ pub fn main() !void {
     defer state.monkey.deinit();
     monkey_model.deinit(allocator);
 
-    Engine.graphics.setClearColor(.newOpaque(20, 20, 20));
+    Engine.graphics.setClearColor(.newOpaque(5, 5, 5));
 
     std.debug.print("\nPress F1 to switch between solid and line rendering\n", .{});
     std.debug.print("Press F3 to print current frametime\n", .{});
