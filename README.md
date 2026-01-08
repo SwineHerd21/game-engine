@@ -46,7 +46,7 @@ zig build test --summary all
 
 ## OpenGL
 
-https://wikis.khronos.org/opengl/Main_Page - OpenGL wiki
+https://wikis.khronos.org/opengl/Main_Page - OpenGL wiki  
 https://learnopengl.com - general OpenGL resource  
 https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions - modern OpenGL guide  
 https://www.youtube.com/playlist?list=PLA0dXqQjCx0S04ntJKUftl6OaOgsiwHjA - OpenGL Tutorial  
@@ -54,8 +54,9 @@ https://www.youtube.com/playlist?list=PLA0dXqQjCx0S04ntJKUftl6OaOgsiwHjA - OpenG
 ## X11
 
 https://x.org/releases/current/doc/libX11/libX11/libX11.html - Xlib reference  
-https://specifications.freedesktop.org/wm/latest/index.html - X11 window manager protocols  
+https://specifications.freedesktop.org/wm/latest/index.html - window manager protocols  
+https://manpages.ubuntu.com/manpages/questing/man3/X11::Protocol::WM.3pm.html - extended window manager hints
 
 ## EGL
-https://registry.khronos.org/EGL/ - EGL reference
+https://registry.khronos.org/EGL/ - EGL reference  
 https://gist.github.com/mmozeiko/911347b5e3d998621295794e0ba334c4 - EGL usage with Xlib  
